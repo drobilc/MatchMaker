@@ -1,14 +1,191 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import sys
 import rospy
+import dlib
+import cv2
+import numpy as np
+import tf2_geometry_msgs
+import tf2_ros
+from sensor_msgs.msg import Image
+from geometry_msgs.msg import PointStamped, Vector3, Pose
+from nav_msgs.msg import OccupancyGrid
+
+from cv_bridge import CvBridge, CvBridgeError
+from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
+
+# Both detectors can be used to find faces in images
+from detectors.haar_detector import HaarDetector
+from detectors.dlib_detector import DlibDetector
+
+class FaceFinder(object):
+    
+    def __init__(self):
+        # Initialize node, anonymous means that we can run same node multiple times
+        rospy.init_node('face_finder', anonymous=True)
+
+        # Read parameters from our face_finder.launch file
+        self.display_camera_window = rospy.get_param('~display_camera_window', False)
+        self.focal_length = rospy.get_param('~camera_focal_length', 554)
+        self.face_detection_frame_threshold = rospy.get_param('~face_detection_frame_threshold', 3)
+        self.face_detection_distance_threshold = rospy.get_param('~face_detection_distance_threshold', 1)
+        self.haar_cascade_data_file_path = rospy.get_param('~haar_cascade_data_file_path', '')
+        
+        # An object we use for converting images between ROS format and OpenCV format
+        self.bridge = CvBridge()
+
+        # We can use dlib or haar detector here, just uncomment correct line
+        # self.face_detector = DlibDetector()
+        self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
+
+        # A list of detected faces on map
+        self.detected_faces = MarkerArray()
+        self.possible_detections = []
+        # Map mapping Pose -> integer
+        self.number_of_detections = {}
+
+        # Publisher for the visualization markers
+        self.markers_publisher = rospy.Publisher('face_markers', MarkerArray, queue_size=1000)
+
+        # A help variable for holding the dimensions of the image
+        self.dims = (0, 0, 0)
+
+        # Subscriber for new camera images
+        self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
+
+        # Object we use for transforming between coordinate frames
+        self.tf_buf = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
+    
+    def get_pose(self, coords, dist, stamp):
+        # Calculate the position of the detected face
+        x1, x2, y1, y2 = coords
+
+        face_x = self.dims[1] / 2 - (x1 + x2) / 2.
+        face_y = self.dims[0] / 2 - (y1 + y2) / 2.
+
+        angle_to_target = np.arctan2(face_x, self.focal_length)
+
+        # Get the angles in the base_link relative coordinate system
+        x, y = dist * np.cos(angle_to_target), dist * np.sin(angle_to_target)
+
+        # Define a stamped message for transformation - in the "camera rgb frame"
+        point_s = PointStamped()
+        point_s.point.x = -y
+        point_s.point.y = 0
+        point_s.point.z = x
+        point_s.header.frame_id = "camera_rgb_optical_frame"
+        point_s.header.stamp = stamp
+
+        # Get the point in the "map" coordinate system
+        try:
+            point_world = self.tf_buf.transform(point_s, "map")
+
+            # Create a Pose object with the same position
+            pose = Pose()
+            pose.position.x = point_world.point.x
+            pose.position.y = point_world.point.y
+            pose.position.z = point_world.point.z
+        except Exception as e:
+            pose = None
+
+        return pose
+    
+    def publish_marker(self, pose):
+        rospy.loginfo('Pubishing new marker. There are currently {} markers.'.format(len(self.detected_faces.markers)))
+        # Create a marker used for visualization
+        marker = Marker()
+        marker.header.stamp = rospy.Time(0)
+        marker.header.frame_id = 'map'
+        marker.pose = pose
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.frame_locked = False
+        marker.lifetime = rospy.Duration.from_sec(10)
+        marker.id = len(self.detected_faces.markers) + 1
+        marker.scale = Vector3(0.1, 0.1, 0.1)
+        marker.color = ColorRGBA(0, 1, 0, 1)
+        self.detected_faces.markers.append(marker)
+        self.markers_publisher.publish(self.detected_faces)
+    
+    def find_closest_face(self, faces, pose):
+        if len(faces) <= 0:
+            return (None, 0)
+        poses = sorted(faces, key=lambda other_pose: (pose.position.x - other_pose.position.x) ** 2 + (pose.position.y - other_pose.position.y))
+        return (poses[0], (pose.position.x - poses[0].position.x) ** 2 + (pose.position.y - poses[0].position.y))
+
+    def process_face(self, image, depth_image, face, depth_time):
+        # Get coordinates of the rectangle around the face
+        x1 = face.left()
+        x2 = face.right()
+        y1 = face.top()
+        y2 = face.bottom()
+
+        # Extract region containing face
+        face_region = image[y1:y2,x1:x2]
+
+        # Mark the face on our image
+        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 3, 8, 0)
+
+        # Find the distance to the detected face
+        face_distance = float(np.nanmean(depth_image[y1:y2,x1:x2]))
+
+        # Find the location of the detected face
+        pose = self.get_pose((x1,x2,y1,y2), face_distance, depth_time)
+
+        if pose is None:
+            return
+        
+        # Find closest marker from list of all markers and check if it is close
+        # enough to be considered the same. If yes, skip this face and continue.
+        already_found, distance = self.find_closest_face([m.pose for m in self.detected_faces.markers], pose)
+        if already_found is not None and distance <= self.face_detection_distance_threshold:
+            # The face we have found is already marked
+            return
+
+        # Find if the detected face has been detected at least n times
+        # if it has, it is probably a face and not a false positive
+        closest_face, distance = self.find_closest_face(self.possible_detections, pose)
+
+        if closest_face is not None and distance <= self.face_detection_distance_threshold:
+            detections = self.number_of_detections[closest_face]
+            if detections >= self.face_detection_frame_threshold:
+                rospy.loginfo('Detected face is probably not a false positive, setting marker!')
+                self.possible_detections.remove(closest_face)
+                del self.number_of_detections[closest_face]
+                self.publish_marker(pose)
+            else:
+                rospy.loginfo('Detected face has already been seen {} times'.format(detections))
+                self.number_of_detections[closest_face] += 1
+        else:
+            rospy.loginfo('Found a new face, adding it to possible_detections')
+            # This is probably a new face OR a false positive
+            self.possible_detections.append(pose)
+            self.number_of_detections[pose] = 1
+    
+    def image_callback(self, rgb_image_message):
+        # This function will be called when new camera rgb image is received
+        # Wait until the depth image is received
+        depth_image_message = rospy.wait_for_message("/camera/depth/image_raw", Image)
+        rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
+        depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
+        self.dims = rgb_image.shape
+
+        # Get the time that the depth image was recieved
+        depth_time = depth_image_message.header.stamp
+
+        face_rectangles = self.face_detector.find_faces(rgb_image)
+        for face_rectangle in face_rectangles:
+            self.process_face(rgb_image, depth_image, face_rectangle, depth_time)
+        
+        if self.display_camera_window:
+            cv2.imshow("Image", rgb_image)
+            cv2.waitKey(1)
 
 if __name__ == '__main__':
-    face_finder = face_localizer()
-
-        rate = rospy.Rate(1)
-        while not rospy.is_shutdown():
-            face_finder.find_faces()
-            rate.sleep()
-
-        cv2.destroyAllWindows()
+    # Create a new face finder object, that will try to find faces and add a new
+    # marker to our map
+    face_finder = FaceFinder()
+    rospy.spin()
