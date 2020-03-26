@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="client" pkg="exercise1" type="client_node" output="screen"/>
+
+  <node name="service" pkg="exercise1" type="service_node" output="screen"/>
+
+</launch>

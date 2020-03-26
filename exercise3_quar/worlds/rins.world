@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <model name="classroom">
+      <pose>-2 -2 0  0 0 0</pose>
+      <static>true</static>
+      
+      <link name="body">
+       
+        <collision name="classroom_collision">
+          <geometry>
+            <mesh><uri>model://exercise3_quar/meshes/rins_world_blender7.dae</uri></mesh>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>model://exercise3_quar/meshes/rins_world_blender7.dae</uri></mesh>
+          </geometry>
+        </visual>
+      
+
+        <sensor name='my_collision sensor' type='contact'>
+
+          <contact>
+            <collision>classroom_collision</collision>
+            <topic>/collision_contact</topic>
+          </contact>
+          <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">
+          <alwaysOn>true</alwaysOn>
+          <updateRate>1</updateRate>
+          <bumperTopicName>/turtlebot_contact</bumperTopicName>
+          <frameName>world</frameName>
+      </plugin>
+        </sensor>
+     
+
+     </link>
+
+    </model>
+  </world>
+</sdf>

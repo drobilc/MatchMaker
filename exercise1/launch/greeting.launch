@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="publisher" pkg="exercise1" type="publish_custom" output="screen"/>
+
+  <node name="subscriber" pkg="exercise1" type="subscribe_custom" output="screen"/>
+
+</launch>
