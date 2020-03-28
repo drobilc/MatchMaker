@@ -2,6 +2,7 @@
 
   <arg name="display_camera_window" default="false"/>
   <arg name="rotate_image" default="false"/>
+  <arg name="detector" default = "1"/>
 
   <node pkg="homework1" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
@@ -12,6 +13,11 @@
     <!-- The path to the haarcascade_face.xml used in HaarDetector -->
     <param name="haar_cascade_data_file_path" type="string" value="$(find homework1)/scripts/detectors/data/haarcascade_face.xml" />
     <param name="cnn_face_detector_data_file_path" type="string" value="$(find homework1)/scripts/detectors/data/mmod_human_face_detector.dat" />
+
+    <!-- Specify which detector to use -->
+    <!-- 1 = dlib -->
+    <!-- 2 = haar -->
+    <param name="use_detector" type="int" value="$(arg detector)"/>
   </node>
 
 </launch>
