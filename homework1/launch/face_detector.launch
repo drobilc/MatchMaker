@@ -10,7 +10,8 @@
     <param name="rotate_image" type="bool" value="$(arg rotate_image)" />
 
     <!-- The path to the haarcascade_face.xml used in HaarDetector -->
-    <param name="haar_cascade_data_file_path" type="string" value="$(find exercise4)/scripts/detectors/data/haarcascade_face.xml" />
+    <param name="haar_cascade_data_file_path" type="string" value="$(find homework1)/scripts/detectors/data/haarcascade_face.xml" />
+    <param name="cnn_face_detector_data_file_path" type="string" value="$(find homework1)/scripts/detectors/data/mmod_human_face_detector.dat" />
   </node>
 
 </launch>
