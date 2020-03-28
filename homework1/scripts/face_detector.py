@@ -22,7 +22,6 @@ from detectors.haar_detector import HaarDetector
 from detectors.dlib_detector import HogDetector, CnnDetector
 
 class FaceFinder(object):
-    
     def __init__(self):
         # Initialize node, anonymous means that we can run same node multiple times
         rospy.init_node('face_detector', anonymous=True)
@@ -36,13 +35,14 @@ class FaceFinder(object):
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
 
-        # We can use dlib or haar detector here, just uncomment correct line
-        # self.face_detector = HogDetector()
+        # We can use dlib, haar, or hog detector here
         detector = rospy.get_param('~use_detector')
         if detector == 1:
             self.face_detector = CnnDetector(self.cnn_face_detector_data_file_path)
         elif detector == 2:
             self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
+        elif detector == 3:
+            self.face_detector = HogDetector()
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
         self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None, tcp_nodelay=True)
@@ -54,6 +54,10 @@ class FaceFinder(object):
         # Should the image be converted to graycale before processing
         # true -> grayscale, false -> rgb
         self.convert_to_grayscale = rospy.get_param('~black_and_white', True)
+
+        # Parameters for evaluating the detector
+        self.frame_id = 0
+        self.total_detected_faces_in_video = 0
 
     def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
@@ -88,13 +92,16 @@ class FaceFinder(object):
     
     def image_callback(self, rgb_image_message):
         # This function will be called when new camera rgb image is received
-        rospy.loginfo('New image frame received')
+        rospy.loginfo('New image frame received, id {}'.format(self.frame_id))
+        self.frame_id += 1
         rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
 
         rgb_image = self.preprocess_image(rgb_image)
 
         face_rectangles = self.face_detector.find_faces(rgb_image)
         rospy.loginfo('Found {} faces'.format(len(face_rectangles)))
+        self.total_detected_faces_in_video += len(face_rectangles)
+        rospy.loginfo('Total detected faces: {}'.format(self.total_detected_faces_in_video))
         for face_rectangle in face_rectangles:
             self.process_face(rgb_image, face_rectangle)
         

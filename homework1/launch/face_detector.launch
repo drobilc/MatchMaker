@@ -19,6 +19,7 @@
     <!-- Specify which detector to use -->
     <!-- 1 = dlib -->
     <!-- 2 = haar -->
+    <!-- 3 = hog -->
     <param name="use_detector" type="int" value="$(arg detector)"/>
 
     <!--Determine the factor by which the image will shrink before processing.-->

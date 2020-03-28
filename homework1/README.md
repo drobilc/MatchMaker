@@ -36,7 +36,7 @@ roslaunch homework1 face_detector.launch display_camera_window:=true
 # You can also tell the face detector that it should rotate image 90 degrees clockwise
 roslaunch homework1 face_detector.launch rotate_image:=true
 
-# To specify which detector should be used replace number with 1 for dlib, 2 for haar
+# To specify which detector should be used replace number with 1 for dlib, 2 for haar, 3 for hog
 roslaunch homework1 face_detector.launch detector:=<number>
 
 # To process the rgb image instead of black and whte one, set hte argument bw to false
