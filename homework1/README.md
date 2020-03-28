@@ -12,11 +12,14 @@ roslaunch homework1 face_detector.launch
 
 # To display image, you can set the display_camera_window argument to true
 roslaunch homework1 face_detector.launch display_camera_window:=true
+
+# You can also tell the face detector that it should rotate image 90 degrees clockwise
+roslaunch homework1 face_detector.launch rotate_image:=true
 ```
 
 ## Video publisher
 Before launching the `video_publisher.launch` inside `homework1/launch`, the path to the video has to be set:
-- first put your video file inside `gomework1/videos` folder
+- first put your video file inside `homework1/videos` folder
 - in `video_publisher.launch` change this fragment by inserting the name of your video:
 
 ```xml

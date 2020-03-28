@@ -1,9 +1,14 @@
 <launch>
 
   <arg name="display_camera_window" default="false"/>
+  <arg name="rotate_image" default="false"/>
 
   <node pkg="homework1" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
+
+    <!-- Whether the image should be rotated by 90 degrees or not -->
+    <param name="rotate_image" type="bool" value="$(arg rotate_image)" />
+
     <!-- The path to the haarcascade_face.xml used in HaarDetector -->
     <param name="haar_cascade_data_file_path" type="string" value="$(find exercise4)/scripts/detectors/data/haarcascade_face.xml" />
   </node>

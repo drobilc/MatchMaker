@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import sys
+import math
 import rospy
 import dlib
 import cv2
@@ -29,6 +30,7 @@ class FaceFinder(object):
         # Read parameters from our face_finder.launch file
         self.display_camera_window = rospy.get_param('~display_camera_window', False)
         self.haar_cascade_data_file_path = rospy.get_param('~haar_cascade_data_file_path', '')
+        self.rotate_image = rospy.get_param('~rotate_image', False)
         
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
@@ -38,11 +40,9 @@ class FaceFinder(object):
         # self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
-        self.image_subscriber = rospy.Subscriber('/videofile/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None, tcp_nodelay=True)
+        self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None, tcp_nodelay=True)
 
-        self.frames = 0
-
-    def process_face(self, image, depth_image, face, depth_time):
+    def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
         x1 = face.left()
         x2 = face.right()
@@ -57,19 +57,24 @@ class FaceFinder(object):
     
     def image_callback(self, rgb_image_message):
         # This function will be called when new camera rgb image is received
-        rospy.loginfo('[{}] New image frame received'.format(self.frames))
+        rospy.loginfo('New image frame received')
         rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
 
+        # Get image width and height to calculate new size
         height, width, channels = rgb_image.shape
+        new_width, new_height = (int(width / 4), int(height / 4))
 
-        rgb_image = cv2.resize(rgb_image, (width / 4, height / 4))
+        # Resize image to be 1/4 the original size, so the face detector is faster
+        rgb_image = cv2.resize(rgb_image, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
 
-        self.frames += 1
+        # If the rotate_image argument is set to true, rotate image 90 deg clockwise
+        if self.rotate_image:
+            rgb_image = cv2.transpose(rgb_image)
 
-        """face_rectangles = self.face_detector.find_faces(rgb_image)
+        face_rectangles = self.face_detector.find_faces(rgb_image)
         rospy.loginfo('Found {} faces'.format(len(face_rectangles)))
         for face_rectangle in face_rectangles:
-            self.process_face(rgb_image, depth_image, face_rectangle, depth_time)"""
+            self.process_face(rgb_image, face_rectangle)
         
         if self.display_camera_window:
             cv2.imshow("Image", rgb_image)
