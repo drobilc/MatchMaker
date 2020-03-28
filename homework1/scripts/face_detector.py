@@ -79,6 +79,7 @@ class FaceFinder(object):
             if self.last_image_received >= 0 and (time.time() - self.last_image_received) >= self.wait_no_image:
                 self.finish()
                 rospy.signal_shutdown("No frame received for {} ms".format(self.wait_no_image))
+                sys.exit(1)
 
             self.rate.sleep()
     
@@ -87,11 +88,11 @@ class FaceFinder(object):
         # This function will be called if no image was received for self.wait_no_image ms
         # Open file for the detector that was used 
         if self.detector_id == 1:
-            results = open("results_cnn.txt", "a") 
+            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_cnn.txt", "a") 
         elif self.detector_id == 2:
-            results = open("results_haar.txt", "a")
+            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_haar.txt", "a")
         elif self.detector_id == 3:
-            results = open("results_hog.txt", "a")
+            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_hog.txt", "a")
 
         # write to file
         line = "detected_faces: " + str(self.total_detected_faces_in_video) + ", frames_in_video: " + str(self.no_of_frames) + ", processed_frames: " + str(self.frame_id) + ", false_positives: " + str(self.more_than_one_detection_in_frame) + ", frames_with_detected_faces: " + str(self.frames_with_detections) + ", grayscale: " + str(self.convert_to_grayscale) + ", downscale: " + str(self.downscale_factor) + "\n"
