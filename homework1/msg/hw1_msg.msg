@@ -1,2 +1,0 @@
-string message
-int32 messageID
