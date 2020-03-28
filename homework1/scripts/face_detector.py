@@ -38,15 +38,22 @@ class FaceFinder(object):
 
         # We can use dlib or haar detector here, just uncomment correct line
         # self.face_detector = HogDetector()
-        # self.face_detector = CnnDetector(self.cnn_face_detector_data_file_path)
-        self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
+        detector = rospy.get_param('~use_detector')
+        if detector == 1:
+            self.face_detector = CnnDetector(self.cnn_face_detector_data_file_path)
+        elif detector == 2:
+            self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
         self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None, tcp_nodelay=True)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
-        self.downscale_factor = 4
+        self.downscale_factor = rospy.get_param('~downscale_factor', 4)
+
+        # Should the image be converted to graycale before processing
+        # true -> grayscale, false -> rgb
+        self.convert_to_grayscale = rospy.get_param('~black_and_white', True)
 
     def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
@@ -74,7 +81,9 @@ class FaceFinder(object):
             image = cv2.transpose(image)
         
         # Convert the image to rgb for faster image processing?
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        if self.convert_to_grayscale:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
         return image
     
     def image_callback(self, rgb_image_message):

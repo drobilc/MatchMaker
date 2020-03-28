@@ -7,6 +7,26 @@ Link to videos:
 ## Face detector node
 There is a minimal face detector inside the `scripts` folder that subscribes to `/camera/rgb/image_raw` topic. It reads an image, uses detector to find faces on image and draw a rectangle around them.
 
+Before you can run the detector, you have to install python library `dlib`. If you don't have `pip` installed, fist run:
+
+```bash
+sudo apt install python-pip
+sudo apt-get -f install
+sudo apt install python-pip
+```
+Now, you can install `dlib`. Note that this step may take a while.
+
+```bash
+pip install dlib
+```
+
+You might also need to install cv2 library:
+```bash
+pip install opencv
+```
+
+Now, you can run the detector.
+
 ```bash
 roslaunch homework1 face_detector.launch
 
@@ -15,14 +35,35 @@ roslaunch homework1 face_detector.launch display_camera_window:=true
 
 # You can also tell the face detector that it should rotate image 90 degrees clockwise
 roslaunch homework1 face_detector.launch rotate_image:=true
+
+# To specify which detector should be used replace number with 1 for dlib, 2 for haar
+roslaunch homework1 face_detector.launch detector:=<number>
+
+# To process the rgb image instead of black and whte one, set hte argument bw to false
+roslaunch homework1 face_detector.launch bw:=false
+
+# Set the downsizing of the image by setting the argument downscale to the appropriate factor.
+# For example: factor 4 means that that the new image width will be width / 4
+roslaunch homework1 face_detector.launch downsize:=<number>
 ```
 
+If you encounter error on importing the detectors check for missing `__init__.py` file in `scripts/detectors`.
+
 ## Video publisher
-Before launching the `video_publisher.launch` inside `homework1/launch`, the path to the video has to be set:
+Before launching the `video_publisher.launch` inside `homework1/launch`, set the default video to play:
 - first put your video file inside `homework1/videos` folder
 - in `video_publisher.launch` change this fragment by inserting the name of your video:
 
 ```xml
-<arg name="video_stream_provider" value="$(find homework1)/videos/name_of_your_video" />
+<arg name="video_source" value="name_of_your_video" />
 ```
+
+You can run the publisher like that:
+
+```bash
+roslaunch homework1 video_publisher.launch video_source:=<name_of_your_video>
+
+```
+
+Note that you only have to provide the name of your video file, such as `my_video.mp4` since the path to it is already set in the launch file.
 
