@@ -129,6 +129,10 @@ virtual void do_capture() {
             unsubscribe();
             subscribe();
           }
+          
+          // CRASH THE VIDEO STREAM
+          ros::shutdown();
+          exit(1);
         }
 
         frame_counter++;
