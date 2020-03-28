@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import sys
 import math
+import time
 import rospy
 import dlib
 import cv2
@@ -55,9 +56,33 @@ class FaceFinder(object):
         # true -> grayscale, false -> rgb
         self.convert_to_grayscale = rospy.get_param('~black_and_white', True)
 
+        # Time when last image was received
+        self.last_image_received = -1
+
         # Parameters for evaluating the detector
         self.frame_id = 0
         self.total_detected_faces_in_video = 0
+
+        # How many seconds we should wait for new image until we can
+        # assume that the video has finished
+        self.wait_no_image = 1.0
+
+        # Create a new rate object that we will use to check whether no image
+        # was received for some time. Set it to 60Hz and create a new loop
+        # that will check whether we should end this script.
+        self.rate = rospy.Rate(60)
+        while not rospy.is_shutdown():
+            # Check if we should exit, call the exit function and shutdown this node
+            if self.last_image_received >= 0 and (time.time() - self.last_image_received) >= self.wait_no_image:
+                self.finish()
+                rospy.signal_shutdown("No frame received for {} ms".format(self.wait_no_image))
+
+            self.rate.sleep()
+    
+    def finish(self):
+        # This function will be called if no image was received for self.wait_no_image ms
+        # Save data to file or something
+        pass
 
     def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
@@ -94,6 +119,10 @@ class FaceFinder(object):
         # This function will be called when new camera rgb image is received
         rospy.loginfo('New image frame received, id {}'.format(self.frame_id))
         self.frame_id += 1
+
+        # Set the last received image time to current time
+        self.last_image_received = time.time()
+
         rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
 
         rgb_image = self.preprocess_image(rgb_image)
@@ -112,4 +141,3 @@ class FaceFinder(object):
 if __name__ == '__main__':
     face_finder = FaceFinder()
     rospy.loginfo('Face detector started')
-    rospy.spin()
