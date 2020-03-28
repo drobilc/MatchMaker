@@ -67,3 +67,12 @@ roslaunch homework1 video_publisher.launch video_source:=<name_of_your_video>
 
 Note that you only have to provide the name of your video file, such as `my_video.mp4` since the path to it is already set in the launch file.
 
+## Video testing
+To test all videos, run the following. The script will iterate over all videos and run face recognition on each file. The `./test_videos.sh` **must** be run inside the `videos` directory.
+
+```bash
+cp test_videos.sh videos/test_videos.sh
+cd videos
+chmod 764 test_videos.sh
+./test_videos.sh
+```
