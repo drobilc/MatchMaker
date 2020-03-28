@@ -46,7 +46,7 @@ class FaceFinder(object):
             self.face_detector = HogDetector()
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
-        self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None, tcp_nodelay=True)
+        self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4

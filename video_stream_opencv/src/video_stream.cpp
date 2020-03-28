@@ -200,6 +200,10 @@ virtual void do_publish(const ros::TimerEvent& event) {
             cv::flip(frame, frame, 1);
           else if (latest_config.flip_vertical)
             cv::flip(frame, frame, 0);
+        } else {
+          NODELET_WARN_STREAM("Image not new.");
+          ros::shutdown();
+          exit(1);
         }
         cv_bridge::CvImagePtr cv_image =
           boost::make_shared<cv_bridge::CvImage>(header, "bgr8", frame);

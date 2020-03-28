@@ -1,5 +1,6 @@
 <launch>
   <arg name="video_source" default="name_of_your_video"/>
+  <arg name="frames" default="-1"/>
 
   <!-- launch video stream -->
   <include file="$(find video_stream_opencv)/launch/camera.launch">
@@ -18,5 +19,7 @@
 
     <!-- flip the image vertically -->
     <arg name="flip_vertical" value="true" />
+
+    <arg name="stop_frame" value="$(arg frames)"/>
   </include>
 </launch>
