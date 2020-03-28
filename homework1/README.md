@@ -38,6 +38,13 @@ roslaunch homework1 face_detector.launch rotate_image:=true
 
 # To specify which detector should be used replace number with 1 for dlib, 2 for haar
 roslaunch homework1 face_detector.launch detector:=<number>
+
+# To process the rgb image instead of black and whte one, set hte argument bw to false
+roslaunch homework1 face_detector.launch bw:=false
+
+# Set the downsizing of the image by setting the argument downscale to the appropriate factor.
+# For example: factor 4 means that that the new image width will be width / 4
+roslaunch homework1 face_detector.launch downsize:=<number>
 ```
 
 If you encounter error on importing the detectors check for missing `__init__.py` file in `scripts/detectors`.
