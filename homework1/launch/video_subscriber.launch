@@ -1,6 +1,0 @@
-<launch>
-
-  <node pkg="hw1" type="video_publisher.py" name="video_topic"  output="screen">
-  </node>
-
-</launch>

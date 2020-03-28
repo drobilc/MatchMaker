@@ -37,12 +37,12 @@ class FaceFinder(object):
         self.bridge = CvBridge()
 
         # We can use dlib, haar, or hog detector here
-        detector = rospy.get_param('~use_detector')
-        if detector == 1:
+        self.detector_id = rospy.get_param('~use_detector')
+        if self.detector_id == 1:
             self.face_detector = CnnDetector(self.cnn_face_detector_data_file_path)
-        elif detector == 2:
+        elif self.detector_id == 2:
             self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
-        elif detector == 3:
+        elif self.detector_id == 3:
             self.face_detector = HogDetector()
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
@@ -61,7 +61,10 @@ class FaceFinder(object):
 
         # Parameters for evaluating the detector
         self.frame_id = 0
-        self.total_detected_faces_in_video = 0
+        self.no_of_frames = rospy.get_param('~total_frames', 0) # number of frames in a video
+        self.total_detected_faces_in_video = 0 # counts all detected faces
+        self.more_than_one_detection_in_frame = 0 # counts how many times more than one face was detected (false positives)
+        self.frames_with_detections = 0 #counts how many times at least one face was detected
 
         # How many seconds we should wait for new image until we can
         # assume that the video has finished
@@ -80,9 +83,23 @@ class FaceFinder(object):
             self.rate.sleep()
     
     def finish(self):
+        rospy.loginfo("FINISH IT!")
         # This function will be called if no image was received for self.wait_no_image ms
-        # Save data to file or something
-        pass
+        # Open file for the detector that was used 
+        if self.detector_id == 1:
+            results = open("results_cnn.txt", "a") 
+        elif self.detector_id == 2:
+            results = open("results_haar.txt", "a")
+        elif self.detector_id == 3:
+            results = open("results_hog.txt", "a")
+
+        # write to file
+        line = "detected_faces: " + str(self.total_detected_faces_in_video) + ", frames_in_video: " + str(self.no_of_frames) + ", processed_frames: " + str(self.frame_id) + ", false_positives: " + str(self.more_than_one_detection_in_frame) + ", frames_with_detected_faces: " + str(self.frames_with_detections) + ", grayscale: " + str(self.convert_to_grayscale) + ", downscale: " + str(self.downscale_factor) + "\n"
+        
+        results.write(line)
+
+        # close the file
+        results.close()
 
     def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
@@ -117,20 +134,23 @@ class FaceFinder(object):
     
     def image_callback(self, rgb_image_message):
         # This function will be called when new camera rgb image is received
-        rospy.loginfo('New image frame received, id {}'.format(self.frame_id))
+        # rospy.loginfo('New image frame received, id {}'.format(self.frame_id))
         self.frame_id += 1
 
         # Set the last received image time to current time
         self.last_image_received = time.time()
 
         rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
-
         rgb_image = self.preprocess_image(rgb_image)
 
         face_rectangles = self.face_detector.find_faces(rgb_image)
-        rospy.loginfo('Found {} faces'.format(len(face_rectangles)))
+        # rospy.loginfo('Found {} faces'.format(len(face_rectangles)))
         self.total_detected_faces_in_video += len(face_rectangles)
-        rospy.loginfo('Total detected faces: {}'.format(self.total_detected_faces_in_video))
+        if len(face_rectangles) > 1:
+            self.more_than_one_detection_in_frame += 1
+        if len(face_rectangles) > 0:
+            self.frames_with_detections += 1
+        # rospy.loginfo('Total detected faces: {}'.format(self.total_detected_faces_in_video))
         for face_rectangle in face_rectangles:
             self.process_face(rgb_image, face_rectangle)
         

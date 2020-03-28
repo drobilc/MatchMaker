@@ -11,9 +11,9 @@ do
     # First, run our face_detector, then start video stream
     frames=$(ffprobe -select_streams v -show_streams $video 2>/dev/null | grep nb_frames | sed -e 's/nb_frames=//')
     echo "Total number of frames: " $frames
-    timeout 10 roslaunch homework1 video_publisher.launch video_source:=$video frames:=$frames &
+    timeout 15 roslaunch homework1 video_publisher.launch video_source:=$video frames:=$frames &
     P1=$!
-    roslaunch homework1 face_detector.launch display_camera_window:=true rotate_image:=true detector:=3&
+    timeout 15 roslaunch homework1 face_detector.launch display_camera_window:=true rotate_image:=true detector:=3 frames:=$frames&
     P2=$!
 
     # wait for both processes to finish

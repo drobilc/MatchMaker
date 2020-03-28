@@ -5,6 +5,7 @@
   <arg name="detector" default="1"/>
   <arg name="downscale" default="4"/>
   <arg name="bw" default="true"/>
+  <arg name="frames" default="0"/>
 
   <node pkg="homework1" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
@@ -33,6 +34,9 @@
     <!-- true = black and white image -->
     <!-- false = rgb image -->
     <param name="black_and_white" type="bool" value="$(arg bw)"/>
+
+    <!-- Number of frames in the input video -->
+    <param name="total_frames" type="int" value="$(arg frames)"/>
   </node>
 
 </launch>

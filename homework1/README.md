@@ -71,6 +71,10 @@ Note that you only have to provide the name of your video file, such as `my_vide
 To test all videos, run the following. The script will iterate over all videos and run face recognition on each file. The `./test_videos.sh` **must** be run inside the `videos` directory.
 
 ```bash
+sudo apt-get install ffmpeg
+roscore
+
+# open new terminal
 cp test_videos.sh videos/test_videos.sh
 cd videos
 chmod 764 test_videos.sh
