@@ -67,6 +67,8 @@ class FaceFinder(object):
         self.frames_with_detections = 0 #counts how many times at least one face was detected
         self.video_id = rospy.get_param('~video_source', "video01.mp4")
 
+        self.frames = []
+
         # How many seconds we should wait for new image until we can
         # assume that the video has finished
         self.wait_no_image = 1.0
@@ -88,22 +90,25 @@ class FaceFinder(object):
         rospy.loginfo("No image received for {} seconds. Ending face detector.".format(self.wait_no_image))
         rospy.loginfo("Total number of frames: {}".format(self.frame_id))
         rospy.loginfo("Number of detected faces: {}".format(self.total_detected_faces_in_video))
-        # This function will be called if no image was received for self.wait_no_image ms
-        # Open file for the detector that was used 
-        if self.detector_id == 1:
-            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_cnn.txt", "a") 
-        elif self.detector_id == 2:
-            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_haar.txt", "a")
-        elif self.detector_id == 3:
-            results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_hog.txt", "a")
 
-        # write to file
-        line = "video_id: " + str(self.video_id) +"detected_faces: " + str(self.total_detected_faces_in_video) + ", frames_in_video: " + str(self.no_of_frames) + ", processed_frames: " + str(self.frame_id) + ", false_positives: " + str(self.more_than_one_detection_in_frame) + ", frames_with_detected_faces: " + str(self.frames_with_detections) + ", grayscale: " + str(self.convert_to_grayscale) + ", downscale: " + str(self.downscale_factor) + "\n"
-        
-        results.write(line)
+        # Construct filename from video id and detector type
+        detector_types = ["cnn", "haar", "hog"]
+        filename = "{}_{}_{}_{}.txt".format(detector_types[self.detector_id - 1], self.video_id.replace('.mp4', ''), self.downscale_factor, self.convert_to_grayscale)
 
-        # close the file
-        results.close()
+        # Open file for writing
+        with open("/home/niki/Desktop/ROS/src/homework1/videos/{}".format(filename), "w") as output_file:
+            # First, write out all parameters to file
+            output_file.write("{}\n".format(self.video_id))
+            output_file.write("{}\n".format(self.detector_id))
+            output_file.write("{}\n".format(self.downscale_factor))
+            output_file.write("{}\n".format(self.convert_to_grayscale))
+            output_file.write("{}\n".format(self.no_of_frames))
+            output_file.write("{}\n".format(self.frame_id))
+            output_file.write("{}\n".format(self.total_detected_faces_in_video))
+            output_file.write("{}\n".format(self.frames_with_detections))
+            for frame in self.frames:
+                output_file.write(str([f.to_list() for f in frame]))
+                output_file.write('\n')
 
     def process_face(self, image, face):
         # Get coordinates of the rectangle around the face
@@ -155,6 +160,7 @@ class FaceFinder(object):
         if len(face_rectangles) > 0:
             self.frames_with_detections += 1
         # rospy.loginfo('Total detected faces: {}'.format(self.total_detected_faces_in_video))
+        self.frames.append(face_rectangles)
         for face_rectangle in face_rectangles:
             self.process_face(rgb_image, face_rectangle)
         
