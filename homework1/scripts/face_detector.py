@@ -46,7 +46,7 @@ class FaceFinder(object):
             self.face_detector = HogDetector()
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
-        self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, buff_size=200*1024*1024, queue_size=None)
+        self.image_subscriber = rospy.Subscriber('/camera/image_raw', Image, self.image_callback, queue_size=1)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
@@ -78,13 +78,15 @@ class FaceFinder(object):
             # Check if we should exit, call the exit function and shutdown this node
             if self.last_image_received >= 0 and (time.time() - self.last_image_received) >= self.wait_no_image:
                 self.finish()
-                rospy.signal_shutdown("No frame received for {} ms".format(self.wait_no_image))
+                rospy.signal_shutdown("No frame received for {} s".format(self.wait_no_image))
                 sys.exit(1)
 
             self.rate.sleep()
     
     def finish(self):
-        rospy.loginfo("FINISH IT!")
+        rospy.loginfo("No image received for {} seconds. Ending face detector.".format(self.wait_no_image))
+        rospy.loginfo("Total number of frames: {}".format(self.frame_id))
+        rospy.loginfo("Number of detected faces: {}".format(self.total_detected_faces_in_video))
         # This function will be called if no image was received for self.wait_no_image ms
         # Open file for the detector that was used 
         if self.detector_id == 1:
