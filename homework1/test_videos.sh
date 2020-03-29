@@ -3,11 +3,11 @@ run_test () {
     echo "[" $1 "] Testing configuration: detector = " $3 ", downscale = " $4 ", black_and_white = " $5
     
     # Run the video publisher, save the process id in P1
-    roslaunch homework1 video_publisher.launch video_source:=$1 frames:=$2 &
+    timeout 15 roslaunch homework1 video_publisher.launch video_source:=$1 frames:=$2 &
     P1=$!
     
     # Run the face detector, save the process id in P2
-    roslaunch homework1 face_detector.launch display_camera_window:=true rotate_image:=true detector:=$3 frames:=$2 downscale:=$4 bw:=$5 &
+    timeout 15 roslaunch homework1 face_detector.launch display_camera_window:=false rotate_image:=true detector:=$3 frames:=$2 downscale:=$4 bw:=$5 video_source:=$1 &
     P2=$!
 
     # Wait for both processes to finish
@@ -25,9 +25,9 @@ do
     frames=$(ffprobe -select_streams v -show_streams $video 2>/dev/null | grep nb_frames | sed -e 's/nb_frames=//')
     echo "Total number of frames: " $frames
 
-    for detector in 1 2 3
+    for detector in 2 3
     do
-        for downscale in 8 4 2 1
+        for downscale in 16 8 4 2 1
         do
             run_test $video $frames $detector $downscale false
             run_test $video $frames $detector $downscale true

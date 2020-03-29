@@ -6,6 +6,7 @@
   <arg name="downscale" default="4"/>
   <arg name="bw" default="true"/>
   <arg name="frames" default="0"/>
+  <arg name="video" default="video01.mp4"/>
 
   <node pkg="homework1" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
@@ -37,6 +38,9 @@
 
     <!-- Number of frames in the input video -->
     <param name="total_frames" type="int" value="$(arg frames)"/>
+
+    <!-- Name of the video -->
+    <param name="video_source" type="string" value="$(arg video)"/>
   </node>
 
 </launch>

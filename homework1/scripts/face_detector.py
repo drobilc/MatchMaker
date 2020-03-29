@@ -65,6 +65,7 @@ class FaceFinder(object):
         self.total_detected_faces_in_video = 0 # counts all detected faces
         self.more_than_one_detection_in_frame = 0 # counts how many times more than one face was detected (false positives)
         self.frames_with_detections = 0 #counts how many times at least one face was detected
+        self.video_id = rospy.get_param('~video_source', "video01.mp4")
 
         # How many seconds we should wait for new image until we can
         # assume that the video has finished
@@ -97,7 +98,7 @@ class FaceFinder(object):
             results = open("/home/ajda/ROS_workspace/src/homework1/scripts/results_hog.txt", "a")
 
         # write to file
-        line = "detected_faces: " + str(self.total_detected_faces_in_video) + ", frames_in_video: " + str(self.no_of_frames) + ", processed_frames: " + str(self.frame_id) + ", false_positives: " + str(self.more_than_one_detection_in_frame) + ", frames_with_detected_faces: " + str(self.frames_with_detections) + ", grayscale: " + str(self.convert_to_grayscale) + ", downscale: " + str(self.downscale_factor) + "\n"
+        line = "video_id: " + str(self.video_id) +"detected_faces: " + str(self.total_detected_faces_in_video) + ", frames_in_video: " + str(self.no_of_frames) + ", processed_frames: " + str(self.frame_id) + ", false_positives: " + str(self.more_than_one_detection_in_frame) + ", frames_with_detected_faces: " + str(self.frames_with_detections) + ", grayscale: " + str(self.convert_to_grayscale) + ", downscale: " + str(self.downscale_factor) + "\n"
         
         results.write(line)
 
