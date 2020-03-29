@@ -35,23 +35,18 @@ We also wanted to find the best image resolution at which the most faces were co
 
 In the table below we can see the comparison between haar cascade and HOG face detector performance on different files. The file resolution is `960 x 540`. The score is calculated as `number_of_true_positives / number_of_frames`.
 
-| Detector | Video | Score |
+| Video | HOG detector score | Haar detector score |
 | --- | --- | --- |
-| haar | face01_0deg | 0.62 |
-| haar | face01_30deg | 0.61 |
-| haar | face01_45deg | 0.54 |
-| haar | face01_60deg | 0.2 |
-| haar | face02_0deg | 0.61 |
-| haar | face02_30deg | 0.6 |
-| haar | face02_45deg | 0.38 |
-| haar | face02_60deg | 0.18 |
-| hog | face01_0deg | 0.32 |
-| hog | face01_30deg | 0.3 |
-| hog | face01_45deg | 0.0 |
-| hog | face01_60deg | 0.26 |
-| hog | face02_0deg | 0.25 |
-| hog | face02_30deg | 0.29 |
-| hog | face02_45deg | 0.24 |
-| hog | face02_60deg | 0.09 |
+| face01_0deg | 0.32 | 0.62 |
+| face01_30deg | 0.3 | 0.61 |
+| face01_45deg | 0.0 | 0.54 |
+| face01_60deg | 0.26 | 0.2 |
+| face02_0deg | 0.25 | 0.61 |
+| face02_30deg | 0.29 | 0.6 |
+| face02_45deg | 0.24 | 0.38 |
+| face02_60deg | 0.09 | 0.18 |
 
 As we can see, the **opencv haar cascade detector** performed better than the other. It correctly identified twice as much faces in all videos.
+
+## Face detector performance
+Now that we have selected our face detector, we can use it to estimate its performance for any distance and angle to the face.
