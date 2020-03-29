@@ -42,3 +42,4 @@ for detector in detectors:
 
                 # close file
                 data_file.close()
+result_file.close()
