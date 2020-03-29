@@ -193,8 +193,8 @@ class face_localizer:
         
         image_viz = np.array(image_1, dtype=np.uint8)
 
-        #cv2.imshow("Depth window", image_viz)
-        #cv2.waitKey(1)
+        cv2.imshow("Depth window", image_viz)
+        cv2.waitKey(1)
 
         #plt.imshow(depth_image)
         #plt.show()

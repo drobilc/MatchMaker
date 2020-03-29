@@ -16,4 +16,8 @@
     <param name="haar_cascade_data_file_path" type="string" value="$(find exercise4)/scripts/detectors/data/haarcascade_face.xml" />
   </node>
 
+  <node pkg="exercise4" type="move_better.py" name="move_to_hardcoded_locations" output="screen">
+     <remap from="current_goal" to="/move_base/goal" />
+  </node>
+
 </launch>

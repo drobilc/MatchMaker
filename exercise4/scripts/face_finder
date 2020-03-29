@@ -37,8 +37,8 @@ class FaceFinder(object):
         self.bridge = CvBridge()
 
         # We can use dlib or haar detector here, just uncomment correct line
-        # self.face_detector = DlibDetector()
-        self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
+        self.face_detector = DlibDetector()
+        # self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
         # A list of detected faces on map
         self.detected_faces = MarkerArray()
@@ -109,6 +109,7 @@ class FaceFinder(object):
         marker.color = ColorRGBA(0, 1, 0, 1)
         self.detected_faces.markers.append(marker)
         self.markers_publisher.publish(self.detected_faces)
+        # print(detected_faces.markers)
     
     def find_closest_face(self, faces, pose):
         if len(faces) <= 0:

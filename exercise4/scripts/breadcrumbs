@@ -15,6 +15,7 @@ class Breadcrumbs():
 		self.rate = rospy.get_param('~rate', 1)
 
 		markers_topic = rospy.get_param('~markers_topic', 'crumbs')
+		print "Markers topic is: "
 
 		self.tf2_buffer = tf2_ros.Buffer()
 		self.tf2_listener = tf2_ros.TransformListener(self.tf2_buffer)
