@@ -103,9 +103,10 @@ class FaceFinder(object):
             output_file.write("{}\n".format(self.downscale_factor))
             output_file.write("{}\n".format(self.convert_to_grayscale))
             output_file.write("{}\n".format(self.no_of_frames))
-            output_file.write("{}\n".format(self.frame_id))
+            output_file.write("{}\n".format(self.frame_id)) # processed frames
             output_file.write("{}\n".format(self.total_detected_faces_in_video))
-            output_file.write("{}\n".format(self.frames_with_detections))
+            output_file.write("{}\n".format(self.frames_with_detections)) # TP
+            output_file.write("{}\n".format(self.more_than_one_detection_in_frame)) # FP
             for frame in self.frames:
                 output_file.write(str([f.to_list() for f in frame]))
                 output_file.write('\n')
