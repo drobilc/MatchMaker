@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -54,7 +54,12 @@
 	
 	For face detection we did not know whether it is better to use black and white image or color one, so we tested each of the two options. We found out that detectors performed better with monochromatic images. \\
 	
-	We also wanted to find the best image resolution at which the number of correctly recognized faces is the largest, so we tested three different resolutions: \texttt{960 x 540}, \texttt{480 x 270} and \texttt{240 x 135}. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was the \texttt{960 x 540}. That means that for the best performance in the final task, we will use the largest image that Kinect sensor can produce, that is \texttt{640 x 480}.
+	We also wanted to find the best image resolution at which the number of correctly recognized faces is the largest, so we tested three different resolutions: \texttt{960 x 540}, \texttt{480 x 270} and \texttt{240 x 135}. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was the \texttt{960 x 540}. That means that for the best performance in the final task, we will use the largest image that Kinect sensor can produce, that is \texttt{640 x 480}. \\
+	
+	In the table below we can see the number of true positives (TP), false positives (FP) and false negatives (FN) for each detector. 
+	True positives are correctly detected faces, false positives incorrectly detected faces, and false negatives represent the number of processed frames with no detected faces.
+	We can see that the HOG detector has way more false negatives than the Haar detector, which shows two things. First, Haar detector is better at detecting faces (considering the number of processed frames) and secondly, HOG detector is much faster and it can process more frames than Haar detector.
+	
 	
 	\begin{center}
 		\begin{tabular}{|c|c|c|c|c|c|c|}
