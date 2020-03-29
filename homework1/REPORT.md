@@ -24,8 +24,17 @@ In the table below, we compare the processing speed of different detectors. We a
 
 As we can see, the dlib HOG detector is the fastest - it can process frames in real time. The dlib CNN detector is the slowest - it can only process one frame before the video ends. This shows that the CNN detector can not be used to detect faces in our finished product.
 
-THe opencv is not quite as fast as the dlib HOG detector, but it can process data almost in realtime and it actually detects the face very well - even better than HOG.
+The opencv is not quite as fast as the dlib HOG detector, but it can process data almost in realtime and it actually detects the face very well - even better than HOG.
 
 The Kinect video resolution is 640 x 480, which means that we will be able to process it using either HOG or haar cascade detector.
 
 ## Face detection
+For face detection we did not know whether it is better to use black and white image or color one, so we tested each of the detectors. We found out that detectors performed better with [manjka] images.
+
+We also wanted to find the best image resolution at which the most faces were correctly recognized, so we tested with four different resolutions: 960 x 540, 480 x 270 and 240 x 135. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was [manjka].
+
+In the table below we can see the number of detected faces for different video files, the number of frames where face was identified correctly (true positives), the number of frames where face was not detected (false negative) and the number of frames where multiple faces or incorrect face was detected (false positive).
+
+[manjka tabela]
+
+As we can see, the [manjka] detector performed better, so all tests from here below will be done using this detector.
