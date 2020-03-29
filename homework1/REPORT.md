@@ -2,7 +2,7 @@
 When evaluating our model performance, we focused on two things - face detection speed and number of frames where our face was detected. We have tested three different face detectors, two from dlib library and one from opencv.
 
 ## Speed
-All the tests were done on realtime video that was streaming to the `/camera/raw_image` (similar to the turtlebot configuration that we will be using for our final task). We could process each frame individually, but that would defeat the purpose of our face detector. We wanted to make sure, that the it can be run realtime on our robot and produce good results. 
+All the tests were done on realtime video that was streaming to the `/camera/raw_image` (similar to the turtlebot configuration that we will be using for our final task). We could process each frame individually, but that would defeat the purpose of our face detector. We wanted to make sure, that the it can be run realtime on our robot and produce good results.
 
 In the opencv implementation, we are using haar cascade, that was and is widely used in cameras as it is very fast and can be run in realtime.
 
@@ -49,4 +49,12 @@ In the table below we can see the comparison between haar cascade and HOG face d
 As we can see, the **opencv haar cascade detector** performed better than the other. It correctly identified twice as much faces in all videos.
 
 ## Face detector performance
-Now that we have selected our face detector, we can use it to estimate its performance for any distance and angle to the face.
+Now that we have selected our face detector, we can use it to estimate its performance for any distance and angle to the face. The results are plotted in the following graph.
+
+On x axis we have distance to the face in intervals of 0.5m, on y axis we can see the ngles from which the face was approached, and on the z axis we have the number of correctly detected faces (true positives) for each distance-angle pair.
+
+![Graph_1](https://www.dropbox.com/s/t5rmahilajdxx48/graf4.png?raw=1 "graf1")
+![Graph_2](https://www.dropbox.com/s/chzf8z5cmfkjpvf/graf5.png?raw=1 "graf2")
+![Graph_3](https://www.dropbox.com/s/m6tyey765eh5rdr/graf6.png?raw=1 "graf3")
+
+We can see that detection works best at the distance of 1.5 and 2.5 meters. The diference between different angles aren't as noticable. The detector works a bit worse when video is taken from a large, 60° angle.
