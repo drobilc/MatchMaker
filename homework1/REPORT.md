@@ -26,15 +26,32 @@ As we can see, the dlib HOG detector is the fastest - it can process frames in r
 
 The opencv is not quite as fast as the dlib HOG detector, but it can process data almost in realtime and it actually detects the face very well - even better than HOG.
 
-The Kinect video resolution is 640 x 480, which means that we will be able to process it using either HOG or haar cascade detector.
+The Kinect video resolution is `640 x 480`, which means that we will be able to process it using either HOG or haar cascade detector.
 
 ## Face detection
-For face detection we did not know whether it is better to use black and white image or color one, so we tested each of the detectors. We found out that detectors performed better with [manjka] images.
+For face detection we did not know whether it is better to use black and white image or color one, so we tested each of the detectors. We found out that detectors performed better with monochromatic images.
 
-We also wanted to find the best image resolution at which the most faces were correctly recognized, so we tested with four different resolutions: 960 x 540, 480 x 270 and 240 x 135. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was [manjka].
+We also wanted to find the best image resolution at which the most faces were correctly recognized, so we tested with four different resolutions: 960 x 540, 480 x 270 and 240 x 135. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was the `960 x 540`. That means that for the best performance in the final task, we will use the largest image that Kinect sensor can produce, that is `640 x 480`.
 
-In the table below we can see the number of detected faces for different video files, the number of frames where face was identified correctly (true positives), the number of frames where face was not detected (false negative) and the number of frames where multiple faces or incorrect face was detected (false positive).
+In the table below we can see the comparison between haar cascade and HOG face detector performance on different files. The file resolution is `960 x 540`. The score is calculated as `number_of_true_positives / number_of_frames`.
 
-[manjka tabela]
+| Detector | Video | Score |
+| --- | --- | --- |
+| haar | face01_0deg | 0.62 |
+| haar | face01_30deg | 0.61 |
+| haar | face01_45deg | 0.54 |
+| haar | face01_60deg | 0.2 |
+| haar | face02_0deg | 0.61 |
+| haar | face02_30deg | 0.6 |
+| haar | face02_45deg | 0.38 |
+| haar | face02_60deg | 0.18 |
+| hog | face01_0deg | 0.32 |
+| hog | face01_30deg | 0.3 |
+| hog | face01_45deg | 0.0 |
+| hog | face01_60deg | 0.26 |
+| hog | face02_0deg | 0.25 |
+| hog | face02_30deg | 0.29 |
+| hog | face02_45deg | 0.24 |
+| hog | face02_60deg | 0.09 |
 
-As we can see, the [manjka] detector performed better, so all tests from here below will be done using this detector.
+As we can see, the **opencv haar cascade detector** performed better than the other. It correctly identified twice as much faces in all videos.
