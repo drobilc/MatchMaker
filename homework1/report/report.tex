@@ -1,11 +1,10 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{subcaption}
-\usepackage{siunitx}
 \usepackage{float}
 
 \author{Team Gamma}
@@ -55,7 +54,26 @@
 	
 	For face detection we did not know whether it is better to use black and white image or color one, so we tested each of the two options. We found out that detectors performed better with monochromatic images. \\
 	
-	We also wanted to find the best image resolution at which the number of correctly recognized faces is the largest, so we tested three different resolutions: \texttt{960 x 540}, \texttt{480 x 270} and \texttt{240 x 135}. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was the \texttt{960 x 540}. That means that for the best performance in the final task, we will use the largest image that Kinect sensor can produce, that is \texttt{640 x 480}. \\
+	We also wanted to find the best image resolution at which the number of correctly recognized faces is the largest, so we tested three different resolutions: \texttt{960 x 540}, \texttt{480 x 270} and \texttt{240 x 135}. Both detectors were able to detect faces in almost real time, but we found out that the resolution at which most faces were recognized correctly was the \texttt{960 x 540}. That means that for the best performance in the final task, we will use the largest image that Kinect sensor can produce, that is \texttt{640 x 480}.
+	
+	\begin{center}
+		\begin{tabular}{|c|c|c|c|c|c|c|}
+			\hline 
+			& \multicolumn{3}{c|}{HOG detector score} & \multicolumn{3}{c|}{Haar detector score} \\
+			\hline
+			Video & TP & FP & FN & TP & FP & FN \\
+			\hline 
+			\texttt{ face01\_0deg } & 75 & 0 & 163 & 56 & 15 & 35 \\
+			\texttt{ face01\_30deg } & 58 & 0 & 138 & 47 & 2 & 30 \\
+			\texttt{ face01\_45deg } & 0 & 0 & 1 & 52 & 2 & 44 \\
+			\texttt{ face01\_60deg } & 58 & 0 & 167 & 18 & 2 & 70 \\
+			\texttt{ face02\_0deg } & 20 & 0 & 60 & 17 & 0 & 11 \\
+			\texttt{ face02\_30deg } & 33 & 0 & 81 & 24 & 0 & 16 \\
+			\texttt{ face02\_45deg } & 25 & 0 & 78 & 15 & 0 & 25 \\
+			\texttt{ face02\_60deg } & 10 & 0 & 104 & 8 & 0 & 36 \\			
+			\hline 
+		\end{tabular} \\
+	\end{center}
 	
 	In the table below we can see the comparison between haar cascade and HOG face detector performance on different files. We used videos of 2 different faces taken at 4 different angles each. The file resolution is 960 x 540. The score is calculated as $\frac{\text{number of true positives}}{\text{number of frames}}$.
 	
