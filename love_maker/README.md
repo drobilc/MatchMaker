@@ -1,5 +1,41 @@
 # Love Maker
-Love maker is a testing ground for the first task.
+Love maker is a precious space for development of the basis of the Match Maker, task1.
+
+Love maker will presumably made following the scheme below.
+![scheme](https://github.com/drobilc/rins_exercises/tree/master/love_maker/scheme.png "scheme")
+
+#### Face detector
+Face detector reads the images from the camera, preprocesses them and runs face detection. It estimates the global position of each face and sends this data to Robustyfier.
+
+### Robustyfier
+Keeps the global locations of previousl detected faces and determines whether the new detection sent by Face detector corresponds to any already discovered faces. If so, it may modify the position of the known face and then send the global coordinates to the Mind. Otherwise it sends the coordinates that have been received form the Face detector.
+
+#### Mind
+This is the node, responsible for movement. Based on information from the Robustyfier it decides wheteher it is time to approach the face. If so, it approaches the face and calls the Greeter. Otherwise it continues it's travel to one of the predetermined locations for space exploration.
+
+#### Greeter
+Says hello to the face and tells the Mind that is has done so.
+
+## Love maker's abilities
+Before starting the task:
+- Robot should build a map of the given environment
+
+The task:
+1. Search the space for faces
+    1. Locate the starting position
+    2. Define a way to move when searching (hardcode or intelligent)
+    3. Detect the faces
+        1. ~~Test different detectors in gazebo (fps, detection success rate)~~ **done**
+        2. Robustify face detector to prevent detecting the same face and considering it as new
+        3. Robustyfy face detector to eliminate false positives (sockets, for example)
+        4. Put marker on the estimated face location
+2. Approach the newly detected face
+    1. Move closer to the face and turn towards it
+    2. Greet
+    3. Mark as already approached
+3. Pass detected faces that have already been approached
+4. Stop when all the faces have been detected and approached
+5. Perform the task as fast as possible
 
 ## Face detector
 As we found out in `homework1`, the **opencv haar cascade detector** gives us best results in terms of speed and detection rate. So for the first task, we will be using this detector. The code for the first task face detection lives in `love_maker/scripts/face_detector.py`.
@@ -8,3 +44,5 @@ As we found out in `homework1`, the **opencv haar cascade detector** gives us be
 # The display_camera_window argument defaults to false
 roslaunch love_maker face_detector.launch display_camera_window:=true
 ```
+
+Another conclusion drawn from `homework1` is that the images should be **reduced to half** the original kinect resolution and **converted to grayscale** before runing the search for faces. The size of the image that face detector actually proceses is therefore `320 x 240`.
