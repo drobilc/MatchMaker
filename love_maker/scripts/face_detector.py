@@ -22,6 +22,7 @@ from std_msgs.msg import ColorRGBA
 from detectors.haar_detector import HaarDetector
 
 class FaceFinder(object):
+    
     def __init__(self):
         # Initialize node, anonymous means that we can run same node multiple times
         rospy.init_node('face_detector', anonymous=True)
@@ -39,6 +40,9 @@ class FaceFinder(object):
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
 
+        # The publisher where face poses will be published once detected
+        self.face_publisher = rospy.Publisher('/face_detections_raw', Pose, queue_size=10)
+
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
         self.downscale_factor = rospy.get_param('~downscale_factor', 4)
@@ -55,6 +59,9 @@ class FaceFinder(object):
 
         # Mark the face on our image
         cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 3, 8, 0)
+
+        # TODO: Compute face position in 3d, construct a pose and send it to
+        # /face_detections_raw topic
     
     def preprocess_image(self, image):
         # Get image width and height to calculate new size
