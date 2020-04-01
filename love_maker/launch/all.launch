@@ -1,0 +1,18 @@
+<launch>
+
+    <arg name="display_camera_window" default="false"/>
+    <arg name="downscale" default="2"/>
+
+    <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
+        <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
+        <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+        <param name="downscale_factor" type="int" value="$(arg downscale)"/>
+    </node>
+
+    <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
+    </node>
+
+    <node pkg="love_maker" type="movement_controller.py" name="movement_controller" output="screen">
+    </node>
+
+</launch>
