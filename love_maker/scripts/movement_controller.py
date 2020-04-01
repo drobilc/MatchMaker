@@ -109,6 +109,12 @@ class MovementController(object):
         # Set the goal pose as the face pose
         goal.target_pose.pose = pose
 
+        # TODO: Until the face detector will only send face pose, the movement
+        # controller will not want to move to location because the rotation
+        # quaternion will be too close to zero. Once the face detector will send
+        # correct data, remove this
+        goal.target_pose.pose.orientation.w = 1
+
         self.has_goals = True
 
         # Send the MoveBaseGoal to our client and wait for server response
@@ -122,10 +128,11 @@ class MovementController(object):
         rospy.loginfo('Started localization protocol')
     
     def on_face_detection(self, face_pose):
-        rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
+        # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
         priority = 1
         heapq.heappush(self.goals, (priority, face_pose))
+        rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
         if not self.has_goals:
             self.start()
