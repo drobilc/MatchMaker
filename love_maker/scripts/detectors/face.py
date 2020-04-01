@@ -18,5 +18,8 @@ class Face(object):
     def bottom(self):
         return self.y2
     
+    def center_point(self):
+        return ((self.x2 + self.x1) / 2.0, (self.y2 + self.y1) / 2.0)
+    
     def to_list(self):
         return [self.x1, self.y1, self.x2, self.y2]

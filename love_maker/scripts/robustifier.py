@@ -16,7 +16,7 @@ class Robustifier(object):
     
     def on_face_detection(self, face_pose):
         # A new face has been detected
-        rospy.info('A new face pose received: {}'.format(face_pose))
+        rospy.loginfo('A new face pose received: {}'.format(face_pose))
 
 if __name__ == '__main__':
     robustifier = Robustifier()

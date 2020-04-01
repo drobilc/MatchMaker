@@ -12,6 +12,13 @@ class MovementController(object):
 
         # The robustifier node publishes faces to /face_detections
         self.face_subscriber = rospy.Subscriber('/face_detections', Pose, self.on_face_detection, queue_size=10)
+
+        # When this node finishes intializing itself, it should first try to
+        # localize itself, so it knows where it is
+        self.localize()
+    
+    def localize(self):
+        rospy.loginfo('Started localization protocol')
     
     def on_face_detection(self, face_pose):
         rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
