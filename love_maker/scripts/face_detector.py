@@ -5,7 +5,6 @@ import sys
 import math
 import time
 import rospy
-import dlib
 import cv2
 import numpy as np
 import tf2_geometry_msgs
@@ -15,7 +14,6 @@ from geometry_msgs.msg import PointStamped, Vector3, Pose
 from nav_msgs.msg import OccupancyGrid
 
 from cv_bridge import CvBridge, CvBridgeError
-from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
 
 # Both detectors can be used to find faces in images
@@ -39,10 +37,10 @@ class FaceFinder(object):
         self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
-        self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
+        self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=10)
 
         # The publisher where face poses will be published once detected
-        self.face_publisher = rospy.Publisher('/face_detections_raw', Pose, queue_size=10)
+        self.face_publisher = rospy.Publisher('/face_detections_raw', Pose, queue_size=1)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
@@ -95,7 +93,14 @@ class FaceFinder(object):
         cv2.rectangle(image, (face.left(), face.top()), (face.right(), face.bottom()), (255, 0, 0), 3, 8, 0)
 
         # Find the distance to the detected face (currently simply a mean of the depth)
-        detected_face_depth = depth_image[face.top():face.bottom(),face.left():face.right()]
+        # We are running detection on smaller image, so the face detector also returns
+        # coordinates on the smaller image. We have to multiply the coordinates by the
+        # scaling factor
+        
+        detected_face_depth = depth_image[
+            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
+            face.left() * self.downscale_factor : face.right() * self.downscale_factor
+        ]
         distance_to_face = float(np.nanmean(detected_face_depth))
 
         # Calculate face position in 3d using detected face position and distance_to_face
