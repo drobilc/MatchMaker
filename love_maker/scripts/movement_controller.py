@@ -11,6 +11,7 @@ from nav_msgs.msg import Odometry
 import heapq
 
 from tf.transformations import euler_from_quaternion
+import math
 import time
 
 class MovementController(object):
@@ -141,6 +142,7 @@ class MovementController(object):
             quaternion = odometry.pose.pose.orientation
             quaternion_as_list = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
             self.starting_rotation = euler_from_quaternion(quaternion_as_list)
+            self.previous_rotation = self.starting_rotation
         
         # Send a twist message to robot every 0.5 seconds
         current_time = time.time()
@@ -161,7 +163,9 @@ class MovementController(object):
             self.localization_publisher.publish(twist)
             
             self.last_message_sent = current_time
-            self.previous_rotation = current_rotation
+            # The previous rotation should only be updated if we have rotated for 30 degrees
+            if abs(current_rotation[2] - self.previous_rotation[2]) > math.pi / 6:
+                self.previous_rotation = current_rotation
 
     def localize(self):
         rospy.loginfo('Started localization protocol')
