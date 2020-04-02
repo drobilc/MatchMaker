@@ -61,3 +61,14 @@ Another conclusion drawn from `homework1` is that the images should be **reduced
 For face detector to be able to convert face positions from image to 3d point, the *map* service must be working.
 
 The face detector publishes the detected positions as *Pose*s to `/face_detections_raw` topic. The robustifier should subscribe to this topic, deduplicate detections and send the real detections to the `/face_detections` topic.
+
+## Robustifier
+Subscribes to `/face_detections_raw` and checks if any neighbouring cells already have a detection logged. When a new face is detected, we wait for some more similar detections before deciding that this is not a false positive. After a true positive is confirmed, Robustifier sends the coordinates to which robot should move (not where the face is) to `/face_detections`.
+
+## Run all
+To run gazebo, rviz and love maker, run each command in a separate terminal:
+1. roscore
+2. roslaunch exercise4 rins_world.launch
+3. roslaunch exercise4 amcl_simulation.launch
+4. roslaunch turtlebot_rviz_launchers view_navigation.launch
+5. roslaunch love_maker all.launch

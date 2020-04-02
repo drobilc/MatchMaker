@@ -64,6 +64,12 @@ class FaceFinder(object):
         x = distance_to_face * np.cos(angle_to_target)
         y = distance_to_face * np.sin(angle_to_target)
 
+        # TODO: Compute global orientation of the face
+        orientation_x = 0
+        orientation_y = 0
+        orientation_z = 0
+        orientation_w = 0
+
         # Define a stamped message for transformation - in the "camera rgb frame"
         point_s = PointStamped()
         point_s.point.x = -y
@@ -81,6 +87,12 @@ class FaceFinder(object):
             pose.position.x = point_world.point.x
             pose.position.y = point_world.point.y
             pose.position.z = point_world.point.z
+
+            pose.orientation.x = orientation_x
+            pose.orientation.y = orientation_y
+            pose.orientation.z = orientation_z
+            pose.orientation.w = orientation_w
+            
 
         except Exception as e:
             rospy.logwarn('Exception while converting face to pose: {}'.format(e))
