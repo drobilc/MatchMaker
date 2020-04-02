@@ -181,9 +181,8 @@ class MovementController(object):
         heapq.heappush(self.goals, (priority, face_pose))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
-        if not self.has_goals:
-            # self.start()
-            pass
+        if self.is_localized and not self.has_goals:
+            self.start()
         
 
 if __name__ == '__main__':
