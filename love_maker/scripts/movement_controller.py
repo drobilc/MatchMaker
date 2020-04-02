@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import rospy
 import actionlib
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # Require python module for ordered heap
@@ -23,7 +23,7 @@ class MovementController(object):
         rospy.loginfo('Connected to movement server')
 
         # The robustifier node publishes faces to /face_detections
-        self.face_subscriber = rospy.Subscriber('/face_detections', Pose, self.on_face_detection, queue_size=10)
+        self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
 
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
@@ -107,7 +107,7 @@ class MovementController(object):
         goal.target_pose.header.stamp = rospy.Time.now()
 
         # Set the goal pose as the face pose
-        goal.target_pose.pose = pose
+        goal.target_pose.pose = pose.pose
 
         # TODO: Until the face detector will only send face pose, the movement
         # controller will not want to move to location because the rotation

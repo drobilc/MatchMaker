@@ -9,8 +9,10 @@ import cv2
 import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
+
+from std_msgs.msg import Header
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PointStamped, Vector3, Pose
+from geometry_msgs.msg import PointStamped, Vector3, PoseStamped, Pose
 from nav_msgs.msg import OccupancyGrid
 
 from cv_bridge import CvBridge, CvBridgeError
@@ -40,7 +42,7 @@ class FaceFinder(object):
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=10)
 
         # The publisher where face poses will be published once detected
-        self.face_publisher = rospy.Publisher('/face_detections_raw', Pose, queue_size=1)
+        self.face_publisher = rospy.Publisher('/face_detections_raw', PoseStamped, queue_size=1)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
@@ -92,7 +94,14 @@ class FaceFinder(object):
             pose.orientation.y = orientation_y
             pose.orientation.z = orientation_z
             pose.orientation.w = orientation_w
-            
+
+            stamped = PoseStamped()
+            stamped.header = Header()
+            stamped.header.stamp = timestamp
+            stamped.header.frame_id = "map"
+            stamped.pose = pose
+
+            return stamped
 
         except Exception as e:
             rospy.logwarn('Exception while converting face to pose: {}'.format(e))
