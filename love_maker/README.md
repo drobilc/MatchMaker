@@ -16,7 +16,7 @@ This is the node, responsible for movement. Based on information from the Robust
 #### Greeter
 Says hello to the face and tells the MovementController that is has done so.
 
-The components can be run separately using corresponding launch files or simultaneously using the `all.launch` launch file.
+The components can be run separately using corresponding launch files or simultaneously using the `all.launch` launch file. If the `all.launch` file is launched, it also starts Gazebo simulator, amcl simulation and Rviz visualization tool.
 ```bash
 # Running components separately
 roslaunch love_maker face_detector.launch
@@ -66,9 +66,4 @@ The face detector publishes the detected positions as *Pose*s to `/face_detectio
 Subscribes to `/face_detections_raw` and checks if any neighbouring cells already have a detection logged. When a new face is detected, we wait for some more similar detections before deciding that this is not a false positive. After a true positive is confirmed, Robustifier sends the coordinates to which robot should move (not where the face is) to `/face_detections`.
 
 ## Run all
-To run gazebo, rviz and love maker, run each command in a separate terminal:
-1. roscore
-2. roslaunch exercise4 rins_world.launch
-3. roslaunch exercise4 amcl_simulation.launch
-4. roslaunch turtlebot_rviz_launchers view_navigation.launch
-5. roslaunch love_maker all.launch
+To run gazebo, rviz and love maker, we can only run one command: `roslaunch love_maker all.launch`.
