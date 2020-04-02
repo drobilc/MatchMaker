@@ -3,11 +3,15 @@ from __future__ import print_function
 
 import rospy
 import actionlib
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from nav_msgs.msg import Odometry
 
 # Require python module for ordered heap
 import heapq
+
+from tf.transformations import euler_from_quaternion
+import time
 
 class MovementController(object):
 
@@ -38,10 +42,8 @@ class MovementController(object):
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
+        self.is_localized = False
         self.localize()
-
-        # After turtlebot has localized itself, start moving to goals in the self.faces heap
-        self.start()
     
     def start(self):
         # When the start function is called, the robot should stop
@@ -124,8 +126,53 @@ class MovementController(object):
         #   * self.feedback is called to notify us about our robot position
         self.client.send_goal(goal, done_cb=self.done, active_cb=self.active, feedback_cb=self.feedback)
     
+    def on_odometry_received(self, odometry):
+        # This function will be called while the robot is localizing itself and
+        # is receiving odometry information about its position and rotation
+        # rospy.loginfo(odometry)
+        if self.is_localized:
+            return
+
+        # If the object has no last_message_sent attribute, then this is the
+        # first odometry message received. Also save starting angle so we know
+        # when we have done a full circle rotation. 
+        if not hasattr(self, "last_message_sent"):
+            self.last_message_sent = time.time()
+            quaternion = odometry.pose.pose.orientation
+            quaternion_as_list = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+            self.starting_rotation = euler_from_quaternion(quaternion_as_list)
+        
+        # Send a twist message to robot every 0.5 seconds
+        current_time = time.time()
+        if current_time - self.last_message_sent >= 0.5:
+            quaternion = odometry.pose.pose.orientation
+            current_rotation = euler_from_quaternion((quaternion.x, quaternion.y, quaternion.z, quaternion.w))
+
+            if hasattr(self, 'previous_rotation') and self.previous_rotation[2] < self.starting_rotation[2] and current_rotation[2] > self.starting_rotation[2]:
+                # Stop subscribing to odometry data so this function is not called again
+                self.odometry_subscriber.unregister()
+                # Call the callback function that tells us that robot has ended localization
+                self.localization_finished()
+                return
+
+            # Otherwise slowly rotate the robot for 10 degrees
+            twist = Twist()
+            twist.angular.z = 10 * (3.14 / 180.0) # 10 deg
+            self.localization_publisher.publish(twist)
+            
+            self.last_message_sent = current_time
+            self.previous_rotation = current_rotation
+
     def localize(self):
         rospy.loginfo('Started localization protocol')
+        self.localization_publisher = rospy.Publisher('/navigation_velocity_smoother/raw_cmd_vel', Twist, queue_size = 1000)
+        self.odometry_subscriber = rospy.Subscriber('/odom', Odometry, self.on_odometry_received, queue_size=10)
+        
+    def localization_finished(self):
+        self.is_localized = True
+        rospy.loginfo('Localization protocol finished')
+        # After turtlebot has localized itself, start moving to goals in the self.faces heap
+        self.start()
     
     def on_face_detection(self, face_pose):
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
@@ -135,7 +182,8 @@ class MovementController(object):
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
         if not self.has_goals:
-            self.start()
+            # self.start()
+            pass
         
 
 if __name__ == '__main__':
