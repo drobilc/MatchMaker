@@ -32,14 +32,19 @@ class MovementController(object):
 
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
-        # We will probably want to construct goals heap from list with this in the future
-        # self.goals = heapq.heapify(goals)
-        self.goals = []
+        self.goals = goals
+        heapq.heapify(goals)
+
         # A list of already visited faces (after we pop a face from visited faces, put it here)
         self.visited_goals = []
         # The has_goals variable should be True if the bot is currently moving
         # and its heap is not empty
         self.has_goals = False
+
+        # The goals will be added to priority heap with decreasing priority. The
+        # hardcoded goals should have a high priority, so that after new goal is
+        # added, we first visit the goal and then the hardcoded location
+        self.current_goal_priority = 0
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
@@ -181,15 +186,34 @@ class MovementController(object):
     def on_face_detection(self, face_pose):
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
-        priority = 1
-        heapq.heappush(self.goals, (priority, face_pose))
+        self.current_goal_priority += 1
+        heapq.heappush(self.goals, (self.current_goal_priority, face_pose))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
         if self.is_localized and not self.has_goals:
             self.start()
         
+def pose_from_point_on_map(point):
+    pose = PoseStamped()
+    pose.pose = Pose()
+    pose.pose.position.x = point[0]
+    pose.pose.position.y = point[1]
+    pose.pose.position.z = point[2]
+    pose.pose.orientation.w = 1
+    return pose
 
 if __name__ == '__main__':
-    controller = MovementController([])
+    controller = MovementController([
+        (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
+        (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
+        (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
+        (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
+        (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
+        (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
+        (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
+        (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
+        (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
+        (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+    ])
     rospy.loginfo('Movement controller started')
     rospy.spin()
