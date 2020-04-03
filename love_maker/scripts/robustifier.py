@@ -2,9 +2,43 @@
 from __future__ import print_function
 
 import rospy
-from geometry_msgs.msg import Pose
+import math
+from geometry_msgs.msg import Pose, PoseStamped, Vector3
+from visualization_msgs.msg import MarkerArray, Marker
+from std_msgs.msg import ColorRGBA
 
 import numpy as np
+
+class Detection(object):
+    
+    def __init__(self, pose, number_of_detections = 0):
+        self.pose = pose.pose
+        self.stamped_pose = pose
+        self.number_of_detections = number_of_detections
+        self.already_sent = False
+
+        # The parameter that is used to blend two different positions together.
+        # How much the received position changes the current position
+        self.blending = 0.2
+    
+    def update(self, other_pose):
+        other_pose = other_pose.pose
+        # Calculate new position on line between current position and received position.
+        # Use the blending parameter to blend current and next position (simple linear interpolation)
+        # position = (1 - blending) * current + blending * next
+        alpha = 1 - self.blending
+        beta = self.blending
+        self.pose.position.x = self.pose.position.x * alpha + other_pose.position.x * beta
+        self.pose.position.y = self.pose.position.y * alpha + other_pose.position.y * beta
+        self.pose.position.z = self.pose.position.z * alpha + other_pose.position.z * beta
+    
+    def distance_to(self, other_pose):
+        other_pose = other_pose.pose
+        # Return simple Euclidean distance between this and other pose
+        dx = self.pose.position.x - other_pose.position.x
+        dy = self.pose.position.y - other_pose.position.y
+        dz = self.pose.position.z - other_pose.position.z
+        return math.sqrt(dx*dx + dy*dy + dz*dz)
 
 class Robustifier(object):
 
@@ -12,127 +46,90 @@ class Robustifier(object):
         # Initialize node, don't allow running multiple nodes of this type
         rospy.init_node('robustifier', anonymous=False)
 
+        # This parameter tells us how far two face detections have to be to be
+        # considered as different positions
+        self.maximum_distance = 0.5
+
+        # This parameter tells us how many detections is needed to proclaim a
+        # face detection true positive
+        self.minimum_detections = 5
+
         # The face detector publishes faces to /face_detections_raw, so create a
         # subscriber that we will use to read positions
-        self.raw_face_subscriber = rospy.Subscriber('/face_detections_raw', Pose, self.on_face_detection, queue_size=10)
+        self.raw_face_subscriber = rospy.Subscriber('/face_detections_raw', PoseStamped, self.on_face_detection, queue_size=10)
         
         # After the robistufier determines face position, it should send a pose
         # to movement_controller node
-        self.face_publisher = rospy.Publisher('/face_detections', Pose, queue_size=10)
+        self.face_publisher = rospy.Publisher('/face_detections', PoseStamped, queue_size=10)
+
+        # TODO: Instead of using a list use a quadtree or a grid
+        # A list of Detection objects used for finding the closest pose
+        self.face_detections = []
 
         # TODO: Define appropriate structures for storing the received poses and
-
-        # positions of already visited faces.
-        # A list of last n received poses (maybe queue?)
-        self.previous_detected_face_poses = []
-
-        # A list of pairs of location tuples for "already visited" faces.
-        # A touple is a pair of x and y coordinates.
-        # Touples in a pair represent an interval that is marked as "visited"
-        self.already_visited = []
-
-
-    def get_x(self, pose):
-        return pose.position.x
-
-    def get_y(self, pose):
-        return pose.position.y
-
-    def get_z(self, pose):
-        return pose.position.z
-
-    def get_orientation_x(self, pose):
-        return pose.orientation.x
-
-    def get_orientation_y(self, pose):
-        return pose.orientation.y
-
-    def get_orientation_z(self, pose):
-        return pose.orientation.z
-
-    def get_orientation_w(self, pose):
-        return pose.orientation.w
-
-    def calculate_mean(self):
-        self.detected_faces_x = map(self.get_x, self.previous_detected_face_poses)
-        self.detected_faces_y = map(self.get_y, self.previous_detected_face_poses)
-        self.detected_faces_z = map(self.get_z, self.previous_detected_face_poses)
-        # TODO: Check if we need orientation, also, do we even need z position above?
-        self.detected_faces_orientation_x = map(self.get_orientation_x, self.previous_detected_face_poses)
-        self.detected_faces_orientation_y = map(self.get_orientation_y, self.previous_detected_face_poses)
-        self.detected_faces_orientation_z = map(self.get_orientation_z, self.previous_detected_face_poses)
-        self.detected_faces_orientation_w = map(self.get_orientation_w, self.previous_detected_face_poses)
-        mean = map(float, map(np.nanmean, [self.detected_faces_x, self.detected_faces_y, self.detected_faces_z, self.detected_faces_orientation_x, self.detected_faces_orientation_y, self.detected_faces_orientation_z, self.detected_faces_orientation_w]))
-        return mean   
-
-    # TODO: Do we need orientation as well? Is z cooordinate even needed?
-    def are_faces_close_to_mean(self, mean, epsilon):
-        x_y_distance_from_mean = []
-        good_detection = [] # mark faces close to mean as good (True) and others as bad (False)
+        self.markers_publisher = rospy.Publisher('face_markers_raw', MarkerArray, queue_size=1000)
+        self.marker_array = MarkerArray()
+        self.marker_number = 1
+    
+    def construct_marker(self, detection):
+        self.marker_number += 1
+        marker = Marker()
+        marker.header.stamp = detection.stamped_pose.header.stamp
+        marker.header.frame_id = 'map'
+        marker.pose = detection.pose
+        marker.type = Marker.CUBE
+        marker.action = Marker.ADD
+        marker.frame_locked = False
+        marker.lifetime = rospy.Duration.from_sec(10)
+        marker.id = self.marker_number
+        marker.scale = Vector3(0.1, 0.1, 0.1)
+        marker.color = ColorRGBA(1, 0, 0, 1)
         
-        for face in range (0, len(self.previous_detected_face_poses)):
-            x_y_distance_from_mean.append(0)
-            x_y_distance_from_mean[face] += abs(self.detected_faces_x[face] - mean[0])
-            x_y_distance_from_mean[face] += abs(self.detected_faces_y[face] - mean[1])
-            x_y_distance_from_mean[face] += abs(self.detected_faces_z[face] - mean[2])
-            
-            if x_y_distance_from_mean > epsilon:
-                good_detection.append(False)
-            else:
-                good_detection.append(True)
-        
-        return good_detection
+        return marker
 
-    # TODO: compute global coordinates based on image rotation
-    def calculate_approaching_point(self, correct_position):
-        return correct_position
+    def already_detected(self, face_pose):
+        for detection in self.face_detections:
+            distance = detection.distance_to(face_pose)
+            if distance <= self.maximum_distance:
+                return detection
+    
+    def publish_face_location(self, pose):
+        # Send a list of all markers to visualize data
+        marker = self.construct_marker(pose)
+        self.marker_array.markers.append(marker)
+        self.markers_publisher.publish(self.marker_array)
     
     def on_face_detection(self, face_pose):
-        # A new face has been detected
-        rospy.loginfo('A new face pose received: {}'.format(face_pose))
+        # A new face has been detected, robustify it
+        # rospy.loginfo('A new face pose received: {}'.format(face_pose))
 
-        # TODO: Only send each face pose once and only send true positive faces
+        # Check if detected face is already in face_detections. This cannot be
+        # done with simple indexof function because the coordinates will not
+        # exactly match
+        saved_pose = self.already_detected(face_pose)
+        if saved_pose is not None:
+            rospy.loginfo('Face was already detected, it has been detected {} times'.format(saved_pose.number_of_detections))
+            saved_pose.number_of_detections += 1
 
-        # Variable to determine whether or not to send the coordinates for approaching to the movement unit.
-        # When set to False, the coordinates are not sent.
-        true_positive_confirmed = False
-
-        # Add the received pose to the list
-        self.previous_detected_face_poses.append(face_pose)
-
-        # When enough detections are collected, calculate their mean position.
-        if len(self.previous_detected_face_poses) > 9:
-        
-            mean = self.calculate_mean()
-            epsilon = 0.5
-
-            # Be a Santa, determine whether the faces are good (within epsilon range from mean) or bad
-            good_detection = self.are_faces_close_to_mean(mean, epsilon)
-            
-            # If all faces are in range epsilon around mean, they represent the same position.
-            # In that case, set the mean as the correct face position and confirm true positive by setting 
-            # true_positive_confirmed to True
-            all_good = all(good_detection) # Applies & to all elements
-            if all_good:
-                true_positive_confirmed = True
-                correct_position = mean
-                
-                # calculate approaching point
-                approaching_point = self.calculate_approaching_point(correct_position)
-
-                # Empty the list of detected faces and ignore all incoming faces 
-                # until the approaching point is reached. 
-                # TODO: set up a new topic between robustifier and movement_controller to communicate this
-                # Maybe also stop face detection until approaching point is reached
-                self.previous_detected_face_poses = []
-                add_new_detections_to_list = False # regulate adding detections from /detected_faces_raw
-
-
-
-        # For now, only forward the received face to movement controller
-        true_positive_confirmed = True
-        if true_positive_confirmed:
-            self.face_publisher.publish(face_pose) # change face_pose to approaching_point
+            # If face was detected more than self.minimum_detections, it is now
+            # considered true positive, send it to movement controller
+            if saved_pose.number_of_detections >= self.minimum_detections:
+                if not saved_pose.already_sent:
+                    rospy.loginfo('Sending face location to movement controller')
+                    self.face_publisher.publish(saved_pose.stamped_pose)
+                    saved_pose.already_sent = True
+            else:
+                rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
+                self.publish_face_location(saved_pose)
+                # The detected face pose and previously saved pose are very similar,
+                # calculate mean position of both poses and save data to saved_pose
+                # saved_pose.update(face_pose)
+        else:
+            rospy.loginfo('Face is probably new.')
+            # Construct a new detection object, add it to detections
+            saved_pose = Detection(face_pose)
+            self.face_detections.append(saved_pose)
+            self.publish_face_location(saved_pose)
 
 if __name__ == '__main__':
     robustifier = Robustifier()

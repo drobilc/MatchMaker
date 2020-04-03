@@ -3,11 +3,16 @@ from __future__ import print_function
 
 import rospy
 import actionlib
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from nav_msgs.msg import Odometry
 
 # Require python module for ordered heap
 import heapq
+
+from tf.transformations import euler_from_quaternion
+import math
+import time
 
 class MovementController(object):
 
@@ -23,25 +28,28 @@ class MovementController(object):
         rospy.loginfo('Connected to movement server')
 
         # The robustifier node publishes faces to /face_detections
-        self.face_subscriber = rospy.Subscriber('/face_detections', Pose, self.on_face_detection, queue_size=10)
+        self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
 
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
-        # We will probably want to construct goals heap from list with this in the future
-        # self.goals = heapq.heapify(goals)
-        self.goals = []
+        self.goals = goals
+        heapq.heapify(goals)
+
         # A list of already visited faces (after we pop a face from visited faces, put it here)
         self.visited_goals = []
         # The has_goals variable should be True if the bot is currently moving
         # and its heap is not empty
         self.has_goals = False
 
+        # The goals will be added to priority heap with decreasing priority. The
+        # hardcoded goals should have a high priority, so that after new goal is
+        # added, we first visit the goal and then the hardcoded location
+        self.current_goal_priority = 0
+
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
+        self.is_localized = False
         self.localize()
-
-        # After turtlebot has localized itself, start moving to goals in the self.faces heap
-        self.start()
     
     def start(self):
         # When the start function is called, the robot should stop
@@ -107,7 +115,7 @@ class MovementController(object):
         goal.target_pose.header.stamp = rospy.Time.now()
 
         # Set the goal pose as the face pose
-        goal.target_pose.pose = pose
+        goal.target_pose.pose = pose.pose
 
         # TODO: Until the face detector will only send face pose, the movement
         # controller will not want to move to location because the rotation
@@ -124,21 +132,88 @@ class MovementController(object):
         #   * self.feedback is called to notify us about our robot position
         self.client.send_goal(goal, done_cb=self.done, active_cb=self.active, feedback_cb=self.feedback)
     
+    def on_odometry_received(self, odometry):
+        # This function will be called while the robot is localizing itself and
+        # is receiving odometry information about its position and rotation
+        # rospy.loginfo(odometry)
+        if self.is_localized:
+            return
+
+        # If the object has no last_message_sent attribute, then this is the
+        # first odometry message received. Also save starting angle so we know
+        # when we have done a full circle rotation. 
+        if not hasattr(self, "last_message_sent"):
+            self.last_message_sent = time.time()
+            quaternion = odometry.pose.pose.orientation
+            quaternion_as_list = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+            self.starting_rotation = euler_from_quaternion(quaternion_as_list)
+            self.previous_rotation = self.starting_rotation
+        
+        # Send a twist message to robot every 0.5 seconds
+        current_time = time.time()
+        if current_time - self.last_message_sent >= 0.5:
+            quaternion = odometry.pose.pose.orientation
+            current_rotation = euler_from_quaternion((quaternion.x, quaternion.y, quaternion.z, quaternion.w))
+
+            if hasattr(self, 'previous_rotation') and self.previous_rotation[2] < self.starting_rotation[2] and current_rotation[2] > self.starting_rotation[2]:
+                # Stop subscribing to odometry data so this function is not called again
+                self.odometry_subscriber.unregister()
+                # Call the callback function that tells us that robot has ended localization
+                self.localization_finished()
+                return
+
+            # Otherwise slowly rotate the robot for 10 degrees
+            twist = Twist()
+            twist.angular.z = 10 * (3.14 / 180.0) # 10 deg
+            self.localization_publisher.publish(twist)
+            
+            self.last_message_sent = current_time
+            # The previous rotation should only be updated if we have rotated for 30 degrees
+            if abs(current_rotation[2] - self.previous_rotation[2]) > math.pi / 6:
+                self.previous_rotation = current_rotation
+
     def localize(self):
         rospy.loginfo('Started localization protocol')
+        self.localization_publisher = rospy.Publisher('/navigation_velocity_smoother/raw_cmd_vel', Twist, queue_size = 1000)
+        self.odometry_subscriber = rospy.Subscriber('/odom', Odometry, self.on_odometry_received, queue_size=10)
+        
+    def localization_finished(self):
+        self.is_localized = True
+        rospy.loginfo('Localization protocol finished')
+        # After turtlebot has localized itself, start moving to goals in the self.faces heap
+        self.start()
     
     def on_face_detection(self, face_pose):
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
-        priority = 1
-        heapq.heappush(self.goals, (priority, face_pose))
+        self.current_goal_priority += 1
+        heapq.heappush(self.goals, (self.current_goal_priority, face_pose))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
-        if not self.has_goals:
+        if self.is_localized and not self.has_goals:
             self.start()
         
+def pose_from_point_on_map(point):
+    pose = PoseStamped()
+    pose.pose = Pose()
+    pose.pose.position.x = point[0]
+    pose.pose.position.y = point[1]
+    pose.pose.position.z = point[2]
+    pose.pose.orientation.w = 1
+    return pose
 
 if __name__ == '__main__':
-    controller = MovementController([])
+    controller = MovementController([
+        (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
+        (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
+        (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
+        (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
+        (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
+        (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
+        (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
+        (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
+        (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
+        (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+    ])
     rospy.loginfo('Movement controller started')
     rospy.spin()
