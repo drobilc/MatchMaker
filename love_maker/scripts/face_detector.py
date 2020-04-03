@@ -126,7 +126,8 @@ class FaceFinder(object):
 
         # TODO: Calculate this differently if possible. The robot cannot move to
         # face if the face is inside the wall, pick a point in front of the wall
-        distance_to_face = distance_to_face * 0.8
+        # Pick a point 0.40m away from the detected face
+        distance_to_face = distance_to_face - 0.40
 
         # Calculate face position in 3d using detected face position and distance_to_face
         pose = self.convert_face_to_pose(image, face, distance_to_face, timestamp)
