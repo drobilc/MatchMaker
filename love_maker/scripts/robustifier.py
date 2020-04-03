@@ -19,7 +19,7 @@ class Detection(object):
 
         # The parameter that is used to blend two different positions together.
         # How much the received position changes the current position
-        self.blending = 0.2
+        self.blending = 0.5
     
     def update(self, other_pose):
         other_pose = other_pose.pose
@@ -52,7 +52,7 @@ class Robustifier(object):
 
         # This parameter tells us how many detections is needed to proclaim a
         # face detection true positive
-        self.minimum_detections = 5
+        self.minimum_detections = 12
 
         # The face detector publishes faces to /face_detections_raw, so create a
         # subscriber that we will use to read positions
@@ -71,10 +71,10 @@ class Robustifier(object):
         self.marker_array = MarkerArray()
         self.marker_number = 1
     
-    def construct_marker(self, detection):
+    def construct_marker(self, detection, color, scale=0.1):
         self.marker_number += 1
         marker = Marker()
-        marker.header.stamp = detection.stamped_pose.header.stamp
+        marker.header.stamp = detection.header.stamp
         marker.header.frame_id = 'map'
         marker.pose = detection.pose
         marker.type = Marker.CUBE
@@ -82,8 +82,8 @@ class Robustifier(object):
         marker.frame_locked = False
         marker.lifetime = rospy.Duration.from_sec(10)
         marker.id = self.marker_number
-        marker.scale = Vector3(0.1, 0.1, 0.1)
-        marker.color = ColorRGBA(1, 0, 0, 1)
+        marker.scale = Vector3(scale, scale, scale)
+        marker.color = color
         
         return marker
 
@@ -93,15 +93,16 @@ class Robustifier(object):
             if distance <= self.maximum_distance:
                 return detection
     
-    def publish_face_location(self, pose):
+    def publish_marker(self, pose, color=ColorRGBA(1, 0, 0, 1), scale=0.1):
         # Send a list of all markers to visualize data
-        marker = self.construct_marker(pose)
+        marker = self.construct_marker(pose, color, scale)
         self.marker_array.markers.append(marker)
         self.markers_publisher.publish(self.marker_array)
     
     def on_face_detection(self, face_pose):
         # A new face has been detected, robustify it
         # rospy.loginfo('A new face pose received: {}'.format(face_pose))
+        self.publish_marker(face_pose)
 
         # Check if detected face is already in face_detections. This cannot be
         # done with simple indexof function because the coordinates will not
@@ -117,19 +118,18 @@ class Robustifier(object):
                 if not saved_pose.already_sent:
                     rospy.loginfo('Sending face location to movement controller')
                     self.face_publisher.publish(saved_pose.stamped_pose)
+                    self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3)
                     saved_pose.already_sent = True
             else:
                 rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
-                self.publish_face_location(saved_pose)
                 # The detected face pose and previously saved pose are very similar,
                 # calculate mean position of both poses and save data to saved_pose
-                # saved_pose.update(face_pose)
+                saved_pose.update(face_pose)
         else:
             rospy.loginfo('Face is probably new.')
             # Construct a new detection object, add it to detections
             saved_pose = Detection(face_pose)
             self.face_detections.append(saved_pose)
-            self.publish_face_location(saved_pose)
 
 if __name__ == '__main__':
     robustifier = Robustifier()

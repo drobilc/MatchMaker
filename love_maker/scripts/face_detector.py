@@ -9,10 +9,11 @@ import cv2
 import numpy as np
 import tf2_geometry_msgs
 import tf2_ros
+import tf
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PointStamped, Vector3, PoseStamped, Pose
+from geometry_msgs.msg import PointStamped, Vector3, PoseStamped, Pose, Quaternion
 from nav_msgs.msg import OccupancyGrid
 
 from cv_bridge import CvBridge, CvBridgeError
@@ -39,7 +40,7 @@ class FaceFinder(object):
         self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
-        self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=10)
+        self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
 
         # The publisher where face poses will be published once detected
         self.face_publisher = rospy.Publisher('/face_detections_raw', PoseStamped, queue_size=1)
@@ -52,7 +53,7 @@ class FaceFinder(object):
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
     
-    def convert_face_to_pose(self, image, face, distance_to_face, timestamp):
+    def convert_face_to_pose(self, image, face, distance_to_face, timestamp, angle_z):
         # Compute the image width and height and face center point
         height, width = image.shape
         face_center = face.center_point()
@@ -67,10 +68,9 @@ class FaceFinder(object):
         y = distance_to_face * np.sin(angle_to_target)
 
         # TODO: Compute global orientation of the face
-        orientation_x = 0
-        orientation_y = 0
-        orientation_z = 0
-        orientation_w = 0
+        orientation = None
+        if angle_z != None:
+            orientation = tf.transformations.quaternion_from_euler(0, 0, angle_z)
 
         # Define a stamped message for transformation - in the "camera rgb frame"
         point_s = PointStamped()
@@ -90,10 +90,8 @@ class FaceFinder(object):
             pose.position.y = point_world.point.y
             pose.position.z = point_world.point.z
 
-            pose.orientation.x = orientation_x
-            pose.orientation.y = orientation_y
-            pose.orientation.z = orientation_z
-            pose.orientation.w = orientation_w
+            if orientation != None:
+                pose.orientation = Quaternion(*orientation)
 
             stamped = PoseStamped()
             stamped.header = Header()
@@ -108,6 +106,57 @@ class FaceFinder(object):
             pose = None
 
         return pose
+    
+    def get_face_angle(self, image, depth_image, face, timestamp):
+        left_edge = detected_face_depth = depth_image[
+            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
+            (face.left() - 0) * self.downscale_factor : (face.left() + 5) * self.downscale_factor
+        ]
+        right_edge = detected_face_depth = depth_image[
+            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
+            (face.right() - 5) * self.downscale_factor : (face.right() + 0) * self.downscale_factor
+        ]
+        distance_to_left = float(np.nanmean(left_edge))
+        distance_to_right = float(np.nanmean(right_edge))
+
+        height, width = depth_image.shape
+        face_center = face.center_point()
+        left_x = width / 2 - face.left() * self.downscale_factor
+        left_y = height / 2 - face_center[1] * self.downscale_factor
+        right_x = width / 2 - face.right() * self.downscale_factor
+        right_y = height / 2 - face_center[1] * self.downscale_factor
+
+        angle_to_left = np.arctan2(left_x, self.focal_length)
+        angle_to_right = np.arctan2(right_x, self.focal_length)
+
+        left_x = distance_to_left * np.cos(angle_to_left)
+        left_y = distance_to_left * np.sin(angle_to_left)
+        right_x = distance_to_right * np.cos(angle_to_right)
+        right_y = distance_to_right * np.sin(angle_to_right)
+
+        left_point = PointStamped()
+        left_point.point.x = -left_y
+        left_point.point.y = 0
+        left_point.point.z = left_x
+        left_point.header.frame_id = "camera_rgb_optical_frame"
+        left_point.header.stamp = timestamp
+
+        right_point = PointStamped()
+        right_point.point.x = -right_y
+        right_point.point.y = 0
+        right_point.point.z = right_x
+        right_point.header.frame_id = "camera_rgb_optical_frame"
+        right_point.header.stamp = timestamp
+
+        try:
+            left_point_world = self.tf_buf.transform(left_point, "map")
+            right_point_world = self.tf_buf.transform(right_point, "map")
+            vector = [right_point_world.point.x - left_point_world.point.x, right_point_world.point.y - left_point_world.point.y]
+            angle_z = np.arctan2(vector[0], vector[1]) - (math.pi / 2)
+            return angle_z
+        except Exception as e:
+            print(e)
+            return None
 
     def process_face(self, image, depth_image, face, timestamp):
         # Mark the face on our image
@@ -124,13 +173,10 @@ class FaceFinder(object):
         ]
         distance_to_face = float(np.nanmean(detected_face_depth))
 
-        # TODO: Calculate this differently if possible. The robot cannot move to
-        # face if the face is inside the wall, pick a point in front of the wall
-        # Pick a point 0.40m away from the detected face
-        distance_to_face = distance_to_face - 0.40
+        angle_z = self.get_face_angle(image, depth_image, face, timestamp)
 
         # Calculate face position in 3d using detected face position and distance_to_face
-        pose = self.convert_face_to_pose(image, face, distance_to_face, timestamp)
+        pose = self.convert_face_to_pose(image, face, distance_to_face, timestamp, angle_z)
 
         # If the face coordinates were successfully transformed to 3d world
         # coordinates, publish the pose to the robustifier
@@ -159,13 +205,15 @@ class FaceFinder(object):
         rgb_image = self.preprocess_image(rgb_image)
 
         # Get the timestamp of the depth image message
+        image_time = rgb_image_message.header.stamp
         depth_time = depth_image_message.header.stamp
+        timestamp = image_time
 
         # Process received faces
         face_rectangles = self.face_detector.find_faces(rgb_image)
         for face_rectangle in face_rectangles:
             # Process face, send rgb and depth image, face rectangle and time when depth image was received
-            self.process_face(rgb_image, depth_image, face_rectangle, depth_time)
+            self.process_face(rgb_image, depth_image, face_rectangle, timestamp)
         
         if self.display_camera_window:
             cv2.imshow("Image", rgb_image)
