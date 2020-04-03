@@ -3,21 +3,18 @@ from __future__ import print_function
 
 import sys
 import math
-import time
 import rospy
 import cv2
 import numpy as np
-import tf2_geometry_msgs
-import tf2_ros
-import tf
+
+from localizer.srv import Localize
 
 from std_msgs.msg import Header
+from detection_msgs.msg import Detection
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PointStamped, Vector3, PoseStamped, Pose, Quaternion
-from nav_msgs.msg import OccupancyGrid
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion
 
 from cv_bridge import CvBridge, CvBridgeError
-from std_msgs.msg import ColorRGBA
 
 # Both detectors can be used to find faces in images
 from detectors.haar_detector import HaarDetector
@@ -43,145 +40,19 @@ class FaceFinder(object):
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
 
         # The publisher where face poses will be published once detected
-        self.face_publisher = rospy.Publisher('/face_detections_raw', PoseStamped, queue_size=1)
+        self.detections_publisher = rospy.Publisher('detections', Detection, queue_size=10)
 
         # How much we should downscale image before trying to find faces
         # For example - factor 4 means that that the new image width will be width / 4
         self.downscale_factor = rospy.get_param('~downscale_factor', 4)
 
-        # Object we use for transforming between coordinate frames
-        self.tf_buf = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
-    
-    def convert_face_to_pose(self, image, face, distance_to_face, timestamp, angle_z):
-        # Compute the image width and height and face center point
-        height, width = image.shape
-        face_center = face.center_point()
+        self.current_message_number = 0
 
-        face_x = width / 2 - face_center[0]
-        face_y = height / 2 - face_center[1]
-
-        angle_to_target = np.arctan2(face_x, self.focal_length)
-
-        # Get the angles in the base_link relative coordinate system
-        x = distance_to_face * np.cos(angle_to_target)
-        y = distance_to_face * np.sin(angle_to_target)
-
-        # TODO: Compute global orientation of the face
-        orientation = None
-        if angle_z != None:
-            orientation = tf.transformations.quaternion_from_euler(0, 0, angle_z)
-
-        # Define a stamped message for transformation - in the "camera rgb frame"
-        point_s = PointStamped()
-        point_s.point.x = -y
-        point_s.point.y = 0
-        point_s.point.z = x
-        point_s.header.frame_id = "camera_rgb_optical_frame"
-        point_s.header.stamp = timestamp
-
-        # Get the point in the "map" coordinate system
-        try:
-            point_world = self.tf_buf.transform(point_s, "map")
-
-            # Create a Pose object with the same position
-            pose = Pose()
-            pose.position.x = point_world.point.x
-            pose.position.y = point_world.point.y
-            pose.position.z = point_world.point.z
-
-            if orientation != None:
-                pose.orientation = Quaternion(*orientation)
-
-            stamped = PoseStamped()
-            stamped.header = Header()
-            stamped.header.stamp = timestamp
-            stamped.header.frame_id = "map"
-            stamped.pose = pose
-
-            return stamped
-
-        except Exception as e:
-            rospy.logwarn('Exception while converting face to pose: {}'.format(e))
-            pose = None
-
-        return pose
-    
-    def get_face_angle(self, image, depth_image, face, timestamp):
-        left_edge = detected_face_depth = depth_image[
-            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
-            (face.left() - 0) * self.downscale_factor : (face.left() + 5) * self.downscale_factor
-        ]
-        right_edge = detected_face_depth = depth_image[
-            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
-            (face.right() - 5) * self.downscale_factor : (face.right() + 0) * self.downscale_factor
-        ]
-        distance_to_left = float(np.nanmean(left_edge))
-        distance_to_right = float(np.nanmean(right_edge))
-
-        height, width = depth_image.shape
-        face_center = face.center_point()
-        left_x = width / 2 - face.left() * self.downscale_factor
-        left_y = height / 2 - face_center[1] * self.downscale_factor
-        right_x = width / 2 - face.right() * self.downscale_factor
-        right_y = height / 2 - face_center[1] * self.downscale_factor
-
-        angle_to_left = np.arctan2(left_x, self.focal_length)
-        angle_to_right = np.arctan2(right_x, self.focal_length)
-
-        left_x = distance_to_left * np.cos(angle_to_left)
-        left_y = distance_to_left * np.sin(angle_to_left)
-        right_x = distance_to_right * np.cos(angle_to_right)
-        right_y = distance_to_right * np.sin(angle_to_right)
-
-        left_point = PointStamped()
-        left_point.point.x = -left_y
-        left_point.point.y = 0
-        left_point.point.z = left_x
-        left_point.header.frame_id = "camera_rgb_optical_frame"
-        left_point.header.stamp = timestamp
-
-        right_point = PointStamped()
-        right_point.point.x = -right_y
-        right_point.point.y = 0
-        right_point.point.z = right_x
-        right_point.header.frame_id = "camera_rgb_optical_frame"
-        right_point.header.stamp = timestamp
-
-        try:
-            left_point_world = self.tf_buf.transform(left_point, "map")
-            right_point_world = self.tf_buf.transform(right_point, "map")
-            vector = [right_point_world.point.x - left_point_world.point.x, right_point_world.point.y - left_point_world.point.y]
-            angle_z = np.arctan2(vector[0], vector[1]) - (math.pi / 2)
-            return angle_z
-        except Exception as e:
-            print(e)
-            return None
-
-    def process_face(self, image, depth_image, face, timestamp):
+    def process_face(self, image, face, timestamp):
         # Mark the face on our image
         cv2.rectangle(image, (face.left(), face.top()), (face.right(), face.bottom()), (255, 0, 0), 3, 8, 0)
 
-        # Find the distance to the detected face (currently simply a mean of the depth)
-        # We are running detection on smaller image, so the face detector also returns
-        # coordinates on the smaller image. We have to multiply the coordinates by the
-        # scaling factor
-        
-        detected_face_depth = depth_image[
-            face.top() * self.downscale_factor : face.bottom() * self.downscale_factor,
-            face.left() * self.downscale_factor : face.right() * self.downscale_factor
-        ]
-        distance_to_face = float(np.nanmean(detected_face_depth))
-
-        angle_z = self.get_face_angle(image, depth_image, face, timestamp)
-
-        # Calculate face position in 3d using detected face position and distance_to_face
-        pose = self.convert_face_to_pose(image, face, distance_to_face, timestamp, angle_z)
-
-        # If the face coordinates were successfully transformed to 3d world
-        # coordinates, publish the pose to the robustifier
-        if pose is not None:
-            self.face_publisher.publish(pose)
+        return face
     
     def preprocess_image(self, image):
         # Get image width and height to calculate new size
@@ -198,22 +69,38 @@ class FaceFinder(object):
     
     def image_callback(self, rgb_image_message):
         # This function will be called when new camera rgb image is received
-        # First, we will wait until depth image is received
-        depth_image_message = rospy.wait_for_message("/camera/depth/image_raw", Image)
-        depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
-        rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
-        rgb_image = self.preprocess_image(rgb_image)
+        rgb_image_original = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
+        rgb_image = self.preprocess_image(rgb_image_original)
 
         # Get the timestamp of the depth image message
-        image_time = rgb_image_message.header.stamp
-        depth_time = depth_image_message.header.stamp
-        timestamp = image_time
+        timestamp = rgb_image_message.header.stamp
 
-        # Process received faces
+        # Find faces in the image
         face_rectangles = self.face_detector.find_faces(rgb_image)
+
+        if len(face_rectangles) <= 0:
+            return
+
+        self.current_message_number += 1
+
+        detection_message = Detection()
+        detection_message.header.seq = self.current_message_number
+        detection_message.header.stamp = timestamp
+        detection_message.header.frame_id = rgb_image_message.header.frame_id
+
+        # TODO: We are currently only publishing the last face, fix that
         for face_rectangle in face_rectangles:
-            # Process face, send rgb and depth image, face rectangle and time when depth image was received
-            self.process_face(rgb_image, depth_image, face_rectangle, timestamp)
+            detection_message.x = face_rectangle.left() * self.downscale_factor
+            detection_message.y = face_rectangle.top() * self.downscale_factor
+            detection_message.width = (face_rectangle.right() - face_rectangle.left()) * self.downscale_factor
+            detection_message.height = (face_rectangle.bottom() - face_rectangle.top()) * self.downscale_factor
+            detection_message.source = 'opencv'
+            detection_message.confidence = 1
+            face_image = rgb_image_original[face_rectangle.top() * self.downscale_factor :face_rectangle.bottom() * self.downscale_factor,face_rectangle.left()* self.downscale_factor:face_rectangle.right()* self.downscale_factor]
+            detection_message.image = self.bridge.cv2_to_imgmsg(face_image, "bgr8")
+            cv2.rectangle(rgb_image, (face_rectangle.left(), face_rectangle.top()), (face_rectangle.right(), face_rectangle.bottom()), (255, 0, 0), 3, 8, 0)
+        
+        self.detections_publisher.publish(detection_message)
         
         if self.display_camera_window:
             cv2.imshow("Image", rgb_image)
