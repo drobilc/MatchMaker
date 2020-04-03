@@ -13,6 +13,11 @@
     <include file="$(find love_maker)/launch/includes/amcl_simulation.launch">
         <!-- Set the map file for the acml simulation -->
         <arg name="map_file" value="$(find love_maker)/maps/my_map.yaml"/>
+        
+        <!-- Set the robot initial pose -->
+        <arg name="initial_pose_x" value="-0.163281708956"/>
+        <arg name="initial_pose_y" value="-3.25395488739"/>
+        <arg name="initial_pose_a" value="0.679"/>
     </include>
 
     <!-- Include the RVIZ visualization tool -->
