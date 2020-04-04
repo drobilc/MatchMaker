@@ -164,7 +164,7 @@ class MovementController(object):
 
             # Otherwise slowly rotate the robot for 10 degrees
             twist = Twist()
-            twist.angular.z = 10 * (3.14 / 180.0) # 10 deg
+            twist.angular.z = 60 * (3.14 / 180.0) # 60 deg
             self.localization_publisher.publish(twist)
             
             self.last_message_sent = current_time
@@ -204,16 +204,29 @@ def pose_from_point_on_map(point):
 
 if __name__ == '__main__':
     controller = MovementController([
-        (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
-        (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
-        (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
-        (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
-        (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
-        (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
-        (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
-        (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
-        (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
-        (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+        # my_map
+        # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
+        # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
+        # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
+        # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
+        # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
+        # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
+        # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
+        # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
+        # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
+        # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+        #my_map1
+        (100, pose_from_point_on_map([2, 2, 0.002472])),
+        (101, pose_from_point_on_map([3, 1.3, 0.002472])),
+        (102, pose_from_point_on_map([4, 1.4, 0.002472])),
+        (103, pose_from_point_on_map([4.5, 2, 0.002472])),
+        (104, pose_from_point_on_map([4, 2.4, 0.002472])),
+        (105, pose_from_point_on_map([3.5, 2.7, 0.002472])),
+        (106, pose_from_point_on_map([3, 2.5, 0.002472])),
+        (107, pose_from_point_on_map([2.1, 2.5, 0.002472])),
+        (108, pose_from_point_on_map([2, 4, 0.002472])),
+        (109, pose_from_point_on_map([2, 2.5, 0.002472])),
+        (110, pose_from_point_on_map([2, 2.6, 0.002472]))
     ])
     rospy.loginfo('Movement controller started')
     rospy.spin()
