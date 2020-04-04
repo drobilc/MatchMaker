@@ -7,6 +7,8 @@ from geometry_msgs.msg import Pose, PoseStamped, Vector3
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
+from tf.transformations import euler_from_quaternion
+
 import numpy as np
 
 class Detection(object):
@@ -98,6 +100,36 @@ class Robustifier(object):
         marker = self.construct_marker(pose, color, scale)
         self.marker_array.markers.append(marker)
         self.markers_publisher.publish(self.marker_array)
+
+    def convert_to_approaching_point(self, pose):
+        # constructs an approaching point which is the point where our robot
+        # should greet the face from. The orientation is set as current robot's rotation
+        # since we want it to face the face :D
+        coordinates = (pose.pose.position.x, pose.pose.position.y, pose.pose.position.z)
+        orientation_parameters = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w) # robot's orientation
+        orientation = map(float, euler_from_quaternion(orientation_parameters))
+
+        orientation[0] = 0.5 * orientation[0]
+        orientation[1] = 0.5 * orientation[1]
+        orientation[2] = 0.5 * orientation[2]
+
+        approaching_point_coordinates = []
+        approaching_point_coordinates.append(coordinates[0] + orientation[0])
+        approaching_point_coordinates.append(coordinates[1] + orientation[1])
+        approaching_point_coordinates.append(coordinates[2] + orientation[2])
+
+        # set coordinates
+        approaching_point = PoseStamped()
+        approaching_point.pose.position.x = approaching_point_coordinates[0]
+        approaching_point.pose.position.y = approaching_point_coordinates[1]
+        approaching_point.pose.position.z = approaching_point_coordinates[2]
+        approaching_point.pose.orientation.x = orientation_parameters[0]
+        approaching_point.pose.orientation.y = orientation_parameters[1]
+        approaching_point.pose.orientation.z = orientation_parameters[2]
+        approaching_point.pose.orientation.w = orientation_parameters[3]
+        approaching_point.header = pose.header
+        rospy.logwarn("Converting to approaching point: {}".format(approaching_point))
+        return approaching_point
     
     def on_face_detection(self, face_pose):
         # A new face has been detected, robustify it
@@ -116,8 +148,11 @@ class Robustifier(object):
             # considered true positive, send it to movement controller
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
+                    # Move the point 0.5m infront of the face so the robot doesn't bump into it when approaching
+                    face_to_approach = saved_pose.stamped_pose
+                    approaching_point = self.convert_to_approaching_point(face_to_approach)
                     rospy.loginfo('Sending face location to movement controller')
-                    self.face_publisher.publish(saved_pose.stamped_pose)
+                    self.face_publisher.publish(approaching_point)
                     self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3)
                     saved_pose.already_sent = True
             else:
