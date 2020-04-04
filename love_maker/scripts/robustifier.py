@@ -75,7 +75,7 @@ class Robustifier(object):
         self.marker_number += 1
         marker = Marker()
         marker.header.stamp = detection.header.stamp
-        marker.header.frame_id = 'map'
+        marker.header.frame_id = detection.header.frame_id
         marker.pose = detection.pose
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
