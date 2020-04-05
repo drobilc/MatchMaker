@@ -165,7 +165,7 @@ class Robustifier(object):
 
         # Construct approaching point pose
         approaching_pose = PoseStamped()
-        approaching_pose.header = pose_in.header
+        approaching_pose.header = global_face_point.header
         approaching_pose.pose.position.x = approaching_point.point.x
         approaching_pose.pose.position.y = approaching_point.point.y
         approaching_pose.pose.position.z = approaching_point.point.z
