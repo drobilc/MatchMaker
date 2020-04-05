@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import rospy
 import math
-from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point
+from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point, Quaternion
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 
@@ -101,6 +101,7 @@ class Robustifier(object):
         for detection in self.face_detections:
             distance = detection.distance_to(face_pose)
             if distance <= self.maximum_distance:
+                detection.stamped_pose.header.stamp = face_pose.header.stamp # one solution to "locatioin too far in history"
                 return detection
 
     def marker_already_set(self, marker):
@@ -132,32 +133,27 @@ class Robustifier(object):
         robot_point.point.y = 0
         robot_point.point.z = 0
 
-        # Construct robot pose
-        robot_pose = PoseStamped()
-        robot_pose.header = pose_in.header
-        robot_pose.pose.position.x = 0
-        robot_pose.pose.position.y = 0
-        robot_pose.pose.position.z = 0
-        robot_pose.pose.orientation.x = 0
-        robot_pose.pose.orientation.y = 0
-        robot_pose.pose.orientation.z = 0
-        robot_pose.pose.orientation.w = 1
-
         # Transform face's and robot's position to global coordinates
         global_face_point = self.tf_buf.transform(face_point, "map")
         global_robot_point = self.tf_buf.transform(robot_point, "map")
-        global_robot_pose = self.tf_buf.transform(robot_pose, "map")
 
-        # Calculate orientation
+        # Calculate orientation vector
         global_position_face = global_face_point.point
         global_position_robot = global_robot_point.point
-        orientation_parameters = (global_position_robot.x - global_position_face.x, global_position_robot.y - global_position_face.y, global_position_robot.z - global_position_face.z)
-        # rospy.logwarn("orientation_parameters are {}".format(orientation_parameters))
-        normalized_orientation = orientation_parameters / np.linalg.norm(orientation_parameters)
-        # rospy.logwarn("NORMALIZED orientation parameters are {}".format(normalized_orientation))
-        orientation_quaternion = quaternion_from_euler(-normalized_orientation[0], -normalized_orientation[1], -normalized_orientation[2])
+        orientation_parameters = []
+        orientation_parameters.append(global_position_robot.x - global_position_face.x)
+        orientation_parameters.append(global_position_robot.y - global_position_face.y)
+        orientation_parameters.append(0.002472)
 
-        # Calculate approaching point
+        # Calculate orientation
+        orientation = math.atan2(orientation_parameters[0], orientation_parameters[1])
+        orientation_quaternion = quaternion_from_euler(0, 0, orientation)
+        orientation_quaternion = Quaternion(orientation_quaternion[0], orientation_quaternion[1], orientation_quaternion[2], orientation_quaternion[3])
+
+        # Normalize orientation vector
+        normalized_orientation = orientation_parameters / np.linalg.norm(orientation_parameters)
+        
+        # Calculate approaching points
         approaching_point = PointStamped()
         approaching_point.header = global_face_point.header
         approaching_point.point.x = global_position_face.x + 0.5 * normalized_orientation[0]
@@ -173,11 +169,7 @@ class Robustifier(object):
         approaching_pose.pose.position.x = approaching_point.point.x
         approaching_pose.pose.position.y = approaching_point.point.y
         approaching_pose.pose.position.z = approaching_point.point.z
-        # NE DELA, DOBIM "INVALID QUATERNION"
-        # approaching_pose.pose.orientation.x = global_robot_pose.pose.orientation.x  # orientation_quaternion[0]
-        # approaching_pose.pose.orientation.y = global_robot_pose.pose.orientation.y  # orientation_quaternion[1]
-        # approaching_pose.pose.orientation.z = global_robot_pose.pose.orientation.z  # orientation_quaternion[2]
-        # approaching_pose.pose.orientation.w = global_robot_pose.pose.orientation.w  # orientation_quaternion[3]
+        approaching_pose.pose.orientation = orientation_quaternion
 
         # Construct approaching point marker pose
         approaching_marker = PoseStamped()
@@ -201,6 +193,10 @@ class Robustifier(object):
             rospy.loginfo('Face was already detected, it has been detected {} times'.format(saved_pose.number_of_detections))
             saved_pose.number_of_detections += 1
 
+            # Another solution to "locatioin too far in history":
+            # set face_to_approach = face_pose
+            # in self.publish_marker(saved_pose...) swap saved_pose.stamped_pose for face_pose
+
             # If face was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
 
@@ -209,7 +205,7 @@ class Robustifier(object):
             # a green marker has already been published nearby (0.5m)
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
-                    marker_already_sent = self.marker_already_set(saved_pose)
+                    # marker_already_sent = self.marker_already_set(saved_pose)
                     # if marker_already_sent is not None:
                     # Move the point 0.5m infront of the face so the robot doesn't bump into it when approaching
                     face_to_approach = saved_pose.stamped_pose
