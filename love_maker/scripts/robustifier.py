@@ -10,7 +10,6 @@ from std_msgs.msg import ColorRGBA
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf2_ros
 from tf2_geometry_msgs import PointStamped
-import tf
 
 import numpy as np
 
@@ -22,6 +21,7 @@ class Detection(object):
         self.number_of_detections = number_of_detections
         self.already_sent = False
 
+        # TODO: set parameter based on the distance and angle to face at the time of detection
         # The parameter that is used to blend two different positions together.
         # How much the received position changes the current position
         self.blending = 0.5
@@ -148,7 +148,7 @@ class Robustifier(object):
         # rospy.logwarn("orientation_parameters are {}".format(orientation_parameters))
         normalized_orientation = orientation_parameters / np.linalg.norm(orientation_parameters)
         # rospy.logwarn("NORMALIZED orientation parameters are {}".format(normalized_orientation))
-        # orientation_quaternion = quaternion_from_euler(-normalized_orientation[0], -normalized_orientation[1], -normalized_orientation[2])
+        orientation_quaternion = quaternion_from_euler(-normalized_orientation[0], -normalized_orientation[1], -normalized_orientation[2])
 
         # Calculate approaching point
         approaching_point = PointStamped()
@@ -166,10 +166,11 @@ class Robustifier(object):
         approaching_pose.pose.position.x = approaching_point.point.x
         approaching_pose.pose.position.y = approaching_point.point.y
         approaching_pose.pose.position.z = approaching_point.point.z
-        approaching_pose.pose.orientation.x = global_robot_pose.pose.orientation.x  # orientation_quaternion[0]
-        approaching_pose.pose.orientation.y = global_robot_pose.pose.orientation.y  # orientation_quaternion[1]
-        approaching_pose.pose.orientation.z = global_robot_pose.pose.orientation.z  # orientation_quaternion[2]
-        approaching_pose.pose.orientation.w = global_robot_pose.pose.orientation.w  # orientation_quaternion[3]
+        # NE DELA, DOBIM "INVALID QUATERNION"
+        # approaching_pose.pose.orientation.x = global_robot_pose.pose.orientation.x  # orientation_quaternion[0]
+        # approaching_pose.pose.orientation.y = global_robot_pose.pose.orientation.y  # orientation_quaternion[1]
+        # approaching_pose.pose.orientation.z = global_robot_pose.pose.orientation.z  # orientation_quaternion[2]
+        # approaching_pose.pose.orientation.w = global_robot_pose.pose.orientation.w  # orientation_quaternion[3]
 
         # Construct approaching point marker pose
         approaching_marker = PoseStamped()
@@ -222,6 +223,10 @@ class Robustifier(object):
 
             # If face was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
+
+            # TODO: Memorize the green markers (true positives) as the second layer of preventing false
+            # positives. Often we get more than one green marker per photo. Before publishing, check wheteher
+            # a green marker has already been published nearby (0.5m)
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
                     # Move the point 0.5m infront of the face so the robot doesn't bump into it when approaching
@@ -229,7 +234,7 @@ class Robustifier(object):
                     approaching_point, approaching_marker = self.convert_to_approaching_point(face_to_approach)
                     rospy.loginfo('Sending face location to movement controller')
                     self.face_publisher.publish(approaching_point)
-                    # publish marker fro confirmed true positive
+                    # publish marker for confirmed true positive
                     self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3)
                     # publish marker for approaching point
                     self.publish_marker(approaching_marker, ColorRGBA(0, 0, 1, 1), 0.1)
