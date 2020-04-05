@@ -217,7 +217,7 @@ if __name__ == '__main__':
         # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
         #my_map1
         (100, pose_from_point_on_map([2, 2, 0.002472])),
-        (101, pose_from_point_on_map([3, 1.3, 0.002472])),
+        (101, pose_from_point_on_map([3, 1.4, 0.002472])),
         (102, pose_from_point_on_map([4, 1.4, 0.002472])),
         (103, pose_from_point_on_map([4.5, 2, 0.002472])),
         (104, pose_from_point_on_map([4, 2.4, 0.002472])),

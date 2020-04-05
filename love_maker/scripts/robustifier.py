@@ -10,6 +10,7 @@ from std_msgs.msg import ColorRGBA
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf2_ros
 from tf2_geometry_msgs import PointStamped
+import tf
 
 import numpy as np
 
@@ -56,7 +57,7 @@ class Robustifier(object):
 
         # This parameter tells us how many detections is needed to proclaim a
         # face detection true positive
-        self.minimum_detections = 12
+        self.minimum_detections = 8
 
         # The face detector publishes faces to /face_detections_raw, so create a
         # subscriber that we will use to read positions
@@ -83,7 +84,7 @@ class Robustifier(object):
         self.marker_number += 1
         marker = Marker()
         marker.header.stamp = detection.header.stamp
-        marker.header.frame_id = detection.header.frame_id
+        marker.header.frame_id = detection.header.frame_id # camera_depth_optical_frame
         marker.pose = detection.pose
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
@@ -108,45 +109,74 @@ class Robustifier(object):
         self.markers_publisher.publish(self.marker_array)
 
     def convert_to_approaching_point(self, pose_in):
-        # Construct face pose
-        face_pose = PoseStamped()
-        face_pose.pose.position.x = pose_in.pose.position.x
-        face_pose.pose.position.y = pose_in.pose.position.y
-        face_pose.pose.position.z = pose_in.pose.position.z
-        face_pose.header = pose_in.header
-        rospy.logwarn("Check the timestamp: {}".format(face_pose))
+        # Construct face point
+        face_point = PointStamped()
+        face_point.header.frame_id = pose_in.header.frame_id
+        face_point.header.stamp = pose_in.header.stamp
+        face_point.point.x = pose_in.pose.position.x
+        face_point.point.y = pose_in.pose.position.y
+        face_point.point.z = pose_in.pose.position.z
+
+        # Construct robot point
+        robot_point = PointStamped()
+        robot_point.header.frame_id = pose_in.header.frame_id
+        robot_point.header.stamp = pose_in.header.stamp
+        robot_point.point.x = 0
+        robot_point.point.y = 0
+        robot_point.point.z = 0
 
         # Construct robot pose
         robot_pose = PoseStamped()
+        robot_pose.header = pose_in.header
         robot_pose.pose.position.x = 0
         robot_pose.pose.position.y = 0
         robot_pose.pose.position.z = 0
-        robot_pose.header = pose_in.header
+        robot_pose.pose.orientation.x = 0
+        robot_pose.pose.orientation.y = 0
+        robot_pose.pose.orientation.z = 0
+        robot_pose.pose.orientation.w = 1
 
         # Transform face's and robot's position to global coordinates
-        global_face_pose = self.tf_buf.transform(face_pose, "map")
+        global_face_point = self.tf_buf.transform(face_point, "map")
+        global_robot_point = self.tf_buf.transform(robot_point, "map")
         global_robot_pose = self.tf_buf.transform(robot_pose, "map")
-        
-        # Calculate orientation
-        global_position_face = global_face_pose.pose.position
-        global_posiiton_robot = global_robot_pose.pose.position
-        orientation_parameters = (global_posiiton_robot.x - global_position_face.x, global_posiiton_robot.y - global_position_face.y, global_posiiton_robot.z - global_position_face.z)
-        orientation_quaternion = quaternion_from_euler(orientation_parameters[0], orientation_parameters[1], orientation_parameters[2])
 
-        # Construct approaching point
-        approaching_point = PoseStamped()
-        approaching_point.pose.position.x = global_position_face.x + 0.5 * orientation_parameters[0]  # face_pose.pose.position.x + 0.5 * orientation_parameters[0]
-        approaching_point.pose.position.y = global_position_face.y + 0.5 * orientation_parameters[1]  # face_pose.pose.position.y + 0.5 * orientation_parameters[1]
-        approaching_point.pose.position.z = global_position_face.z + 0.5 * orientation_parameters[2]  # face_pose.pose.position.z + 0.5 * orientation_parameters[2]
-        approaching_point.pose.orientation.x = orientation_quaternion[0]
-        approaching_point.pose.orientation.y = orientation_quaternion[1]
-        approaching_point.pose.orientation.z = orientation_quaternion[2]
-        approaching_point.pose.orientation.w = orientation_quaternion[3]
+        # Calculate orientation
+        global_position_face = global_face_point.point
+        global_position_robot = global_robot_point.point
+        orientation_parameters = (global_position_robot.x - global_position_face.x, global_position_robot.y - global_position_face.y, global_position_robot.z - global_position_face.z)
+        # rospy.logwarn("orientation_parameters are {}".format(orientation_parameters))
+        normalized_orientation = orientation_parameters / np.linalg.norm(orientation_parameters)
+        # rospy.logwarn("NORMALIZED orientation parameters are {}".format(normalized_orientation))
+        # orientation_quaternion = quaternion_from_euler(-normalized_orientation[0], -normalized_orientation[1], -normalized_orientation[2])
+
+        # Calculate approaching point
+        approaching_point = PointStamped()
+        approaching_point.header = global_face_point.header
+        approaching_point.point.x = global_position_face.x + 0.5 * normalized_orientation[0]
+        approaching_point.point.y = global_position_face.y + 0.5 * normalized_orientation[1]
+        approaching_point.point.z = global_position_face.z + 0.5 * normalized_orientation[2]
 
         # Transform back to frame_id = camera_depth_optical_frames
-        approaching_point = self.tf_buf.transform(approaching_point, "camera_depth_optical_frames")
-        rospy.logwarn("Approaching point for face {} set to {}".format(face_pose, approaching_point))
+        approaching_marker_point = self.tf_buf.transform(approaching_point, "camera_depth_optical_frame")
 
+        # Construct approaching point pose
+        approaching_pose = PoseStamped()
+        approaching_pose.header = pose_in.header
+        approaching_pose.pose.position.x = approaching_point.point.x
+        approaching_pose.pose.position.y = approaching_point.point.y
+        approaching_pose.pose.position.z = approaching_point.point.z
+        approaching_pose.pose.orientation.x = global_robot_pose.pose.orientation.x  # orientation_quaternion[0]
+        approaching_pose.pose.orientation.y = global_robot_pose.pose.orientation.y  # orientation_quaternion[1]
+        approaching_pose.pose.orientation.z = global_robot_pose.pose.orientation.z  # orientation_quaternion[2]
+        approaching_pose.pose.orientation.w = global_robot_pose.pose.orientation.w  # orientation_quaternion[3]
+
+        # Construct approaching point marker pose
+        approaching_marker = PoseStamped()
+        approaching_marker.header = approaching_marker_point.header
+        approaching_marker.pose.position.x = approaching_marker_point.point.x
+        approaching_marker.pose.position.y = approaching_marker_point.point.y
+        approaching_marker.pose.position.z = approaching_marker_point.point.z
 
         # # constructs an approaching point which is the point where our robot
         # # should greet the face from. The orientation is set as current robot's rotation
@@ -175,13 +205,12 @@ class Robustifier(object):
         # approaching_point.pose.orientation.w = orientation_parameters[3]
         # approaching_point.header = pose.header
         # rospy.logwarn("Blue marker: {}".format(approaching_point))
-        return approaching_point
+        return approaching_pose, approaching_marker
     
     def on_face_detection(self, face_pose):
         # A new face has been detected, robustify it
         # rospy.loginfo('A new face pose received: {}'.format(face_pose))
         self.publish_marker(face_pose)
-        # frame_id = camera_depth_optical_frames
 
         # Check if detected face is already in face_detections. This cannot be
         # done with simple indexof function because the coordinates will not
@@ -197,13 +226,13 @@ class Robustifier(object):
                 if not saved_pose.already_sent:
                     # Move the point 0.5m infront of the face so the robot doesn't bump into it when approaching
                     face_to_approach = saved_pose.stamped_pose
-                    approaching_point = self.convert_to_approaching_point(face_to_approach)
+                    approaching_point, approaching_marker = self.convert_to_approaching_point(face_to_approach)
                     rospy.loginfo('Sending face location to movement controller')
                     self.face_publisher.publish(approaching_point)
                     # publish marker fro confirmed true positive
                     self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3)
                     # publish marker for approaching point
-                    self.publish_marker(approaching_point, ColorRGBA(0, 0, 1, 1), 0.1)
+                    self.publish_marker(approaching_marker, ColorRGBA(0, 0, 1, 1), 0.1)
                     saved_pose.already_sent = True
                     # rospy.logwarn("Green marker: {}".format(saved_pose.stamped_pose))
             else:
