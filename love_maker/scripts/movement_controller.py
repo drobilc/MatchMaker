@@ -38,7 +38,9 @@ class MovementController(object):
 
         # The robustifier node publishes faces to /face_detections
         self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
-
+        
+        # TODO: If we want the heap to be sorted on euclidian distance to the goal,
+        # the priority parameter should be changed to distance. heapq always sorts by the first element in touple.
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
         self.goals = goals
@@ -54,6 +56,11 @@ class MovementController(object):
         # hardcoded goals should have a high priority, so that after new goal is
         # added, we first visit the goal and then the hardcoded location
         self.current_goal_priority = 0
+
+        # If a goal isn't reached succesfully, increase the counter and try again. When counter reaches 3,
+        # add the goal at the end of the queue, reset the counter and move to the next goal
+        self.fail_counter = 0
+        self.max_fails_allowed = 3
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
@@ -75,6 +82,13 @@ class MovementController(object):
         self.move_to_goal(first_goal)
     
     def done(self, status, result):
+        if self.current_goal is not None:
+            priority, goal = self.current_goal
+            if status == 3 and priority < 100:
+                self.greeter.greet()
+                rospy.sleep(1)
+                time.sleep(1)
+
         # This is called when the robot has reached our current goal
         # or something has gone wrong
         rospy.loginfo('Goal has finished with status: {}'.format(status))
@@ -91,9 +105,19 @@ class MovementController(object):
         # Status with number 3 means that robot has reached the goal
         if status == 3:
             rospy.loginfo('Goal has been reached successfully')
-        else:
-            # TODO: Goal unreachable, add it back to queue, but with higher priority
+        elif self.fail_counter <= self.max_fails_allowed:
+            # Goal failed, try again immediately (max 3 times)
             rospy.logerr('The robot could not move to the goal')
+            heapq.heappush(self.goals, (self.current_goal_priority, self.current_goal[1]))
+            self.fail_counter += 1
+        else:
+            # Goal unreachable, add it back to queue, but with higher priority
+            rospy.logerr('The robot could not move to the goal')
+            heapq.heappush(self.goals, (self.current_goal_priority + 110, self.current_goal[1]))
+            self.fail_counter = 0
+
+        # reset current goal
+        self.current_goal = None
         
         # If there are no more goals do nothing, otherwise move to next goal
         if len(self.goals) <= 0:
@@ -125,6 +149,9 @@ class MovementController(object):
 
         # Set the goal pose as the face pose
         goal.target_pose.pose = pose.pose
+
+        # Set the goal as current goal
+        self.current_goal = element
 
         # TODO: Until the face detector will only send face pose, the movement
         # controller will not want to move to location because the rotation
@@ -171,7 +198,7 @@ class MovementController(object):
                 self.localization_finished()
                 return
 
-            # Otherwise slowly rotate the robot for 10 degrees
+            # Otherwise rotate the robot for 60 degrees
             twist = Twist()
             twist.angular.z = 60 * (3.14 / 180.0) # 60 deg
             self.localization_publisher.publish(twist)
@@ -198,8 +225,6 @@ class MovementController(object):
         self.current_goal_priority += 1
         heapq.heappush(self.goals, (self.current_goal_priority, face_pose))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
-
-        self.greeter.greet()
 
         if self.is_localized and not self.has_goals:
             self.start()
@@ -252,7 +277,7 @@ if __name__ == '__main__':
         # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
         # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
         # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
-        #my_map1
+        # my_map1
         (100, pose_from_point_on_map([2, 2, 0.002472])),
         (101, pose_from_point_on_map([3, 1.4, 0.002472])),
         (102, pose_from_point_on_map([4, 1.4, 0.002472])),
