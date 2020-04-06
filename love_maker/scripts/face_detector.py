@@ -67,6 +67,22 @@ class FaceFinder(object):
         
         return image
     
+    def construct_detection_message(self, timestamp, frame_id, rgb_image_original, face_rectangle):
+        self.current_message_number += 1
+        detection_message = Detection()
+        detection_message.header.seq = self.current_message_number
+        detection_message.header.stamp = timestamp
+        detection_message.header.frame_id = frame_id
+        detection_message.x = face_rectangle.left() * self.downscale_factor
+        detection_message.y = face_rectangle.top() * self.downscale_factor
+        detection_message.width = (face_rectangle.right() - face_rectangle.left()) * self.downscale_factor
+        detection_message.height = (face_rectangle.bottom() - face_rectangle.top()) * self.downscale_factor
+        detection_message.source = 'opencv'
+        detection_message.confidence = 1
+        face_image = rgb_image_original[face_rectangle.top() * self.downscale_factor :face_rectangle.bottom() * self.downscale_factor,face_rectangle.left()* self.downscale_factor:face_rectangle.right()* self.downscale_factor]
+        detection_message.image = self.bridge.cv2_to_imgmsg(face_image, "bgr8")
+        return detection_message
+    
     def image_callback(self, rgb_image_message):
         # This function will be called when new camera rgb image is received
         rgb_image_original = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
@@ -81,26 +97,11 @@ class FaceFinder(object):
         if len(face_rectangles) <= 0:
             return
 
-        self.current_message_number += 1
-
-        detection_message = Detection()
-        detection_message.header.seq = self.current_message_number
-        detection_message.header.stamp = timestamp
-        detection_message.header.frame_id = rgb_image_message.header.frame_id
-
-        # TODO: We are currently only publishing the last face, fix that
+        # Iterate over faces and publish all of them to the mapper
         for face_rectangle in face_rectangles:
-            detection_message.x = face_rectangle.left() * self.downscale_factor
-            detection_message.y = face_rectangle.top() * self.downscale_factor
-            detection_message.width = (face_rectangle.right() - face_rectangle.left()) * self.downscale_factor
-            detection_message.height = (face_rectangle.bottom() - face_rectangle.top()) * self.downscale_factor
-            detection_message.source = 'opencv'
-            detection_message.confidence = 1
-            face_image = rgb_image_original[face_rectangle.top() * self.downscale_factor :face_rectangle.bottom() * self.downscale_factor,face_rectangle.left()* self.downscale_factor:face_rectangle.right()* self.downscale_factor]
-            detection_message.image = self.bridge.cv2_to_imgmsg(face_image, "bgr8")
             cv2.rectangle(rgb_image, (face_rectangle.left(), face_rectangle.top()), (face_rectangle.right(), face_rectangle.bottom()), (255, 0, 0), 3, 8, 0)
-        
-        self.detections_publisher.publish(detection_message)
+            detection_message = self.construct_detection_message(timestamp, rgb_image_message.header.frame_id, rgb_image_original, face_rectangle)
+            self.detections_publisher.publish(detection_message)
         
         if self.display_camera_window:
             cv2.imshow("Image", rgb_image)
