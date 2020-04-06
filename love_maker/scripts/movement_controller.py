@@ -3,13 +3,18 @@ from __future__ import print_function
 
 import rospy
 import actionlib
+import sound_play
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
 from geometry_msgs.msg import Pose, PoseStamped, Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
+from std_msgs.msg import String
 
 # Require python module for ordered heap
 import heapq
 
+from random import randint
 from tf.transformations import euler_from_quaternion
 import math
 import time
@@ -19,6 +24,10 @@ class MovementController(object):
     def __init__(self, goals):
         # Initialize node, don't allow running multiple nodes of this type
         rospy.init_node('movement_controller', anonymous=False)
+
+        # Create a Greeter object that controls speech synthesisation
+        self.greeter = Greeter()
+        self.greeter.say("I am very stupid!")
 
         # Create a new simple action client that will connect to move_base topic
         # The action server will listen on /mmove_base/goal and will notify
@@ -190,6 +199,8 @@ class MovementController(object):
         heapq.heappush(self.goals, (self.current_goal_priority, face_pose))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
+        self.greeter.greet()
+
         if self.is_localized and not self.has_goals:
             self.start()
         
@@ -201,6 +212,32 @@ def pose_from_point_on_map(point):
     pose.pose.position.z = point[2]
     pose.pose.orientation.w = 1
     return pose
+
+# Object that abstracts voice commands
+class Greeter(object):
+
+    greetings = [
+        "Hello there!", "How are you doing?", "Oh, hi", "Good day", "Hello"
+    ]
+
+    def __init__(self):
+        self.voice = 'voice_kal_diphone'
+        self.volume = 1.0
+        self.client = SoundClient()
+        rospy.loginfo("Greeter created!")
+    
+    def say(self, data):
+        # Send data to the client, client outputs the data with given voice and volume
+        rospy.loginfo("Send to sound_client: " + data)
+        self.client.say(data, self.voice, self.volume)
+    
+    def greet(self, greeting = None):
+        if greeting is None:
+            random_greeting = self.greetings[randint(0, len(self.greetings) - 1)]
+            self.say(random_greeting)
+        else:
+            self.say(self.greetings[greeting])
+
 
 if __name__ == '__main__':
     controller = MovementController([
