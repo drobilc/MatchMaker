@@ -30,7 +30,7 @@ class MovementController(object):
         self.greeter.say("I am very stupid!")
 
         # Create a new simple action client that will connect to move_base topic
-        # The action server will listen on /mmove_base/goal and will notify
+        # The action server will listen on /move_base/goal and will notify
         # us about status and provide feedback at /move_base/status
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
