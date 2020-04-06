@@ -116,25 +116,24 @@ class Robustifier(object):
         self.marker_array.markers.append(marker)
         self.markers_publisher.publish(self.marker_array)
 
-    def convert_to_approaching_point(self, pose_in):
+    def convert_to_approaching_point(self, face_point):
         # Construct face point
-        face_point = PointStamped()
-        face_point.header.frame_id = pose_in.header.frame_id
-        face_point.header.stamp = pose_in.header.stamp
-        face_point.point.x = pose_in.pose.position.x
-        face_point.point.y = pose_in.pose.position.y
-        face_point.point.z = pose_in.pose.position.z
+        global_face_point = PointStamped()
+        global_face_point.header.frame_id = face_point.header.frame_id
+        global_face_point.header.stamp = face_point.header.stamp
+        global_face_point.point.x = face_point.pose.position.x
+        global_face_point.point.y = face_point.pose.position.y
+        global_face_point.point.z = face_point.pose.position.z
 
         # Construct robot point
         robot_point = PointStamped()
-        robot_point.header.frame_id = pose_in.header.frame_id
-        robot_point.header.stamp = pose_in.header.stamp
+        robot_point.header.frame_id = "camera_depth_optical_frame"
+        robot_point.header.stamp = face_point.header.stamp
         robot_point.point.x = 0
         robot_point.point.y = 0
         robot_point.point.z = 0
 
         # Transform face's and robot's position to global coordinates
-        global_face_point = self.tf_buf.transform(face_point, "map")
         global_robot_point = self.tf_buf.transform(robot_point, "map")
 
         # Calculate orientation vector
@@ -183,6 +182,14 @@ class Robustifier(object):
     def on_face_detection(self, face_pose):
         # A new face has been detected, robustify it
         # rospy.loginfo('A new face pose received: {}'.format(face_pose))
+
+        # First convert the face position to map coordinate frame, so we can
+        # check if the distance to the nearest face is less than half a metre If
+        # this is not done, the robustifier tries to compute distances between
+        # points in camera_depth_optical_frame frame, which has a different
+        # scale than map
+        face_pose = self.tf_buf.transform(face_pose, "map")
+
         self.publish_marker(face_pose)
 
         # Check if detected face is already in face_detections. This cannot be
