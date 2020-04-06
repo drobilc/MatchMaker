@@ -25,7 +25,7 @@ class MovementController(object):
         # Initialize node, don't allow running multiple nodes of this type
         rospy.init_node('movement_controller', anonymous=False)
 
-        # Create a Greeter object that controls speech synthesisation
+        # Create a Greeter object that controls speech synthetisation
         self.greeter = Greeter()
         self.greeter.say("I am very stupid!")
 
