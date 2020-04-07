@@ -75,7 +75,7 @@ class MovementController(object):
             # (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
             # (102, pose_from_point_on_map([2, 1, 0.002472]), False)
         ]
-        self.initial_goals = goals
+        self.initial_goals = [goal for goal in goals]
         self.goals = goals
         heapq.heapify(goals)
 
