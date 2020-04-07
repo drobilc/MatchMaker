@@ -36,10 +36,6 @@ class MovementController(object):
         self.client.wait_for_server()
         rospy.loginfo('Connected to movement server')
 
-        # Set the move_base parameters
-        rospy.set_param('/move_base/recovery_behavior_enabled', False)
-        rospy.set_param('/move_base/clearing_rotation_allowed', False)
-
         # The robustifier node publishes faces to /face_detections
         self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
         

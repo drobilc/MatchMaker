@@ -15,5 +15,7 @@
   </include>
 
   <!-- Move base -->
-  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml">
+    <arg name="custom_param_file" value="$(find love_maker)/launch/includes/move_base_params.yaml"/>
+  </include>
 </launch>

@@ -16,13 +16,13 @@
         
         <!-- Set the robot initial pose -->
 
-	<!-- For my_map set this coordinates -->
+	    <!-- For my_map set this coordinates -->
         <!--<arg name="initial_pose_x" value="-0.163281708956"/>-->
         <!--<arg name="initial_pose_y" value="-3.25395488739"/>-->
         <!--<arg name="initial_pose_a" value="0.679"/>-->
 	
-	<!-- for my_map1 set this coordinates -->
-	<arg name="initial_pose_x" value="0.00000"/>
+	    <!-- for my_map1 set this coordinates -->
+	    <arg name="initial_pose_x" value="0.00000"/>
         <arg name="initial_pose_y" value="0.00000"/>
         <arg name="initial_pose_a" value="0.000"/>
     </include>
