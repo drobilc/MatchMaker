@@ -62,18 +62,22 @@ class MovementController(object):
             # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
             # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
             # my_map1
-            (100, pose_from_point_on_map([2, 2, 0.002472]), False),
-            (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
-            (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
-            (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
-            (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
-            (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
-            (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
-            (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
-            (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
-            (109, pose_from_point_on_map([2, 4, 0.002472]), False),
-            (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
-            (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
+            # (100, pose_from_point_on_map([2, 2, 0.002472]), False),
+            # (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
+            # (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
+            # (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+            # (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
+            # (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
+            # (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
+            # (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
+            # (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
+            # (109, pose_from_point_on_map([2, 4, 0.002472]), False),
+            # (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
+            # (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
+
+            (100, pose_from_point_on_map([2, 3.5, 0.002472]), False),
+            (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+            (102, pose_from_point_on_map([2, 1, 0.002472]), False)
         ]
         self.goals = goals
         heapq.heapify(goals)
