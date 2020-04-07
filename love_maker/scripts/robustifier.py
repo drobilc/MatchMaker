@@ -152,6 +152,9 @@ class Robustifier(object):
         approaching_point.point.y = global_position_face.y + 0.5 * normalized_orientation[1]
         approaching_point.point.z = global_position_face.z + 0.5 * normalized_orientation[2]
 
+        if approaching_point.point.y < 1.2:
+            approaching_point.point.y = 1.2
+
         # Transform back to frame_id = camera_depth_optical_frames
         approaching_marker_point = self.tf_buf.transform(approaching_point, "camera_depth_optical_frame")
 
@@ -213,7 +216,7 @@ class Robustifier(object):
                 rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
                 # The detected face pose and previously saved pose are very similar,
                 # calculate mean position of both poses and save data to saved_pose
-                # saved_pose.update(face_pose)
+                saved_pose.update(face_pose)
         else:
             rospy.loginfo('Face is probably new.')
             # Construct a new detection object, add it to detections
