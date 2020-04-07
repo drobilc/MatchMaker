@@ -145,8 +145,8 @@ class Robustifier(object):
         orientation_parameters.append(0.002472)
 
         # Calculate orientation
-        orientation = math.atan2(orientation_parameters[0], orientation_parameters[1])
-        orientation_quaternion = quaternion_from_euler(0, 0, orientation)
+        orientation = math.atan2(orientation_parameters[1], orientation_parameters[0])
+        orientation_quaternion = quaternion_from_euler(0, 0, orientation + math.pi)
         orientation_quaternion = Quaternion(orientation_quaternion[0], orientation_quaternion[1], orientation_quaternion[2], orientation_quaternion[3])
 
         # Normalize orientation vector
@@ -169,6 +169,7 @@ class Robustifier(object):
         approaching_pose.pose.position.y = approaching_point.point.y
         approaching_pose.pose.position.z = approaching_point.point.z
         approaching_pose.pose.orientation = orientation_quaternion
+        #approaching_pose.pose.orientation.w = - approaching_pose.pose.orientation.w
 
         # Construct approaching point marker pose
         approaching_marker = PoseStamped()

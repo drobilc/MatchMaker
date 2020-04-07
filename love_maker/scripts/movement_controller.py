@@ -109,11 +109,11 @@ class MovementController(object):
         # Status with number 3 means that robot has reached the goal
         if status == 3:
             rospy.loginfo('Goal has been reached successfully')
-        elif self.fail_counter <= self.max_fails_allowed:
-            # Goal failed, try again immediately (max 3 times)
-            rospy.logerr('The robot could not move to the goal')
-            heapq.heappush(self.goals, (self.current_goal_priority, self.current_goal[1]))
-            self.fail_counter += 1
+        # elif self.fail_counter <= self.max_fails_allowed:
+        #     # Goal failed, try again immediately (max 3 times)
+        #     rospy.logerr('The robot could not move to the goal')
+        #     heapq.heappush(self.goals, (self.current_goal_priority, self.current_goal[1]))
+        #     self.fail_counter += 1
         else:
             # Goal unreachable, add it back to queue, but with higher priority
             rospy.logerr('The robot could not move to the goal')
@@ -161,7 +161,7 @@ class MovementController(object):
         # controller will not want to move to location because the rotation
         # quaternion will be too close to zero. Once the face detector will send
         # correct data, remove this
-        goal.target_pose.pose.orientation.w = 1
+        # goal.target_pose.pose.orientation.w = 1
 
         self.has_goals = True
 
