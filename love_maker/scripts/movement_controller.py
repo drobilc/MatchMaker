@@ -6,7 +6,7 @@ import actionlib
 import sound_play
 from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
-from geometry_msgs.msg import Pose, PoseStamped, Twist
+from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String
@@ -15,13 +15,13 @@ from std_msgs.msg import String
 import heapq
 
 from random import randint
-from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import math
 import time
 
 class MovementController(object):
 
-    def __init__(self):
+    def __init__(self, goals):
         # Initialize node, don't allow running multiple nodes of this type
         rospy.init_node('movement_controller', anonymous=False)
 
@@ -44,37 +44,6 @@ class MovementController(object):
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
 
-        # Initial goals for space exploration
-        goals = [
-            # my_map
-            # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
-            # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
-            # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
-            # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
-            # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
-            # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
-            # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
-            # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
-            # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
-            # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
-            # my_map1
-            # (100, pose_from_point_on_map([2, 2, 0.002472]), False),
-            # (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
-            # (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
-            # (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
-            # (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
-            # (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
-            # (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
-            # (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
-            # (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
-            # (109, pose_from_point_on_map([2, 4, 0.002472]), False),
-            # (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
-            # (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
-
-            (100, pose_from_point_on_map([2, 3.5, 0.002472]), False),
-            (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
-            (102, pose_from_point_on_map([2, 1, 0.002472]), False)
-        ]
         self.initial_goals = [goal for goal in goals]
         self.goals = goals
         heapq.heapify(goals)
@@ -268,13 +237,20 @@ class MovementController(object):
         if self.is_localized and not self.has_goals:
             self.start()
         
-def pose_from_point_on_map(point):
+def pose_from_point_on_map(point, angle_z_axis = None):
     pose = PoseStamped()
     pose.pose = Pose()
     pose.pose.position.x = point[0]
     pose.pose.position.y = point[1]
     pose.pose.position.z = point[2]
-    pose.pose.orientation.w = 1
+
+    # set correct orientation of the point
+    if angle_z_axis is not None:
+        rotation = quaternion_from_euler(0, 0, angle_z_axis)
+        pose.pose.orientation = Quaternion(*rotation)
+    else:
+        pose.pose.orientation.w = 1
+
     return pose
 
 # Object that abstracts voice commands
@@ -304,6 +280,46 @@ class Greeter(object):
 
 
 if __name__ == '__main__':
-    controller = MovementController()
+    # Initial goals for space exploration
+    goals = [
+        # my_map
+        # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
+        # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
+        # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
+        # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
+        # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
+        # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
+        # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
+        # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
+        # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
+        # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+        # my_map1
+        # (100, pose_from_point_on_map([2, 2, 0.002472]), False),
+        # (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
+        # (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
+        # (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+        # (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
+        # (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
+        # (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
+        # (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
+        # (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
+        # (109, pose_from_point_on_map([2, 4, 0.002472]), False),
+        # (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
+        # (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
+        # my_map2
+        # (100, pose_from_point_on_map([2, 3.5, 0.002472]), False),
+        # (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+        # (102, pose_from_point_on_map([2, 1, 0.002472]), False),
+
+        (100, pose_from_point_on_map([2.204, 0.745, 0.002472],  1.034), False), # 1.034
+        (101, pose_from_point_on_map([1.733, 3.113, 0.002472],  0.782), False), # 0.782
+        (103, pose_from_point_on_map([4.490, 2.087, 0.002472],  1.583), False), # 1.593 [0.000, 0.000, 0.715, 0.699]
+        (102, pose_from_point_on_map([2.506, 2.844, 0.002472], -0.979), False), # -0.979 [0.000, 0.000, -0.470, 0.883]
+        (104, pose_from_point_on_map([3.522, 1.612, 0.002472], -1.554), False), # -1.554 [0.000, 0.000, -0.701, 0.713]
+        (105, pose_from_point_on_map([2.337, 2.446, 0.002472],  2.673), False), # 2.673 [0.000, 0.000, 0.973, 0.232]
+        (106, pose_from_point_on_map([3.897, 2.407, 0.002472],  1.023), False), # 1.023 [0.000, 0.000, 0.489, 0.872]
+    ]
+
+    controller = MovementController(goals)
     rospy.loginfo('Movement controller started')
     rospy.spin()
