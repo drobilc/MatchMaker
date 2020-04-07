@@ -118,7 +118,7 @@ class MovementController(object):
     def done(self, status, result):
         if self.current_goal is not None:
             priority, goal = self.current_goal
-            if status == 3 and priority < 100:
+            if status == 3 and (priority < 100 or priority > 111):
                 self.greeter.greet()
                 self.number_of_detected_faces += 1
                 rospy.sleep(1)
