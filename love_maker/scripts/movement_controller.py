@@ -75,6 +75,7 @@ class MovementController(object):
             (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
             (102, pose_from_point_on_map([2, 1, 0.002472]), False)
         ]
+        self.initial_goals = goals
         self.goals = goals
         heapq.heapify(goals)
 
@@ -162,8 +163,8 @@ class MovementController(object):
         if len(self.goals) <= 0:
             if self.number_of_detected_faces < self.number_of_faces_in_the_world:
                 # not all faces have been approached yet, add new goals to the map
-                for goal in self.goals:
-                    heapq.heappush(goal)
+                for goal in self.initial_goals:
+                    heapq.heappush(self.goals, goal)
             else:
                 self.has_goals = False
                 return
