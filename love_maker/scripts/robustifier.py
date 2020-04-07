@@ -70,7 +70,6 @@ class Robustifier(object):
         # TODO: Instead of using a list use a quadtree or a grid
         # A list of Detection objects used for finding the closest pose
         self.face_detections = []
-        self.true_positives = []
 
         # TODO: Define appropriate structures for storing the received poses and
         self.markers_publisher = rospy.Publisher('face_markers_raw', MarkerArray, queue_size=1000)
@@ -103,12 +102,6 @@ class Robustifier(object):
             if distance <= self.maximum_distance:
                 detection.stamped_pose.header.stamp = face_pose.header.stamp # one solution to "locatioin too far in history"
                 return detection
-
-    def marker_already_set(self, marker):
-        for true_positive in self.true_positives:
-            distance = true_positive.distance_to(marker)
-            if distance <= self.maximum_distance:
-                return true_positive
     
     def publish_marker(self, pose, color=ColorRGBA(1, 0, 0, 1), scale=0.1):
         # Send a list of all markers to visualize data
@@ -145,8 +138,8 @@ class Robustifier(object):
         orientation_parameters.append(0.002472)
 
         # Calculate orientation
-        orientation = math.atan2(orientation_parameters[0], orientation_parameters[1])
-        orientation_quaternion = quaternion_from_euler(0, 0, orientation)
+        orientation = math.atan2(orientation_parameters[1], orientation_parameters[0])
+        orientation_quaternion = quaternion_from_euler(0, 0, orientation + math.pi)
         orientation_quaternion = Quaternion(orientation_quaternion[0], orientation_quaternion[1], orientation_quaternion[2], orientation_quaternion[3])
 
         # Normalize orientation vector
@@ -158,6 +151,9 @@ class Robustifier(object):
         approaching_point.point.x = global_position_face.x + 0.5 * normalized_orientation[0]
         approaching_point.point.y = global_position_face.y + 0.5 * normalized_orientation[1]
         approaching_point.point.z = global_position_face.z + 0.5 * normalized_orientation[2]
+
+        if approaching_point.point.y < 1.2:
+            approaching_point.point.y = 1.2
 
         # Transform back to frame_id = camera_depth_optical_frames
         approaching_marker_point = self.tf_buf.transform(approaching_point, "camera_depth_optical_frame")
@@ -181,14 +177,13 @@ class Robustifier(object):
     
     def on_face_detection(self, face_pose):
         # A new face has been detected, robustify it
-        # rospy.loginfo('A new face pose received: {}'.format(face_pose))
 
         # First convert the face position to map coordinate frame, so we can
         # check if the distance to the nearest face is less than half a metre If
         # this is not done, the robustifier tries to compute distances between
         # points in camera_depth_optical_frame frame, which has a different
         # scale than map
-        face_pose = self.tf_buf.transform(face_pose, "map")
+        face_pose = self.tf_buf.transform(face_pose, "map") # red
 
         self.publish_marker(face_pose)
 
@@ -200,38 +195,28 @@ class Robustifier(object):
             rospy.loginfo('Face was already detected, it has been detected {} times'.format(saved_pose.number_of_detections))
             saved_pose.number_of_detections += 1
 
-            # Another solution to "locatioin too far in history":
-            # set face_to_approach = face_pose
-            # in self.publish_marker(saved_pose...) swap saved_pose.stamped_pose for face_pose
-
             # If face was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
-
-            # TODO: Memorize the green markers (true positives) as the second layer of preventing false
-            # positives. Often we get more than one green marker per photo. Before publishing, check wheteher
-            # a green marker has already been published nearby (0.5m)
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
-                    # marker_already_sent = self.marker_already_set(saved_pose)
-                    # if marker_already_sent is not None:
+
                     # Move the point 0.5m infront of the face so the robot doesn't bump into it when approaching
                     face_to_approach = saved_pose.stamped_pose
                     approaching_point, approaching_marker = self.convert_to_approaching_point(face_to_approach)
                     rospy.loginfo('Sending face location to movement controller')
                     self.face_publisher.publish(approaching_point)
+
                     # publish marker for confirmed true positive
-                    self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3)
+                    self.publish_marker(saved_pose.stamped_pose, ColorRGBA(0, 1, 0, 1), 0.3) # green
                     
                     # publish marker for approaching point
-                    self.publish_marker(approaching_marker, ColorRGBA(0, 0, 1, 1), 0.1)
+                    self.publish_marker(approaching_marker, ColorRGBA(0, 0, 1, 1), 0.1) # blue
                     saved_pose.already_sent = True
-                    # rospy.logwarn("Green marker: {}".format(saved_pose.stamped_pose))
-                    self.true_positives.append(saved_pose) # add to list
             else:
                 rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
                 # The detected face pose and previously saved pose are very similar,
                 # calculate mean position of both poses and save data to saved_pose
-                # saved_pose.update(face_pose)
+                saved_pose.update(face_pose)
         else:
             rospy.loginfo('Face is probably new.')
             # Construct a new detection object, add it to detections

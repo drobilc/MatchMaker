@@ -21,7 +21,7 @@ import time
 
 class MovementController(object):
 
-    def __init__(self, goals):
+    def __init__(self):
         # Initialize node, don't allow running multiple nodes of this type
         rospy.init_node('movement_controller', anonymous=False)
 
@@ -43,24 +43,56 @@ class MovementController(object):
         # the priority parameter should be changed to distance. heapq always sorts by the first element in touple.
         # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
         # https://docs.python.org/2/library/heapq.html
+
+        # Initial goals for space exploration
+        goals = [
+            # my_map
+            # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
+            # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
+            # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
+            # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
+            # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
+            # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
+            # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
+            # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
+            # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
+            # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
+            # my_map1
+            # (100, pose_from_point_on_map([2, 2, 0.002472]), False),
+            # (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
+            # (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
+            # (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+            # (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
+            # (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
+            # (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
+            # (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
+            # (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
+            # (109, pose_from_point_on_map([2, 4, 0.002472]), False),
+            # (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
+            # (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
+
+            (100, pose_from_point_on_map([2, 3.5, 0.002472]), False),
+            (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
+            (102, pose_from_point_on_map([2, 1, 0.002472]), False)
+        ]
         self.goals = goals
         heapq.heapify(goals)
 
-        # A list of already visited faces (after we pop a face from visited faces, put it here)
-        self.visited_goals = []
         # The has_goals variable should be True if the bot is currently moving
         # and its heap is not empty
         self.has_goals = False
+
+        # Counter of faces. If we run out of goals but haven't found all of the faces yet,
+        # the robot hould explore some more
+        self.number_of_detected_faces = 0
+
+        # Number of faces that have to be detected
+        self.number_of_faces_in_the_world = 6
 
         # The goals will be added to priority heap with decreasing priority. The
         # hardcoded goals should have a high priority, so that after new goal is
         # added, we first visit the goal and then the hardcoded location
         self.current_goal_priority = 0
-
-        # If a goal isn't reached succesfully, increase the counter and try again. When counter reaches 3,
-        # add the goal at the end of the queue, reset the counter and move to the next goal
-        self.fail_counter = 0
-        self.max_fails_allowed = 3
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
@@ -76,6 +108,7 @@ class MovementController(object):
         if len(self.goals) <= 0:
             return
         
+        self.greeter.say("Hello, my name is Dora the explorer and I am ready to begin my mission!")
         self.has_goals = True
         first_goal = heapq.heappop(self.goals)
         rospy.loginfo('Robot has started to move to its first goal: {}'.format(first_goal))
@@ -83,11 +116,14 @@ class MovementController(object):
     
     def done(self, status, result):
         if self.current_goal is not None:
-            priority, goal = self.current_goal
-            if status == 3 and priority < 100:
+            priority, goal, is_face = self.current_goal
+
+            # If the approaching point was reached succesfully, greet.
+            if status == 3 and is_face:
                 self.greeter.greet()
+                self.number_of_detected_faces += 1
                 rospy.sleep(1)
-                time.sleep(1)
+                #time.sleep(1)
 
         # This is called when the robot has reached our current goal
         # or something has gone wrong
@@ -105,24 +141,32 @@ class MovementController(object):
         # Status with number 3 means that robot has reached the goal
         if status == 3:
             rospy.loginfo('Goal has been reached successfully')
-        elif self.fail_counter <= self.max_fails_allowed:
-            # Goal failed, try again immediately (max 3 times)
-            rospy.logerr('The robot could not move to the goal')
-            heapq.heappush(self.goals, (self.current_goal_priority, self.current_goal[1]))
-            self.fail_counter += 1
         else:
             # Goal unreachable, add it back to queue, but with higher priority
             rospy.logerr('The robot could not move to the goal')
-            heapq.heappush(self.goals, (self.current_goal_priority + 110, self.current_goal[1]))
-            self.fail_counter = 0
+            if is_face:
+                heapq.heappush(self.goals, (self.current_goal_priority + 111, self.current_goal[1], True))
+            else:
+                heapq.heappush(self.goals, (self.current_goal_priority + 161, self.current_goal[1], False))
+
 
         # reset current goal
         self.current_goal = None
         
         # If there are no more goals do nothing, otherwise move to next goal
-        if len(self.goals) <= 0:
+        if self.number_of_detected_faces >= self.number_of_faces_in_the_world:
             self.has_goals = False
+            self.greeter.say("My work here is done. I have found all the people.")
             return
+
+        if len(self.goals) <= 0:
+            if self.number_of_detected_faces < self.number_of_faces_in_the_world:
+                # not all faces have been approached yet, add new goals to the map
+                for goal in self.goals:
+                    heapq.heappush(goal)
+            else:
+                self.has_goals = False
+                return
 
         # Pop the item with the smallest priority from goals and move there
         next_goal = heapq.heappop(self.goals)
@@ -140,7 +184,7 @@ class MovementController(object):
     
     def move_to_goal(self, element):
         # Get the priority and element from heap
-        priority, pose = element
+        priority, pose, is_face = element
         rospy.loginfo('Moving to goal [priority = {}] {}'.format(priority, pose))
         # Create a new MoveBaseGoal object and set its position and rotation
         goal = MoveBaseGoal()
@@ -152,12 +196,6 @@ class MovementController(object):
 
         # Set the goal as current goal
         self.current_goal = element
-
-        # TODO: Until the face detector will only send face pose, the movement
-        # controller will not want to move to location because the rotation
-        # quaternion will be too close to zero. Once the face detector will send
-        # correct data, remove this
-        goal.target_pose.pose.orientation.w = 1
 
         self.has_goals = True
 
@@ -223,7 +261,7 @@ class MovementController(object):
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
         self.current_goal_priority += 1
-        heapq.heappush(self.goals, (self.current_goal_priority, face_pose))
+        heapq.heappush(self.goals, (self.current_goal_priority, face_pose, True))
         rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
 
         if self.is_localized and not self.has_goals:
@@ -265,30 +303,6 @@ class Greeter(object):
 
 
 if __name__ == '__main__':
-    controller = MovementController([
-        # my_map
-        # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
-        # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
-        # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
-        # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
-        # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
-        # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
-        # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
-        # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
-        # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
-        # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
-        # my_map1
-        (100, pose_from_point_on_map([2, 2, 0.002472])),
-        (101, pose_from_point_on_map([3, 1.4, 0.002472])),
-        (102, pose_from_point_on_map([4, 1.4, 0.002472])),
-        (103, pose_from_point_on_map([4.5, 2, 0.002472])),
-        (104, pose_from_point_on_map([4, 2.4, 0.002472])),
-        (105, pose_from_point_on_map([3.5, 2.7, 0.002472])),
-        (106, pose_from_point_on_map([3, 2.5, 0.002472])),
-        (107, pose_from_point_on_map([2.1, 2.5, 0.002472])),
-        (108, pose_from_point_on_map([2, 4, 0.002472])),
-        (109, pose_from_point_on_map([2, 2.5, 0.002472])),
-        (110, pose_from_point_on_map([2, 2.6, 0.002472]))
-    ])
+    controller = MovementController()
     rospy.loginfo('Movement controller started')
     rospy.spin()
