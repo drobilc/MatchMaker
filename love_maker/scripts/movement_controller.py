@@ -57,7 +57,7 @@ class MovementController(object):
         self.number_of_detected_faces = 0
 
         # Number of faces that have to be detected
-        self.number_of_faces_in_the_world = 6
+        self.number_of_faces_in_the_world = 3
 
         # The goals will be added to priority heap with decreasing priority. The
         # hardcoded goals should have a high priority, so that after new goal is
