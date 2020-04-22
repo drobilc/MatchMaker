@@ -1,0 +1,55 @@
+<launch>
+
+    <arg name="display_camera_window" default="false"/>
+    <arg name="downscale" default="2"/>
+
+    <!-- Include the gazebo simulator -->
+    <include file="$(find love_maker)/launch/includes/rins_world.launch">
+        <!-- Set the world file for the gazebo simulator -->
+        <arg name="world_file"  value="$(find love_maker)/worlds/rins2.world"/>
+        <!-- another world -->
+        <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
+    </include>
+
+    <!-- Include the amcl simulator -->
+    <include file="$(find love_maker)/launch/includes/amcl_simulation.launch">
+        <!-- Set the map file for the acml simulation -->
+        <arg name="map_file" value="$(find love_maker)/maps/my_map1.yaml"/>
+        
+        <!-- Set the robot initial pose -->
+
+	    <!-- For my_map set this coordinates -->
+        <!--<arg name="initial_pose_x" value="-0.163281708956"/>-->
+        <!--<arg name="initial_pose_y" value="-3.25395488739"/>-->
+        <!--<arg name="initial_pose_a" value="0.679"/>-->
+	
+	    <!-- for my_map1 set this coordinates -->
+	    <arg name="initial_pose_x" value="0.00000"/>
+        <arg name="initial_pose_y" value="0.00000"/>
+        <arg name="initial_pose_a" value="0.000"/>
+    </include>
+
+    <!-- Include the RVIZ visualization tool -->
+    <!-- <include file="$(find turtlebot_rviz_launchers)/launch/view_navigation.launch"></include> -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find love_maker)/launch/includes/rviz_config.rviz"/>
+
+    <!-- Launch the localizer service -->
+    <include file="$(find localizer)/launch/localizer_node_simulation.launch"></include>
+
+    <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
+        <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
+        <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+        <param name="downscale_factor" type="int" value="$(arg downscale)"/>
+    </node>
+
+    <node pkg="love_maker" type="face_mapper.py" name="face_mapper" output="screen">
+    </node>
+
+    <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
+    </node>
+
+    <!-- We need to run the sound_play node in order to be able to synthesise text -->
+    <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
+    </node>
+
+</launch>

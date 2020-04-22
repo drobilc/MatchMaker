@@ -1,0 +1,6 @@
+<launch>
+
+  <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
+  </node>
+
+</launch>
