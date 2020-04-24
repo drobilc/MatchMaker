@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="exercise6" type="cylinder_segmentation" name="cylinder_segmentation">s
+        <remap from="input" to="/camera/depth/points"/>
+    </node>
+
+</launch>

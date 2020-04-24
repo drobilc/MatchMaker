@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="exercise6" type="planes" name="planes">
+
+        <remap from="input" to="/camera/depth/points"/>
+        <remap from="planes" to="/exercise6/planes"/>
+
+    </node>
+
+</launch>

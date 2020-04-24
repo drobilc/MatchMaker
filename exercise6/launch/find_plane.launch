@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="exercise6" type="find_plane" name="find_plane">
+
+        <remap from="input" to="/camera/depth/points"/>
+        <remap from="/exercise6/find_plane" to="plane"/>
+
+    </node>
+
+</launch>
