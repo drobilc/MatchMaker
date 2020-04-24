@@ -43,13 +43,48 @@
 		\caption{Training set}
 	\end{figure}
 
-	Those images were then used to train our colour classifier. For testing set we also tried different images of single coloured objects. A subset of the test images is included below.
+	Those images were then used to train our colour classifier.
 	
-	% MANJKAJO SLIKE DRUGIH OBJEKTOV
+	For testing set we used different images of single coloured cylinders with roughly the same diameter. A subset of the test images is included below.
+	
 	\begin{figure}[H]
 		\centering
+		\includegraphics[width=.13\linewidth]{images/test01.jpg}
+		\includegraphics[width=.13\linewidth]{images/test02.jpg}
+		\includegraphics[width=.13\linewidth]{images/test03.jpg}
+		\includegraphics[width=.13\linewidth]{images/test04.jpg}
+		\includegraphics[width=.13\linewidth]{images/test05.jpg}
+		\includegraphics[width=.13\linewidth]{images/test06.jpg} \\
+		\vspace{3pt}
+		\includegraphics[width=.13\linewidth]{images/test07.jpg}
+		\includegraphics[width=.13\linewidth]{images/test08.jpg}
+		\includegraphics[width=.13\linewidth]{images/test_09_remove_if_too_many_photos.jpg}
+		\includegraphics[width=.13\linewidth]{images/test_10_remove_if_too_many_photos.jpg}
+		\includegraphics[width=.13\linewidth]{images/test_11_remove_if_too_many_photos.jpg}
+		\includegraphics[width=.13\linewidth]{images/test_12_remove_if_too_many_photos.jpg}
 		\caption{Testing set}
 	\end{figure}
+
+	Just as the training images, these were cropped and shrinked befor they were fed to our model for evaluation. Some examples of cropped images are shown below.
+
+	% This looks A M A Z I N G
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=.08\linewidth]{images/test_cut_01.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_02.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_03.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_04.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_05.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_06.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_07.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_08.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_09.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_10.jpg}
+		\includegraphics[width=.08\linewidth]{images/test_cut_11.jpg}
+		\caption{Cropped images from testing set}
+	\end{figure}
+
+	These cropped images illustrate very well, why we chose to use cylindrical objects as our test set. Each image contains various shades of the colour which is consequence of light hitting different spots on cylinders at different angle. Another reason for choosing this shape is that we expect encountering similar objects in the task2. 
 	
 	\section{Colour classification}
 	
