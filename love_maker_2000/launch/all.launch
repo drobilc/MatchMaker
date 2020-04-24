@@ -36,19 +36,19 @@
     <!-- Launch the localizer service -->
     <include file="$(find localizer)/launch/localizer_node_simulation.launch"></include>
 
-    <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
+    <node pkg="love_maker_2000" type="face_detector.py" name="face_detector" output="screen">
         <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
         <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker_2000)/scripts/detectors/data/haarcascade_face.xml" />
         <param name="downscale_factor" type="int" value="$(arg downscale)"/>
     </node>
 
-    <node pkg="love_maker" type="face_mapper.py" name="face_mapper" output="screen">
+    <node pkg="love_maker_2000" type="face_mapper.py" name="face_mapper" output="screen">
     </node>
 
-    <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
+    <node pkg="love_maker_2000" type="robustifier.py" name="robustifier" output="screen">
     </node>
 
-    <node pkg="love_maker" type="movement_controller.py" name="movement_controller" output="screen">
+    <node pkg="love_maker_2000" type="movement_controller.py" name="movement_controller" output="screen">
     </node>
 
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
