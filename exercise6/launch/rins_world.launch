@@ -1,5 +1,5 @@
 <launch>
-  <arg name="world_file"  value="/home/vicos/ROS/src/exercise6/worlds/rins_task2.world"/>
+  <arg name="world_file"  value="$(find exercise6)/worlds/rins_task2.world"/>
 
   <arg name="base"      value="kobuki"/> <!-- create, roomba -->
   <arg name="battery"   value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 -->
@@ -10,7 +10,7 @@
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="use_sim_time" value="true"/>
     <arg name="debug" value="false"/>
-    <arg name="gui" value="$(arg gui)" />
+    <arg name="gui" value="$(arg gui)"/>
     <arg name="world_name" value="$(arg world_file)"/>
   </include>
 
