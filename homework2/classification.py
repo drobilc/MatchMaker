@@ -2,7 +2,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 import numpy
 import csv
 
@@ -19,8 +19,6 @@ def read_data(input_file):
 
     data_x, data_y = [], []
     for row in rows:
-        if row[3] == "white":
-            continue
         data_x.append([float(row[0]), float(row[1]), float(row[2])])
         data_y.append(row[3])
 
@@ -52,10 +50,16 @@ classifiers = {
     "knn, k = 5, weights = distance": KNeighborsClassifier(5, weights='distance'),
     "knn, k = 7": KNeighborsClassifier(7),
     "knn, k = 7, weights = distance": KNeighborsClassifier(7, weights='distance'),
-    "decision tree": DecisionTreeClassifier(),
+    "decision tree, gini": DecisionTreeClassifier(criterion='gini'),
+    "decision tree, entropy": DecisionTreeClassifier(criterion='entropy'),
+    "random forest, gini": RandomForestClassifier(n_estimators=100, criterion='gini'),
+    "random forest, entropy": RandomForestClassifier(n_estimators=100, criterion='entropy'),
     "naive bayes": GaussianNB(),
-    "random forest": RandomForestClassifier(),
-    "support vector machine": SVC(kernel="linear", C=0.025),
+    "support vector machine, kernel=linear, c=0.025": SVC(kernel="linear", C=0.025),
+    "support vector machine, kernel=rbf, c=0.025": SVC(kernel="rbf", C=0.025),
+    "support vector machine, kernel=linear, c=0.05": SVC(kernel="linear", C=0.05),
+    "support vector machine, kernel=linear, c=0.1": SVC(kernel="linear", C=0.1),
+    "support vector machine, kernel=linear, c=0.2": SVC(kernel="linear", C=0.2),
 }
 
 color_spaces = {

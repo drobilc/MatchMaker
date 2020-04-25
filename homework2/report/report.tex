@@ -117,19 +117,28 @@
 	We then tested different classifiers using training data set. Results can be found in the table below. Accuracy is measured using our testing set and is calculated for both \texttt{RGB} and \texttt{HSV} colour space.
 	
 	\begin{center}
-		\begin{tabular}{|c|c|}
+		\begin{tabular}{|c|c|c|c|}
 			\hline 
-			\textbf{Classifier} & \textbf{Accuracy} (\texttt{RGB}) \\
+			\textbf{Classifier} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} \\
 			\hline
-			knn, k = 1 & 0.95 & 0.82 & 0.95 \\ \hline
-			knn, k = 3 & 0.95 & 0.82 & 0.95 \\ \hline
-			knn, k = 5 & 0.95 & 0.82 & 0.96 \\ \hline
-			knn, k = 7 & 0.95 & 0.83 & 0.96 \\ \hline
-			knn, k = 7, weights = distance & 0.95 & 0.82 & 0.96 \\ \hline
-			decision tree & 0.84 & 0.87 & 0.89 \\ \hline
-			naive bayes & 0.84 & 0.89 & 0.97 \\ \hline
-			random forest & 0.90 & 0.90 & 0.88 \\ \hline
-			support vector machine & 0.96 & 0.56 & 0.97 \\ \hline
+			knn, k = 1 & 0.88 & 0.52 & 0.94 \\ \hline
+			knn, k = 1, weights = distance & 0.88 & 0.52 & 0.94 \\ \hline
+			knn, k = 3 & 0.89 & 0.51 & 0.94 \\ \hline
+			knn, k = 3, weights = distance & 0.89 & 0.52 & 0.94 \\ \hline
+			knn, k = 5 & 0.89 & 0.53 & 0.94 \\ \hline
+			knn, k = 5, weights = distance & 0.89 & 0.52 & 0.94 \\ \hline
+			knn, k = 7 & 0.90 & 0.52 & 0.94 \\ \hline
+			knn, k = 7, weights = distance & 0.90 & 0.53 & 0.94 \\ \hline
+			decision tree, gini & 0.80 & 0.88 & 0.86 \\ \hline
+			decision tree, entropy & 0.82 & 0.87 & 0.85 \\ \hline
+			random forest, gini & 0.85 & 0.82 & 0.91 \\ \hline
+			random forest, entropy & 0.82 & 0.85 & 0.89 \\ \hline
+			naive bayes & 0.71 & 0.87 & 0.96 \\ \hline
+			support vector machine, kernel=linear, c=0.025 & 0.92 & 0.61 & 0.92 \\ \hline
+			support vector machine, kernel=rbf, c=0.025 & 0.26 & 0.42 & 0.27 \\ \hline
+			support vector machine, kernel=linear, c=0.05 & 0.92 & 0.62 & 0.93 \\ \hline
+			support vector machine, kernel=linear, c=0.1 & 0.92 & 0.50 & 0.93 \\ \hline
+			support vector machine, kernel=linear, c=0.2 & 0.92 & 0.57 & 0.93 \\ \hline
 		\end{tabular} \\
 	\end{center}
 
