@@ -14,20 +14,25 @@
 	
 	\maketitle
 	
-	Our second task was training a classifier that could recognize six different colours - red, green, blue, yellow, white and black. We divided the task into three parts.  \\
-	
-	The first, most time consuming part was obtaining a training and testing sets - images of objects under different conditions (illumination and viewing angle). After the training and testing data sets were created, each image had to be labelled and cropped so it only contained the object of interest. \\
-	
-	With our datasets ready, we then trained different classifiers to recognize colours and computed their accuracy on our testing set. To get the best classification accuracy, we also tried different colour spaces. \\
-	
-	Lastly, we trained a convolutional neural network.
-	% MANJKA
+	For our second task we were training a classifier to recognize six different colours - red, green, blue, yellow, white and black. We divided the task into three parts. 
+
+	\begin{enumerate}
+		\item Obtaining data for training and testing set
+		\item Training different classifiers
+		\item Evaluating the performance of trained classifiers
+	\end{enumerate}
 		
-	\section{Training set}
+	\section{Preparing training and testing data}
+
+	The first, most time consuming part was obtaining training and testing sets - images of unicolor objects under different conditions (illumination and viewing angle). After the training and testing data sets were created, each image had to be labelled and cropped so it only contained the object of interest. \\
+
+	\subsection{Taking photos}
 	
-	For our training set, we obtained around 200 images of objects under different lighting conditions and viewing angles. For simplicity, we used a simple circle of different colours. The circular shape was selected because it is easy to detect and cropping can be done automatically using Hough transformation method.
+	We chose to take two groups of photos. For the first set of images we took photos of unicolor circles under different viewing angles and under different light conditions. We played with not just the light intensity but also it's colour as can be seen in the photos below. We obtained around 200 images of this kind. For simplicity, we used a simple unicolor circles of different colours. The circular shape was selected because it is easy to detect and cropping can be done automatically using Hough transformation method. \\
 	
-	We present a subset of our training and testing images below. It can be seen that some of the pictures were taken in dark environment, some were taken under blue / yellow lights, we also tried using very high ISO to simulate grain, etc. We also included multiple different shades of the same colour.
+	Below we present a subset of our training and testing images below. It can be seen that some of the pictures were taken in dark environment, some were taken under blue / yellow lights, we also tried using very high ISO to simulate grain, etc. We also included multiple different shades of the same colour. 
+
+	% Manjka povezava na robota, robot bo vidu različne osvetlitve, ...
 
 	\begin{figure}[H]
 		\centering
@@ -40,16 +45,20 @@
 		\includegraphics[width=.20\linewidth]{images/train06.jpg}
 		\includegraphics[width=.20\linewidth]{images/train07.jpg}
 		\includegraphics[width=.20\linewidth]{images/train08.jpg}
-		\caption{Training set}
+		\caption{First set of photos}
 	\end{figure}
 
-	Those images were then used to train our colour classifier.
+	For the second set of images, we took photos of single coloured cylinders from different sides with a "fixed" light source, the sun. All the cyliners had roughly the same diameter as they were created by wrapping paper around a plastic bottle. We used paper of different shades of each colour and of different textures. \\
 	
-	For testing set we used different images of single coloured cylinders with roughly the same diameter. A subset of the test images is included below.
+	Photos were taken when the sun was low, so the light was hitting the cylinder more horizontally than vertically. Pictures were taken from 3 viewing points - towards the sunlight, against the sunlight and perpendicular to the sunlight. This ensured somewhat gradient distribution of the cololor in the images. \\
+	
+	We obtained around 130 photos of this kind. A subset of the images is included below.
+
+	% Manjka povezava na robota, robot bo vidu različne osvetlitve, ...
 	
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=.13\linewidth]{images/test01.jpg}
+		\includegraphics[width=.13\linewidth, height=.13\linewidth]{images/test01.jpg}
 		\includegraphics[width=.13\linewidth]{images/test02.jpg}
 		\includegraphics[width=.13\linewidth]{images/test03.jpg}
 		\includegraphics[width=.13\linewidth]{images/test04.jpg}
@@ -62,10 +71,11 @@
 		\includegraphics[width=.13\linewidth]{images/test_10_remove_if_too_many_photos.jpg}
 		\includegraphics[width=.13\linewidth]{images/test_11_remove_if_too_many_photos.jpg}
 		\includegraphics[width=.13\linewidth]{images/test_12_remove_if_too_many_photos.jpg}
-		\caption{Testing set}
+		\caption{Second set of photos}
 	\end{figure}
 
-	Just as the training images, these were cropped and shrinked befor they were fed to our model for evaluation. Some examples of cropped images are shown below.
+	\subsection{Preprocessing photos}
+	To prepare the images for classifiers, we cropped them. We did this so the images only contain the color (object) of interest and not also all the surrounding ones. Circles were cropped to perfect circle form using the Hough transform. Cylinders were cropped to rectangles. Some examples of cropped cylinders are shown below.
 
 	% This looks A M A Z I N G
 	\begin{figure}[H]
@@ -81,13 +91,34 @@
 		\includegraphics[width=.08\linewidth]{images/test_cut_09.jpg}
 		\includegraphics[width=.08\linewidth]{images/test_cut_10.jpg}
 		\includegraphics[width=.08\linewidth]{images/test_cut_11.jpg}
-		\caption{Cropped images from testing set}
+		\caption{Cropped images from second set}
 	\end{figure}
 
 	These cropped images illustrate very well, why we chose to use cylindrical objects as our test set. Each image contains various shades of the colour which is consequence of light hitting different spots on cylinders at different angle. Another reason for choosing this shape is that we expect encountering similar objects in the task2. 
+
+	\subsection{Training and testing set}
+
+	MANJKA kk smo splittali in zakaj tk. Kere vse opcije smo probali in zakaj se nam je to zdelo smiselno
+	% Smo nardili več kombinacij, kaj je training in kaj je testing
 	
 	\section{Colour classification}
+
+	With our datasets ready, we then trained different classifiers to recognize colours and computed their accuracy on our testing set. To get the best classification accuracy, we also tried different colour spaces. 
+
+	\subsection{Colour spaces}
+
+	We tried:
+
+	\begin{enumerate}
+		\item RGB
+		\item HSV
+		\item CIELAB
+	\end{enumerate}
+
+	MANKJKA OPIS RGB, HSV in CIELAB in zakaj mislimo, da jim bo šlo dober.
+	% TODO: dopolni
 	
+
 	Our first approach was training a classifier with colours as input vectors. Each colour in colour space can be represented by a vector $v$ and the classification task is to map this vector $v$ to correct class. \\
 	
 	In the \texttt{RGB} colour space, each vector $v$ can be represented using $v = (red, green, blue)$, where $red, green, blue \in [0, 255]$. \\
@@ -96,7 +127,7 @@
 	
 	In the figure below we have plotted colours from our training set in \texttt{RGB} and \texttt{HSV} colour space. As we can see, in the \texttt{RGB} colour space, the shades of the same colour lie on the same line. Similar thing happens in \texttt{HSV} color space, but the lines are vertical. Because the \texttt{HSV} colour space is conical, the red colour lies both on the far left and far right of our graph. This is not ideal for knn or linear support vector machines, so we predict that those will perform better on the \texttt{RGB} colour space. \\
 	
-	The \texttt{RGB} and \texttt{HSV} are not natural colour spaces for humans. If two colours are close in \texttt{RGB} space (using euclidean distance), that doesn't mean that human perceive them as similar. There are some colour spaces that are more suited for human perception, for example the \texttt{XYZ} colour space. \\
+	The \texttt{RGB} and \texttt{HSV} are not natural colour spaces for humans. If two colours are close in \texttt{RGB} space (using euclidean distance), that doesn't mean that human perceive them as similar. There are some colour spaces that are more suited for human perception, for example the \texttt{CYLAB} colour space. \\
 	
 	% Because the input to our classifier is a simple three dimensional vector, we predict that the knn classifier will perform quite well.	
 	
@@ -113,6 +144,13 @@
 			\end{subfigure}
 		\end{figure}
 	\end{center}
+
+	\subsection{Colour distribution in training and testing set}
+
+	MANJKA kk so razporejene barve, kaj smo nardili za enakomernost oziroma zakaj se za njo nismo odločli
+	% TODO: oštevilči vse opcije, ki smo jih sprobali
+
+	\section{Evaluating performance}
 
 	We then tested different classifiers using training data set. Results can be found in the table below. Accuracy is measured using our testing set and is calculated for both \texttt{RGB} and \texttt{HSV} colour space.
 	
@@ -147,16 +185,14 @@
 	% MANJKA IZBOR NAJBOLJŠEGA KLASIFIKATORJA
 	
 	% ZA VSAK KLASIFIKATOR NAPIŠI OPOMBO ZAKAJ JE TAKO
+
+	
+	\section{Conclusion}
+
+	MANJKA kaj bomo uporabli na robotku, povzetek vsega, ovire (kot navedeno spodaj - dodaj osvetlitev)
 	
 	% OPOMBA GLEDE TEGA, DA JE POTREBNO IZ OBROČKA DOBITI PRAVO BARVO.
-	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases.	
-	
-	\section{Convolutional neural network}
-	
-	The other approach that we tried was training our classifier using entire image of an object. In this case, we don't have to manually sample points on our object. Before we do that, we have to isolate the object and reduce image size. Having a resolution of \texttt{30px x 30px} means that we have 900 inputs to our neural network. Another problem with convolutional neural networks is that we need a large dataset of images, which we don't have in our case. We only have 200 images for all six colours but we would probably need 200 images for each colour. \\
-	
-	So the first step is to resize our object image to a smaller size to reduce the number of inputs to our classifier. We then reshape our image to one dimensional array and send it to our classifier.
-	
+	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases.
 	
 	
 \end{document}
