@@ -24,13 +24,13 @@
 		
 	\section{Preparing training and testing data}
 
-	The first, most time consuming part was obtaining training and testing sets - images of unicolor objects under different conditions (illumination and viewing angle). After the training and testing data sets were created, each image had to be labelled and cropped so it only contained the object of interest. \\
+	The first, most time consuming part was obtaining training and testing sets - images of unicolour objects under different conditions (illumination and viewing angle). After the training and testing data sets were created, each image had to be labelled and cropped so it only contained the object of interest. \\
 
 	\subsection{Taking photos}
 	
-	We chose to take two groups of photos. For the first set of images we took photos of unicolor circles under different viewing angles and under different light conditions. We played with not just the light intensity but also it's colour as can be seen in the photos below. We obtained around 200 images of this kind. For simplicity, we used a simple unicolor circles of different colours. The circular shape was selected because it is easy to detect and cropping can be done automatically using Hough transformation method. \\
+	We chose to take two groups of photos. For the first set of images we took photos of unicolour circles under different viewing angles and under different light conditions. We played with not just the light intensity but also it's colour as can be seen in the photos below. We obtained around 200 images of this kind. For simplicity, we used a simple unicolour circles of different colours. The circular shape was selected because it is easy to detect and cropping can be done automatically using Hough transformation method. \\
 	
-	Below we present a subset of our training and testing images below. It can be seen that some of the pictures were taken in dark environment, some were taken under blue / yellow lights, we also tried using very high ISO to simulate grain, etc. We also included multiple different shades of the same colour. This is important because the color of 3D objects that our robot will encounter won't be of an uniform colour. Some parts of the objects will be darker, some lighter and the overall shade will change depending on which direction the robot will see the object from.
+	Below we present a subset of those images. It can be seen that some of the pictures were taken in dark environment, some were taken under blue / yellow lights, we also tried using very high ISO to simulate grain, etc. We also included multiple different shades of the same colour. This is important because the 3D objects that our robot will encounter won't be of an uniform colour. Some parts of the objects will be darker, some lighter and the overall shade will change depending on which direction the robot will see the object from.
 
 	\begin{figure}[H]
 		\centering
@@ -46,9 +46,9 @@
 		\caption{First set of photos}
 	\end{figure}
 
-	For the second set of images, we took photos of single coloured cylinders from different sides with a "fixed" light source, the sun. All the cyliners had roughly the same diameter as they were created by wrapping paper around a plastic bottle. We used paper of different shades of each colour and of different textures. \\
+	For the second set of images, we took photos of single coloured cylinders from different sides with a "fixed" light source, the sun. All the cylinders had roughly the same diameter as they were created by wrapping paper around a plastic bottle. We used paper of different shades of each colour and of different textures. \\
 	
-	Photos were taken when the sun was low, so the light was hitting the cylinder more horizontally than vertically. Pictures were taken from 3 viewing points - towards the sunlight, against the sunlight and perpendicular to the sunlight. This ensured somewhat gradient distribution of the cololor in the images. This is important, because cylinders that the robot will encounter will also have gradient distribution of the color.\\
+	Photos were taken when the sun was low, so the light was hitting the cylinder more horizontally than vertically. Pictures were taken from 3 viewing points - towards the sunlight, against the sunlight and perpendicular to the sunlight direction. This ensured somewhat gradient distribution of the cololor in the images. This is important, because cylinders that the robot will encounter will also have gradient distribution of the colour.\\
 	
 	We obtained around 130 photos of this kind. A subset of the images is included below.
 	
@@ -98,21 +98,31 @@
 
 	For the second option we chose to swap the training and testing set to see if above hypotesis holds true.\\
 
-	Since colour distribution is not the same among these two groups of images, we expected some missclassifications. The images of circles contain more dark tones as opposed to the images of cylinders.
+	We noticed that the colour within each set of images is not evenly distibuted. For example, the set of images of cylinders only contains 3 photos of black cylinders as opposed to 30 photos of blue ones. We know that this might temper with the results, so we had to fix this before starting any trainig of the classifiers. \\
 	
-	%TODO
-	VSTAVI SLIKI BARVNIH DISTRIBUCIJ GLEDE NA MNOŽICO
+	In each image we randomly sampled the same number of points and assigned a label to each. After this was done for all images in a set, we checked which colour has the least instances and how many does it have. For each colour we then randomly selected the same number of instances as the one with the least instances have, and with this we provided equal oportunities for all colours. The process of sampling is described in more detail in the next section. \\
 
-	RAZMISLI ALI GRE TOLE ZDAJ RAJE V DISKUSIJO, ZAKAJ NI ACCURACY 1, ALI BOMO NARDILI ŠE TESTE ZA SET Z ENAKOMERNO RAZPOREDITVIJO
-	We also noticed that the color within each set of images is not evenly distibuted. For example, the set of images of cylinders only contains 3 photos of black cylinders as opposed to XY photos of blue ones.
+	Since the images of circles contain more dark tones as opposed to the images of cylinders, we expected some missclassifications.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=.45\linewidth]{images/rgb.png}
+		\includegraphics[width=.45\linewidth]{images/test_rgb.png}
+		\caption{\texttt{RGB} colour distribution of the points in circles (on the left) and cylinders (on the right)}
+	\end{figure}
+
+	%\begin{figure}[H]
+	%	\centering
+	%	\includegraphics[width=.45\linewidth]{images/rgb_labels.png}
+	%	\includegraphics[width=.45\linewidth]{images/test_rgb_labels.png}
+	%	\caption{Distribution of colour labels of the points in circles (on the left) and cylinders (on the right)}
+	%\end{figure}
 	
 	\section{Colour classification}
 
 	With our datasets ready, we then trained different classifiers to recognize colours and computed their accuracy on our testing set. To get the best classification accuracy, we also tried different colour spaces. 
 
-	\subsection{Colour spaces}
-
-	We tried \texttt{RGB}, \texttt{HSV} and \texttt{LAB} colourspace.\\
+	We tried \texttt{RGB}, \texttt{HSV} and \texttt{LAB} colour space.\\
 
 	Our first approach was training a classifier with colours as input vectors. Each colour in colour space can be represented by a vector $v$ and the classification task is to map this vector $v$ to correct class. \\
 	
@@ -120,68 +130,89 @@
 
 	Because the input to our classifier is a simple three dimensional vector, we predict that the knn classifier will perform quite well. \\	
 	
-	To prepare training data set, we used Hough transformation to detect circles in our images and randomly sampled points inside found circles to obtain RGB vectors corresponding to colours. Instead of sampling colour just from one point in the circle, we averaged colours in a region around sampled point. We chose multiple points from the same circle because object's illumination is almost never uniform. \\
+	To prepare training data set, we used Hough transformation to detect circles in our images and randomly sampled points inside found circles to obtain \texttt{RGB} vectors corresponding to colours. Instead of sampling colour just from one point in the circle, we averaged colours in a region around sampled point. We chose multiple points from the same circle because object's illumination is almost never uniform. \\
 	
-	In the figure below we have plotted colours from our training set in \texttt{RGB} and \texttt{HSV} colour space. As we can see, in the \texttt{RGB} colour space, the shades of the same colour lie on the same line. Similar thing happens in \texttt{HSV} color space, but the lines are vertical. Because the \texttt{HSV} colour space is conical, the red colour lies both on the far left and far right of our graph. This is not ideal for knn or linear support vector machines, so we predict that those will perform better on the \texttt{RGB} colour space. \\
-	
-	The \texttt{RGB} and \texttt{HSV} are not natural colour spaces for humans. If two colours are close in \texttt{RGB} space (using euclidean distance), that doesn't mean that human perceive them as similar. There are some colour spaces that are more suited for human perception, for example the \texttt{CIELAB} colour space, also called \texttt{LAB}. \\
+	In the figure below we have plotted colours from our first training set (circles) in \texttt{RGB}, \texttt{HSV} and \texttt{LAB} colour space. As we can see, in the \texttt{RGB} colour space, the shades of the same colour lie on the same line. Similar thing happens in \texttt{HSV} colour space, but the lines are vertical. Because the \texttt{HSV} colour space is conical, the red colour lies both on the far left and far right of our graph. This is not ideal for knn or linear support vector machines, so we predict that those will perform better on the \texttt{RGB} colour space. \\
 
-	\texttt{CIELAB} was designed so that the same amount of numerical change in these values corresponds to roughly the same amount of visually perceived change. The  \texttt{CIELAB} gamut includes both the gamuts of the \texttt{RGB} and \texttt{CYMK} color models. It expresses color as three values: $L^*$ for the lightness from black ($0$) to white ($100$), $a^*$ from green (−) to red ($+$), and $b^*$ from blue (−) to yellow ($+$). Because three parameters are measured, the space itself is a three-dimensional real number space, which allows for infinitely many possible colors. In practice, the space is usually mapped onto a three-dimensional integer space for digital representation, and thus the $L^*$, $a^*$, and $b^*$ values are usually absolute, with a pre-defined range. \\
-	
-	Since \texttt{LAB} is related to \texttt{RGB}, we can expect them to perform similarly.
-	
-	% ZAMENJAJ SLIKO KO DODAŠ ŠE BELO BARVO!
 	\begin{center}
 		\begin{figure}[H]
 			\begin{subfigure}{.5\linewidth}
 				\includegraphics[width=\linewidth]{images/rgb.png}
-				\caption{RGB color space}
+				\caption{RGB colour space}
 			\end{subfigure}
 			\begin{subfigure}{.5\linewidth}
 				\includegraphics[width=\linewidth]{images/hsv.png}
-				\caption{HSV color space}
+				\caption{HSV colour space}
+			\end{subfigure}
+			\begin{subfigure}{.5\linewidth}
+				\includegraphics[width=\linewidth]{images/lab.png}
+				\caption{CIELAB colour space}
 			\end{subfigure}
 		\end{figure}
 	\end{center}
 
-	\subsection{Colour distribution in training and testing set}
+	To see the difference more clearly, we plotted below the same distributions as above except we displayed their colour labels (which colour the point was labeled as) instead of their actual colour.
 
-	MANJKA kk so razporejene barve, kaj smo nardili za enakomernost oziroma zakaj se za njo nismo odločli - A BO TU AL ZGORI
-	% TODO: oštevilči vse opcije, ki smo jih sprobali
+	\begin{center}
+		\begin{figure}[H]
+			\begin{subfigure}{.5\linewidth}
+				\includegraphics[width=\linewidth]{images/rgb_labels.png}
+				\caption{RGB colour space}
+			\end{subfigure}
+			\begin{subfigure}{.5\linewidth}
+				\includegraphics[width=\linewidth]{images/hsv_labels.png}
+				\caption{HSV colour space}
+			\end{subfigure}
+			\begin{subfigure}{.5\linewidth}
+				\centering
+				\includegraphics[width=\linewidth]{images/lab_labels.png}
+				\caption{CIELAB colour space}
+			\end{subfigure}
+		\end{figure}
+	\end{center}
+	
+	The \texttt{RGB} and \texttt{HSV} are not natural colour spaces for humans. If two colours are close in \texttt{RGB} space (using euclidean distance), that doesn't mean that human perceive them as similar. There are some colour spaces that are more suited for human perception, for example the \texttt{CIELAB} colour space, also called \texttt{LAB}. \\
+
+	\texttt{CIELAB} was designed so that the same amount of numerical change in these values corresponds to roughly the same amount of visually perceived change. The  \texttt{CIELAB} gamut includes both the gamuts of the \texttt{RGB} and \texttt{CYMK} colour models. It expresses colour as three values: $L^*$ for the lightness from black ($0$) to white ($100$), $a^*$ from green (-) to red ($+$), and $b^*$ from blue (-) to yellow ($+$). Because three parameters are measured, the space itself is a three-dimensional real number space, which allows for infinitely many possible colours. In practice, the space is usually mapped onto a three-dimensional integer space for digital representation, and thus the $L^*$, $a^*$, and $b^*$ values are usually absolute, with a pre-defined range. \\
+	
+	Since \texttt{LAB} is related to \texttt{RGB}, we can expect them to perform similarly.
 
 	\section{Evaluating performance}
 
-	We then tested different classifiers using training data set. Results can be found in the table below. Accuracy is measured using our testing set and is calculated for all three coulour spaces \texttt{RGB}, \texttt{HSV} and \texttt{LAB} colour space.
-
-	% A so že pravi podatki tu?
+	We then tested different classifiers using training data set. Results can be found in the table below. Accuracy is measured using our testing set and is calculated for all three coulour spaces \texttt{RGB}, \texttt{HSV} and \texttt{LAB} colour space. When we trained our classifiers with points from circles, we tested with points from cylinders and vice versa. The best result for each classifier is displayed in \textbf{bold}.
 	
 	\begin{center}
-		\begin{tabular}{|c|c|c|c|}
-			\hline 
-			\textbf{Classifier} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} \\
+		\begin{tabular}{|c|c|c|c||c|c|c|}
 			\hline
-			knn, k = 1 & 0.88 & 0.52 & 0.94 \\ \hline
-			knn, k = 1, weights = distance & 0.88 & 0.52 & 0.94 \\ \hline
-			knn, k = 3 & 0.89 & 0.51 & 0.94 \\ \hline
-			knn, k = 3, weights = distance & 0.89 & 0.52 & 0.94 \\ \hline
-			knn, k = 5 & 0.89 & 0.53 & 0.94 \\ \hline
-			knn, k = 5, weights = distance & 0.89 & 0.52 & 0.94 \\ \hline
-			knn, k = 7 & 0.90 & 0.52 & 0.94 \\ \hline
-			knn, k = 7, weights = distance & 0.90 & 0.53 & 0.94 \\ \hline
-			decision tree, gini & 0.80 & 0.88 & 0.86 \\ \hline
-			decision tree, entropy & 0.82 & 0.87 & 0.85 \\ \hline
-			random forest, gini & 0.85 & 0.82 & 0.91 \\ \hline
-			random forest, entropy & 0.82 & 0.85 & 0.89 \\ \hline
-			naive bayes & 0.71 & 0.87 & 0.96 \\ \hline
-			support vector machine, kernel=linear, c=0.025 & 0.92 & 0.61 & 0.92 \\ \hline
-			support vector machine, kernel=rbf, c=0.025 & 0.26 & 0.42 & 0.27 \\ \hline
-			support vector machine, kernel=linear, c=0.05 & 0.92 & 0.62 & 0.93 \\ \hline
-			support vector machine, kernel=linear, c=0.1 & 0.92 & 0.50 & 0.93 \\ \hline
-			support vector machine, kernel=linear, c=0.2 & 0.92 & 0.57 & 0.93 \\ \hline
+			Training set & \multicolumn{3}{c||}{\textbf{Circles}} & \multicolumn{3}{c|}{\textbf{Cylinders}} \\
+			\hline
+			\hline 
+			\textbf{Classifier} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} \\
+			\hline
+			\textbf{knn}, \small k = 3 & 0.82 & 0.50 & 0.83 & 0.81 & 0.54 & \textbf{0.87} \\ \hline
+			\textbf{knn}, \small k = 5 & 0.82 & 0.49 & 0.84 & 0.81 & 0.54 & \textbf{0.87} \\ \hline
+			\textbf{knn}, \small k = 7 & 0.83 & 0.48 & 0.85 & 0.81 & 0.52 & \textbf{0.87} \\ \hline
+			\hline
+			\textbf{decision tree}, \small gini & 0.73 & 0.76 & 0.76 & 0.75 & 0.84 & \textbf{0.87} \\ \hline
+			\textbf{decision tree}, \small entropy & 0.76 & 0.78 & 0.78 & 0.74 & 0.83 & \textbf{0.88} \\ \hline
+			\hline
+			\textbf{random forest}, \small gini & 0.78 & 0.78 & 0.81 & 0.75 & 0.78 & \textbf{0.89} \\ \hline
+			\textbf{random forest}, \small entropy & 0.78 & 0.76 & 0.80 & 0.78 & 0.70 & \textbf{0.90} \\ \hline
+			\hline
+			\textbf{naive bayes} & 0.75 & \textbf{0.92} & 0.91 & 0.72 & 0.70 & 0.84 \\ \hline
+			\hline
+			\textbf{svm}, \small kernel=linear, c=0.025 & 0.85 & 0.72 & 0.86 & 0.89 & 0.60 & \textbf{0.90} \\ \hline
+			\textbf{svm}, \small kernel=rbf, c=0.025 & 0.17 & \textbf{0.37} & 0.19 & 0.17 & 0.36 & 0.26 \\ \hline
+			\textbf{svm}, \small kernel=linear, c=0.05 & 0.85 & 0.73 & 0.87 & 0.88 & 0.64 & \textbf{0.90} \\ \hline
+			\textbf{svm}, \small kernel=linear, c=0.1 & 0.85 & 0.73 & 0.87 & 0.89 & 0.65 & \textbf{0.90} \\ \hline
+			\textbf{svm}, \small kernel=linear, c=0.2 & 0.84 & 0.72 & 0.87 & 0.89 & 0.67 & \textbf{0.90} \\ \hline
 		\end{tabular} \\
 	\end{center}
 
-	As we have predicted, the accuracy in \texttt{HSV} color space is lower than that in the \texttt{RGB} space. As expected, \texttt{RGB} and \texttt{LAB} perform similarly, but the \texttt{LAB} performs slightly better. \\
+	% za k smo probali tudi utežene verzije ampak ker ni blo razlike, niso prikazani v tabeli.
+	We also tried all knn versions from the table with added weights (distance). Since there was no noticable difference, we ommited it for better transparency of the results. \\
+
+	As we have predicted, in general the accuracy in \texttt{HSV} colour space is lower than that in the \texttt{RGB} space. As expected, \texttt{RGB} and \texttt{LAB} perform similarly, but the \texttt{LAB} performs slightly better. \\
 	
 	% MANJKA IZBOR NAJBOLJŠEGA KLASIFIKATORJA
 	
@@ -194,6 +225,8 @@
 	
 	% OPOMBA GLEDE TEGA, DA JE POTREBNO IZ OBROČKA DOBITI PRAVO BARVO.
 	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases.
+
+	% uporabili bomo več zaporednih framov, zato ne potrebujemo 100% natančnosti
 	
 	
 \end{document}
