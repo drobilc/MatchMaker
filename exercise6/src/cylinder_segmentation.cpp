@@ -50,8 +50,49 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud) {
   pub_torus.publish(outcloud_torus);
 }
 
-void remove_all_planes() {
+void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered2, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2) {
+  // Objects needed
+  pcl::ExtractIndices<PointT> extract;
+  pcl::ExtractIndices<pcl::Normal> extract_normals;
+  pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
 
+  // Datasets
+  pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
+
+  seg.setOptimizeCoefficients(true);
+  seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+  seg.setNormalDistanceWeight(0.1);
+  seg.setMethodType(pcl::SAC_RANSAC);
+  seg.setMaxIterations(100);
+  seg.setDistanceThreshold(0.03);
+  seg.setInputCloud(cloud_filtered);
+  seg.setInputNormals(cloud_normals);
+  // Obtain the plane inliers and coefficients
+  seg.segment(*inliers_plane, *coefficients_plane);
+  std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
+
+  // Extract the planar inliers from the input cloud
+  extract.setInputCloud(cloud_filtered);
+  extract.setIndices(inliers_plane);
+  extract.setNegative(false);
+  
+  // Write the planar inliers to disk
+  pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
+  extract.filter(*cloud_plane);
+  std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+
+  pcl::PCLPointCloud2 outcloud_plane;
+  pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
+  pubx.publish(outcloud_plane);
+
+  // Remove the planar inliers, extract the rest
+  extract.setNegative(true);
+  extract.filter(*cloud_filtered2);
+  extract_normals.setNegative(true);
+  extract_normals.setInputCloud(cloud_normals);
+  extract_normals.setIndices(inliers_plane);
+  extract_normals.filter(*cloud_normals2);
 }
 
 void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
@@ -66,7 +107,6 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
   pcl::PCDWriter writer;
   pcl::ExtractIndices<PointT> extract;
-  pcl::ExtractIndices<pcl::Normal> extract_normals;
   pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
   Eigen::Vector4f centroid;
 
@@ -76,8 +116,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
   pcl::PointCloud<PointT>::Ptr cloud_filtered2(new pcl::PointCloud<PointT>);
   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2(new pcl::PointCloud<pcl::Normal>);
-  pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients), coefficients_cylinder(new pcl::ModelCoefficients);
-  pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices), inliers_cylinder(new pcl::PointIndices);
+  pcl::ModelCoefficients::Ptr coefficients_cylinder(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers_cylinder(new pcl::PointIndices);
 
   // Read in the cloud data
   pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
@@ -100,41 +140,42 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   find_rings(cloud_filtered);
 
   // TODO: remove all planes
+  remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
 
   // Create the segmentation object for the planar model and set all the parameters
-  seg.setOptimizeCoefficients(true);
-  seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-  seg.setNormalDistanceWeight(0.1);
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setMaxIterations(100);
-  seg.setDistanceThreshold(0.03);
-  seg.setInputCloud(cloud_filtered);
-  seg.setInputNormals(cloud_normals);
-  // Obtain the plane inliers and coefficients
-  seg.segment(*inliers_plane, *coefficients_plane);
-  std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
+  // seg.setOptimizeCoefficients(true);
+  // seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+  // seg.setNormalDistanceWeight(0.1);
+  // seg.setMethodType(pcl::SAC_RANSAC);
+  // seg.setMaxIterations(100);
+  // seg.setDistanceThreshold(0.03);
+  // seg.setInputCloud(cloud_filtered);
+  // seg.setInputNormals(cloud_normals);
+  // // Obtain the plane inliers and coefficients
+  // seg.segment(*inliers_plane, *coefficients_plane);
+  // std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
 
-  // Extract the planar inliers from the input cloud
-  extract.setInputCloud(cloud_filtered);
-  extract.setIndices(inliers_plane);
-  extract.setNegative(false);
+  // // Extract the planar inliers from the input cloud
+  // extract.setInputCloud(cloud_filtered);
+  // extract.setIndices(inliers_plane);
+  // extract.setNegative(false);
 
-  // Write the planar inliers to disk
-  pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
-  extract.filter(*cloud_plane);
-  std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+  // // Write the planar inliers to disk
+  // pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
+  // extract.filter(*cloud_plane);
+  // std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
 
-  pcl::PCLPointCloud2 outcloud_plane;
-  pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
-  pubx.publish(outcloud_plane);
+  // pcl::PCLPointCloud2 outcloud_plane;
+  // pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
+  // pubx.publish(outcloud_plane);
 
-  // Remove the planar inliers, extract the rest
-  extract.setNegative(true);
-  extract.filter(*cloud_filtered2);
-  extract_normals.setNegative(true);
-  extract_normals.setInputCloud(cloud_normals);
-  extract_normals.setIndices(inliers_plane);
-  extract_normals.filter(*cloud_normals2);
+  // // Remove the planar inliers, extract the rest
+  // extract.setNegative(true);
+  // extract.filter(*cloud_filtered2);
+  // extract_normals.setNegative(true);
+  // extract_normals.setInputCloud(cloud_normals);
+  // extract_normals.setIndices(inliers_plane);
+  // extract_normals.filter(*cloud_normals2);
 
   // Create the segmentation object for cylinder segmentation and set all the parameters
   seg.setOptimizeCoefficients(true);
