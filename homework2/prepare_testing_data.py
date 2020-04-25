@@ -32,6 +32,8 @@ def sample_colors(image, n=10, region_size=10):
 image_directories = glob.glob('images/test/*')
 print('Found {} folders with images'.format(len(image_directories)))
 
+data = []
+
 for directory in image_directories:
     directory_name = os.path.basename(directory)
 
@@ -45,11 +47,30 @@ for directory in image_directories:
         image = cv2.imread(image_path)
 
         # Sample n points from circle and get their colors
-        colors = sample_colors(image, n=20)
+        colors = sample_colors(image, n=50)
 
         for color in colors:
             color = numpy.around(color, decimals=2)
             # The image is in BGR format, convert it to rgb
-            output_file.write('{};{};{};{}\n'.format(color[2], color[1], color[0], directory_name))
+            # output_file.write('{};{};{};{}\n'.format(color[2], color[1], color[0], directory_name))
+            data.append([color[2], color[1], color[0], directory_name])
+
+# The results will be saved to output_file as r;g;b;class
+output_file = open('test.csv', 'w', encoding='utf-8')
+
+color_data = {}
+
+for element in data:
+    label = element[-1]
+    if label not in color_data:
+        color_data[label] = []
+    color_data[label].append((element[0], element[1], element[2]))
+
+minimal_number_of_colors = min([len(color_data[color_name]) for color_name in color_data])
+
+for color_name in color_data:
+    selected_colors = random.sample(color_data[color_name], k=minimal_number_of_colors)
+    for color in selected_colors:
+        output_file.write('{};{};{};{}\n'.format(color[0], color[1], color[2], color_name))
 
 output_file.close()
