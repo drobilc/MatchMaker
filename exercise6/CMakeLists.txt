@@ -75,4 +75,5 @@ add_executable (don_segmentation src/don_segmentation.cpp)
 add_executable (minicut_segmentation src/minicut_segmentation.cpp)
 add_executable (region_growing src/region_growing.cpp)
 add_executable (centroid_estimation src/centroid_estimation.cpp)
+add_executable (voxelgrid src/voxelgrid.cpp)
 

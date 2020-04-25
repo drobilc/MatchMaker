@@ -5,6 +5,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 ros::Publisher pub;
+double leaf_size_x, leaf_size_y, leaf_size_z;
 
 void callback(const pcl::PCLPointCloud2ConstPtr& cloud_blob) {
 
@@ -12,7 +13,7 @@ void callback(const pcl::PCLPointCloud2ConstPtr& cloud_blob) {
 
   pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
   sor.setInputCloud (cloud_blob);
-  sor.setLeafSize (0.1, 0.1, 0.1);
+  sor.setLeafSize (leaf_size_x, leaf_size_y, leaf_size_z);
   sor.filter (cloud_filtered);
 
   pub.publish(cloud_filtered);
@@ -21,6 +22,14 @@ void callback(const pcl::PCLPointCloud2ConstPtr& cloud_blob) {
 int main(int argc, char** argv) {
   ros::init (argc, argv, "voxelgrid");
   ros::NodeHandle nh;
+  // Get parameters from launch file
+  nh.getParam("/voxelgrid/leaf_size_x", leaf_size_x);
+  nh.getParam("/voxelgrid/leaf_size_y", leaf_size_y);
+  nh.getParam("/voxelgrid/leaf_size_z", leaf_size_z);
+
+  std::cerr << "Leaf size: x = " << leaf_size_x << ", y = " << leaf_size_y << ", z = " << leaf_size_z << std::endl;
+
+  // Publisher and subscriber
   ros::Subscriber sub = nh.subscribe ("input", 1, callback);
   pub = nh.advertise<pcl::PCLPointCloud2>("output", 1);
   ros::spin ();

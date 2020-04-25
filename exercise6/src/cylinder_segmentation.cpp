@@ -27,6 +27,33 @@ tf2_ros::Buffer tf2_buffer;
 
 typedef pcl::PointXYZ PointT;
 
+// Parameters for cylinder segmentation
+double cylinder_normal_distance_weight;
+double cylinder_max_iterations;
+double cylinder_distance_threshold;
+double cylinder_radius_max;
+double cylinder_radius_min;
+
+void find_rings(pcl::PointCloud<PointT>::Ptr &cloud) {
+  pcl::PassThrough<PointT> pass;
+
+  // Build a passthrough filter to leave only the toruses, publish to ros topic
+  std::cerr << "\nStart filtering cloud for toruses" << std::endl;
+  pcl::PointCloud<PointT>::Ptr cloud_filtered_torus(new pcl::PointCloud<PointT>);
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("y");
+  pass.setFilterLimits(-0.5, -0.3);
+  pass.filter(*cloud_filtered_torus);
+  std::cerr << "PointCloud for toruses has: " << cloud_filtered_torus->points.size() << " data points." << std::endl;
+  pcl::PCLPointCloud2 outcloud_torus;
+  pcl::toPCLPointCloud2(*cloud_filtered_torus, outcloud_torus);
+  pub_torus.publish(outcloud_torus);
+}
+
+void remove_all_planes() {
+
+}
+
 void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 {
   // All the objects needed
@@ -63,17 +90,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   pass.filter(*cloud_filtered);
   std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
-  // Build a passthrough filter to leave only the toruses, publish to ros topic
-  std::cerr << "\nStart filtering cloud for toruses" << std::endl;
-  pcl::PointCloud<PointT>::Ptr cloud_filtered_torus(new pcl::PointCloud<PointT>);
-  pass.setInputCloud(cloud_filtered);
-  pass.setFilterFieldName("y");
-  pass.setFilterLimits(-0.5, -0.3);
-  pass.filter(*cloud_filtered_torus);
-  std::cerr << "PointCloud for toruses has: " << cloud_filtered_torus->points.size() << " data points." << std::endl;
-  pcl::PCLPointCloud2 outcloud_torus;
-  pcl::toPCLPointCloud2(*cloud_filtered_torus, outcloud_torus);
-  pub_torus.publish(outcloud_torus);
+  // Find rings
+  find_rings(cloud_filtered);
 
   // Estimate point normals
   ne.setSearchMethod(tree);
@@ -120,10 +138,10 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   seg.setOptimizeCoefficients(true);
   seg.setModelType(pcl::SACMODEL_CYLINDER);
   seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setNormalDistanceWeight(0.1);
-  seg.setMaxIterations(10000);
-  seg.setDistanceThreshold(0.05);
-  seg.setRadiusLimits(0.06, 0.2);
+  seg.setNormalDistanceWeight(cylinder_normal_distance_weight);
+  seg.setMaxIterations(cylinder_max_iterations);
+  seg.setDistanceThreshold(cylinder_distance_threshold);
+  seg.setRadiusLimits(cylinder_radius_min, cylinder_radius_max);
   seg.setInputCloud(cloud_filtered2);
   seg.setInputNormals(cloud_normals2);
 
@@ -205,8 +223,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     marker.scale.y = 0.1;
     marker.scale.z = 0.1;
 
-    marker.color.r = 0.0f;
-    marker.color.g = 1.0f;
+    marker.color.r = 0.7f;
+    marker.color.g = 0.3f;
     marker.color.b = 0.0f;
     marker.color.a = 1.0f;
 
@@ -220,11 +238,23 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   }
 }
 
+void get_parameters(ros::NodeHandle nh) {
+  // Get parameters for cylinder segmentation from the launch file
+  nh.getParam("/cylinder_segmentation/normal_distance_weight", cylinder_normal_distance_weight);
+  nh.getParam("/cylinder_segmentation/max_iterations", cylinder_max_iterations);
+  nh.getParam("/cylinder_segmentation/distance_threshold", cylinder_distance_threshold);
+  nh.getParam("/cylinder_segmentation/radius_max", cylinder_radius_max);
+  nh.getParam("/cylinder_segmentation/radius_min", cylinder_radius_min);
+}
+
 int main(int argc, char **argv)
 {
   // Initialize ROS
   ros::init(argc, argv, "cylinder_segment");
   ros::NodeHandle nh;
+
+  // Get needed parameters
+  get_parameters(nh);
 
   // For transforming between coordinate frames
   tf2_ros::TransformListener tf2_listener(tf2_buffer);
