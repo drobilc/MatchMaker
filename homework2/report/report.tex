@@ -213,20 +213,17 @@
 	We also tried all knn versions from the table with added weights (distance). Since there was no noticable difference, we ommited it for better transparency of the results. \\
 
 	As we have predicted, in general the accuracy in \texttt{HSV} colour space is lower than that in the \texttt{RGB} space. As expected, \texttt{RGB} and \texttt{LAB} perform similarly, but the \texttt{LAB} performs slightly better. \\
-	
-	% MANJKA IZBOR NAJBOLJŠEGA KLASIFIKATORJA
-	
-	% ZA VSAK KLASIFIKATOR NAPIŠI OPOMBO ZAKAJ JE TAKO
 
+	We can see that in most cases the best results are with \texttt{LAB} colour space and in the second scenario, where we trained our classifier with colours from cylinders and tested it with colours from the circles. Interestingly, the highest score of all classifiers is naive bayes on \texttt{HSV} colour space. \\
+
+	Overall, the best performing classifier is support vector machine, which is not suprising as our data consists of vectors.
 	
 	\section{Conclusion}
 
-	MANJKA kaj bomo uporabli na robotku, povzetek vsega, ovire (kot navedeno spodaj - dodaj osvetlitev)
+	Based on the obtained results, we have two candidates to use with our robot. The first one is the one with the best score - naive bayes with \texttt{HSV}. The second one is support vector machine with linear kernel as it has consistently the highest results for \texttt{RGB} and \texttt{LAB}. We will try both in practice and decide based on the performance. \\
 	
-	% OPOMBA GLEDE TEGA, DA JE POTREBNO IZ OBROČKA DOBITI PRAVO BARVO.
-	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases.
+	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases. \\
 
+	Another approach which can robustify the classification is to take into accounts several frames that contain the object of interest, not just the current one. This also allows us to have a classifier that does not have a 100\% success rate.
 	% uporabili bomo več zaporednih framov, zato ne potrebujemo 100% natančnosti
-	
-	
 \end{document}
