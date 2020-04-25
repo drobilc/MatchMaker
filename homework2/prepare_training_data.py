@@ -41,6 +41,27 @@ def find_color_circle(image):
     # Get only the closest circle and return it
     return circles[0]
 
+def sample_white_colors(image, circle, n=10, region_size=10):
+    average_colors = []
+
+    height, width, channels = image.shape
+
+    # Pick n colors randomly OUTSIDE the circle
+    while len(average_colors) < n:
+        # Randomly pick a point inside the full image
+        x = random.random() * (width - 2 * region_size) + region_size
+        y = random.random() * (height - 2 * region_size) + region_size
+
+        circle_radius = circle[2] * 1.1
+        if ((circle[0] - x) ** 2 + (circle[1] - y) ** 2 <= circle_radius ** 2):
+            continue
+
+        region = image[int(y)-region_size:int(y)+region_size,int(x)-region_size:int(x)+region_size]
+        average_color = numpy.average(numpy.average(region, axis=0), axis=0)
+        average_colors.append(average_color)
+
+    return average_colors
+
 def sample_colors(image, circle, n=10, region_size=10):
     # Now that we have selected a circle, sample random points from it
     average_colors = []
@@ -89,12 +110,17 @@ for directory in image_directories:
             
             # Sample n points from circle and get their colors
             colors = sample_colors(image, circle, n=20)
+            white_colors = sample_white_colors(image, circle, n=5)
 
             for color in colors:
                 color = numpy.around(color, decimals=2)
                 # The image is in BGR format, convert it to rgb
                 output_file.write('{};{};{};{}\n'.format(color[2], color[1], color[0], directory_name))
             
+            for white in white_colors:
+                color = numpy.around(white, decimals=2)
+                output_file.write('{};{};{};{}\n'.format(color[2], color[1], color[0], 'white'))
+
             # Display the image
             # cv2.circle(image, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
             # cv2.imshow('Image', image)

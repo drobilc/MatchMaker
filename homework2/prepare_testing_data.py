@@ -18,7 +18,7 @@ def sample_colors(image, n=10, region_size=10):
 
     for i in range(n):
         x = random.random() * (width - 2 * region_size) + region_size
-        y = random.random() * (width - 2 * region_size) + region_size
+        y = random.random() * (height - 2 * region_size) + region_size
 
         # For each point, calculate an average color around the center
         region = image[int(y)-region_size:int(y)+region_size,int(x)-region_size:int(x)+region_size]
