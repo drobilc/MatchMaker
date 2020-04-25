@@ -90,14 +90,16 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   pass.filter(*cloud_filtered);
   std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
-  // Find rings
-  find_rings(cloud_filtered);
-
   // Estimate point normals
   ne.setSearchMethod(tree);
   ne.setInputCloud(cloud_filtered);
   ne.setKSearch(50);
   ne.compute(*cloud_normals);
+
+  // Find rings
+  find_rings(cloud_filtered);
+
+  // TODO: remove all planes
 
   // Create the segmentation object for the planar model and set all the parameters
   seg.setOptimizeCoefficients(true);
