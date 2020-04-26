@@ -9,7 +9,7 @@ Panels:
         - /Global Map1/Planner1
         - /Local Map1/Planner1
         - /Local Map1/Trajectory Cloud1
-        - /PointCloud21
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 550
   - Class: rviz/Selection
@@ -437,9 +437,9 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 20.9500008
+          Max Intensity: 4.5999999
           Min Color: 0; 0; 0
-          Min Intensity: 0
+          Min Intensity: 0.600000024
           Name: Trajectory Cloud
           Position Transformer: XYZ
           Queue Size: 10
@@ -543,14 +543,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /detected_cylinder
-      Name: Cylinder Markers
-      Namespaces:
-        cylinder: true
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -575,25 +567,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.1567688
+      Distance: 3.67223692
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.06747079
-        Y: -0.0896275043
-        Z: 0.193957672
+        X: -0.564733565
+        Y: 0.615021527
+        Z: -0.312300086
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.580398679
+      Pitch: 0.690398812
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.27039778
+      Yaw: 0.280407369
     Saved: ~
 Window Geometry:
   Displays:

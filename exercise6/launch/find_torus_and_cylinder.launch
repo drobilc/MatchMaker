@@ -22,9 +22,9 @@
         <remap from="output" to="/exercise6/voxelgrid"/>
 
         <!-- Leaf size in meters -->
-        <param name="leaf_size_x" value="0.01"/>
-        <param name="leaf_size_y" value="0.01"/>
-        <param name="leaf_size_z" value="0.01"/>
+        <param name="leaf_size_x" value="0.01"/> <!-- 0.01 -->
+        <param name="leaf_size_y" value="0.01"/> <!-- 0.01 -->
+        <param name="leaf_size_z" value="0.01"/> <!-- 0.01 -->
 
     </node>
 
