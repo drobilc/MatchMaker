@@ -1,0 +1,6 @@
+<launch>
+
+  <node pkg="love_maker_2000" type="cylinder_robustifier.py" name="cylinder_robustifier" output="screen">
+  </node>
+
+</launch>
