@@ -85,6 +85,8 @@ class MovementController(object):
         self.move_to_goal(first_goal)
     
     def done(self, status, result):
+        rospy.sleep(1) # just to be sure it detects cylinders and toruses
+
         if self.current_goal is not None:
             priority, goal, is_face = self.current_goal
 
@@ -282,42 +284,14 @@ class Greeter(object):
 if __name__ == '__main__':
     # Initial goals for space exploration
     goals = [
-        # my_map
-        # (100, pose_from_point_on_map([0.204939, -1.357251, 0.002472])),
-        # (101, pose_from_point_on_map([0.921944, -0.779827, 0.002472])),
-        # (102, pose_from_point_on_map([1.579607, -0.200512, 0.002472])),
-        # (103, pose_from_point_on_map([1.829951, 0.612022, 0.002472])),
-        # (104, pose_from_point_on_map([1.162717, 1.044056, 0.002472])),
-        # (105, pose_from_point_on_map([0.462207, 0.501959, 0.002472])),
-        # (106, pose_from_point_on_map([-0.063535, 0.076191, 0.002472])),
-        # (107, pose_from_point_on_map([-0.757831, -0.17621, 0.002472])),
-        # (108, pose_from_point_on_map([-1.337893, 0.387238, 0.002472])),
-        # (109, pose_from_point_on_map([-0.17028, -0.889452, 0.002472]))
-        # my_map1
-        # (100, pose_from_point_on_map([2, 2, 0.002472]), False),
-        # (101, pose_from_point_on_map([3, 1.4, 0.002472]), False),
-        # (102, pose_from_point_on_map([4, 1.4, 0.002472]), False),
-        # (103, pose_from_point_on_map([4.5, 2, 0.002472]), False),
-        # (104, pose_from_point_on_map([4.2, 1.5, 0.002472]), False),
-        # (105, pose_from_point_on_map([4, 2.4, 0.002472]), False),
-        # (106, pose_from_point_on_map([3.5, 2.7, 0.002472]), False),
-        # (107, pose_from_point_on_map([3, 2.5, 0.002472]), False),
-        # (108, pose_from_point_on_map([2.1, 2.5, 0.002472]), False),
-        # (109, pose_from_point_on_map([2, 4, 0.002472]), False),
-        # (110, pose_from_point_on_map([2, 2.5, 0.002472]), False),
-        # (111, pose_from_point_on_map([2, 2.6, 0.002472]), False)
-        # my_map2
-        # (100, pose_from_point_on_map([2, 3.5, 0.002472]), False),
-        # (101, pose_from_point_on_map([4.5, 2, 0.002472]), False),
-        # (102, pose_from_point_on_map([2, 1, 0.002472]), False),
-
-        (100, pose_from_point_on_map([2.204, 0.745, 0.002472],  1.034), False), # 1.034
-        (101, pose_from_point_on_map([1.733, 3.113, 0.002472],  0.782), False), # 0.782
-        (103, pose_from_point_on_map([4.490, 2.087, 0.002472],  1.583), False), # 1.593 [0.000, 0.000, 0.715, 0.699]
-        (102, pose_from_point_on_map([2.506, 2.844, 0.002472], -0.979), False), # -0.979 [0.000, 0.000, -0.470, 0.883]
-        (104, pose_from_point_on_map([3.522, 1.612, 0.002472], -1.554), False), # -1.554 [0.000, 0.000, -0.701, 0.713]
-        (105, pose_from_point_on_map([2.588, 2.795, 0.002472],  2.339), False), # 2.673 [0.000, 0.000, 0.973, 0.232]
-        (106, pose_from_point_on_map([3.897, 2.407, 0.002472],  1.023), False), # 1.023 [0.000, 0.000, 0.489, 0.872]
+        (100, pose_from_point_on_map([-0.293, 0.384, 0.010],  -2.578), False),
+        (101, pose_from_point_on_map([-0.293, 0.384, 0.010],  2.918), False),
+        (103, pose_from_point_on_map([-0.631, 1.318, 0.010],  1.816), False),
+        (102, pose_from_point_on_map([0.043, 2.588, 0.010], 0.363), False),
+        (104, pose_from_point_on_map([1.336, 1.251, 0.010], -2.033), False),
+        (105, pose_from_point_on_map([1.336, 1.251, 0.010],  -1.189), False),
+        (106, pose_from_point_on_map([2.411, 0.635, 0.010],  1.586), False),
+        (107, pose_from_point_on_map([2.795, 0.134, 0.010], -0.962), False)
     ]
 
     controller = MovementController(goals)
