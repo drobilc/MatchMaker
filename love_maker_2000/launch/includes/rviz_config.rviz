@@ -9,7 +9,6 @@ Panels:
         - /Global Map1/Planner1
         - /Local Map1/Planner1
         - /Local Map1/Trajectory Cloud1
-        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 550
   - Class: rviz/Selection
@@ -437,9 +436,9 @@ Visualization Manager:
           Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 4.5999999
+          Max Intensity: 11.6000004
           Min Color: 0; 0; 0
-          Min Intensity: 0.600000024
+          Min Intensity: 3.5999999
           Name: Trajectory Cloud
           Position Transformer: XYZ
           Queue Size: 10
@@ -493,14 +492,6 @@ Visualization Manager:
       Topic: /move_base/NavfnROS/plan
       Unreliable: false
       Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /face_markers_raw
-      Name: MarkerArray
-      Namespaces:
-        "": true
-      Queue Size: 100
-      Value: true
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera/rgb/image_raw
@@ -543,6 +534,30 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /face_markers_raw
+      Name: Face Markers
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /cylinder_markers_rawwww
+      Name: Cylinder Markers
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /torus_markers_raw
+      Name: Torus Markers
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -567,25 +582,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.67223692
+      Distance: 8.5103693
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.564733565
-        Y: 0.615021527
-        Z: -0.312300086
+        X: -0.305227786
+        Y: 0.529037595
+        Z: -0.0304627344
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.690398812
+      Pitch: 0.530399203
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.280407369
+      Yaw: 6.26358938
     Saved: ~
 Window Geometry:
   Displays:
