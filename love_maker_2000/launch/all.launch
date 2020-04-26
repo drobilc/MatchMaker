@@ -51,6 +51,12 @@
     <node pkg="love_maker_2000" type="movement_controller.py" name="movement_controller" output="screen">
     </node>
 
+    <node pkg="love_maker_2000" type="cylinder_robustifier.py" name="cylinder_robustifier" output="screen">
+    </node>
+
+    <node pkg="love_maker_2000" type="torus_robustifier.py" name="torus_robustifier" output="screen">
+    </node>
+
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
     </node>
