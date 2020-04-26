@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Point.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/ModelCoefficients.h>
@@ -13,6 +14,7 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/voxel_grid.h>
 #include "pcl/point_cloud.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -22,6 +24,7 @@ ros::Publisher pubx;
 ros::Publisher puby;
 ros::Publisher pubm;
 ros::Publisher pub_torus;
+ros::Publisher pub_cylinder;
 
 tf2_ros::Buffer tf2_buffer;
 
@@ -50,16 +53,20 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud)
 {
   pcl::PassThrough<PointT> pass;
 
-  // Build a passthrough filter to leave only the toruses, publish to ros topic
+  // Build a passthrough filter to leave only points at height, where rings are
   std::cerr << "\nStart filtering cloud for toruses" << std::endl;
-  pcl::PointCloud<PointT>::Ptr cloud_filtered_torus(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("y");
   pass.setFilterLimits(-0.5, -0.3);
-  pass.filter(*cloud_filtered_torus);
-  std::cerr << "PointCloud for toruses has: " << cloud_filtered_torus->points.size() << " data points." << std::endl;
+  pass.filter(*cloud_filtered);
+  std::cerr << "PointCloud for toruses has: " << cloud_filtered->points.size() << " data points." << std::endl;
+
+  // Publish found faces
+
+  // Publish to topic
   pcl::PCLPointCloud2 outcloud_torus;
-  pcl::toPCLPointCloud2(*cloud_filtered_torus, outcloud_torus);
+  pcl::toPCLPointCloud2(*cloud_filtered, outcloud_torus);
   pub_torus.publish(outcloud_torus);
 }
 
@@ -209,6 +216,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     geometry_msgs::PointStamped point_camera;
     geometry_msgs::PointStamped point_map;
     visualization_msgs::Marker marker;
+    geometry_msgs::Point point_cylinder;
     geometry_msgs::TransformStamped tss;
 
     point_camera.header.frame_id = "camera_rgb_optical_frame";
@@ -276,6 +284,12 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
     puby.publish(outcloud_cylinder);
+
+    // Publish location of cylinder
+    point_cylinder.x = point_map.point.x;
+    point_cylinder.y = point_map.point.y;
+    point_cylinder.z = point_map.point.z;
+    pub_cylinder.publish(point_cylinder);
   }
 }
 
@@ -313,6 +327,8 @@ int main(int argc, char **argv)
   pub_torus = nh.advertise<pcl::PCLPointCloud2>("torus", 1);
 
   pubm = nh.advertise<visualization_msgs::Marker>("detected_cylinder", 1);
+
+  pub_cylinder = nh.advertise<geometry_msgs::Point>("detected_cylinder_point", 1);
 
   // Spin
   ros::spin();
