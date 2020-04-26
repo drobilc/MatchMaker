@@ -6,6 +6,8 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{float}
+\usepackage{multirow}
+\usepackage{rotating}
 
 \author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
 \title{Colour recognition}
@@ -148,6 +150,7 @@
 				\includegraphics[width=\linewidth]{images/lab.png}
 				\caption{CIELAB colour space}
 			\end{subfigure}
+			\caption{sampled colours, placed in different colour spaces}
 		\end{figure}
 	\end{center}
 
@@ -168,6 +171,7 @@
 				\includegraphics[width=\linewidth]{images/lab_labels.png}
 				\caption{CIELAB colour space}
 			\end{subfigure}
+			\caption{labels of sampled colours, placed in different colour spaces}
 		\end{figure}
 	\end{center}
 	
@@ -193,11 +197,11 @@
 			\textbf{knn}, \small k = 5 & 0.82 & 0.49 & 0.84 & 0.81 & 0.54 & \textbf{0.87} \\
 			\textbf{knn}, \small k = 7 & 0.83 & 0.48 & 0.85 & 0.81 & 0.52 & \textbf{0.87} \\
 			\hline \hline
-			\textbf{decision tree}, \small gini & 0.73 & 0.76 & 0.76 & 0.75 & 0.84 & \textbf{0.87} \\
-			\textbf{decision tree}, \small entropy & 0.76 & 0.78 & 0.78 & 0.74 & 0.83 & \textbf{0.88} \\
+			\textbf{decision tree}, \small gini & 0.75 & 0.80 & 0.78 & 0.70 & 0.84 & \textbf{0.88} \\
+			\textbf{decision tree}, \small entropy & 0.76 & 0.74 & 0.78 & 0.74 & 0.83 & \textbf{0.88} \\
 			\hline \hline
-			\textbf{random forest}, \small gini & 0.78 & 0.78 & 0.81 & 0.75 & 0.78 & \textbf{0.89} \\
-			\textbf{random forest}, \small entropy & 0.78 & 0.76 & 0.80 & 0.78 & 0.70 & \textbf{0.90} \\
+			\textbf{random forest}, \small gini & 0.79 & 0.78 & 0.82 & 0.78 & 0.78 & \textbf{0.89} \\
+			\textbf{random forest}, \small entropy & 0.78 & 0.77 & 0.80 & 0.81 & 0.75 & \textbf{0.89} \\
 			\hline \hline
 			\textbf{naive bayes} & 0.75 & \textbf{0.92} & 0.91 & 0.72 & 0.70 & 0.84 \\
 			\hline \hline
@@ -225,11 +229,64 @@
 
 	We can see that in most cases the best results are with \texttt{LAB} colour space and in the second scenario, where we trained our classifier with colours from cylinders and tested it with colours from the circles. Interestingly, the highest score of all classifiers is naive bayes on \texttt{HSV} colour space. \\
 
-	Overall, the best performing classifier is support vector machine, which is not suprising as our data consists of vectors.
-	
+	%Overall, the best performing classifier is support vector machine, which is not suprising as our data consists of vectors.
+	Since naive bayes showed the best performance, we wanted to understand it's performance better, so we looked at the confusion matrices of the top 2 results. \\
+
+	\begin{center}
+		\begin{tabular}{|c c c c c c c c|}
+			\hline
+			\multicolumn{1}{|c}{} & \multicolumn{6}{c}{\multirow{2}{*}{\textbf{\large naive bayes on \texttt{HSV}}}} & \multicolumn{1}{c|}{}\\
+			\multicolumn{1}{|c}{} & & & & & & & \multicolumn{1}{c|}{}\\
+			\hline
+				& & \multicolumn{6}{|c|}{\textbf{predicted}} \\
+				\multicolumn{2}{|c|}{}& \begin{sideways}red\end{sideways} & \begin{sideways}green\end{sideways} & \begin{sideways}blue\end{sideways} & \begin{sideways}yellow \end{sideways} & \begin{sideways}black\end{sideways} & \begin{sideways}white\end{sideways} \\ \hline
+			\multirow{6}{*}{\begin{sideways}\textbf{actual}\end{sideways}}& \multicolumn{1}{c|}{red} &250 & 0 & 0 & 0 & 0 & 0 \\
+			&\multicolumn{1}{c|}{green} & 31 & 209 & 3 & 0 & 5 & 2 \\
+			&\multicolumn{1}{c|}{blue} & 10 & 0 & 240 & 0 & 0 & 0 \\
+			&\multicolumn{1}{c|}{yellow} & 0 & 2 & 0 & 248 & 0 & 0 \\
+			&\multicolumn{1}{c|}{black} & 0 & 0 & 0 & 0 & 198 & 52 \\
+			&\multicolumn{1}{c|}{white} & 0 & 0 & 0 & 0 & 13 & 237 \\ \hline
+		\end{tabular}
+	\end{center}
+
+	\begin{center}
+		\begin{tabular}{|c c c c c c c c|}
+			\hline
+			\multicolumn{1}{|c}{} & \multicolumn{6}{c}{\multirow{2}{*}{\textbf{\large naive bayes on \texttt{LAB}}}} & \multicolumn{1}{c|}{}\\
+			\multicolumn{1}{|c}{} & & & & & & & \multicolumn{1}{c|}{}\\
+			\hline
+				& & \multicolumn{6}{|c|}{\textbf{predicted}} \\
+				\multicolumn{2}{|c|}{}& \begin{sideways}red\end{sideways} & \begin{sideways}green\end{sideways} & \begin{sideways}blue\end{sideways} & \begin{sideways}yellow \end{sideways} & \begin{sideways}black\end{sideways} & \begin{sideways}white\end{sideways} \\ \hline
+			\multirow{6}{*}{\begin{sideways}\textbf{actual}\end{sideways}}& \multicolumn{1}{c|}{red} &250 & 0 & 0 & 0 & 0 & 0 \\
+			&\multicolumn{1}{c|}{green} & 0 & 250 & 0 & 0 & 0 & 0 \\
+			&\multicolumn{1}{c|}{blue} & 0 & 0 & 250 & 0 & 0 & 0 \\
+			&\multicolumn{1}{c|}{yellow} & 0 & 1 & 0 & 249 & 0 & 0 \\
+			&\multicolumn{1}{c|}{black} & 0 & 35 & 65 & 0 & 132 & 18 \\
+			&\multicolumn{1}{c|}{white} & 0 & 1 & 8 & 0 & 4 & 237 \\ \hline
+		\end{tabular}
+	\end{center}
+
+	Since these are multiclass confusion matrices, we read them a bit differently than the binary ones. This is explained in a picture below.
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=1\linewidth]{images/Confusion_matrix_explanation.png}
+		\caption{Multiclass confusion matrix, source: \small \textit{Activity, Context, and Plan Recognition with Computational Causal Behaviour Models - Scientific Figure on ResearchGate}}
+	\end{figure}
+
+	%https://www.researchgate.net/figure/Confusion-matrix-for-multi-class-classification-The-confusion-matrix-of-a_fig7_314116591
+
+	We can see that on \texttt{HSV} colour space we have problems with confusing black and white, which happens beacuse white can appear as a dark grey sometimes. Some noticable confusion happens when classifier has to classify a green instance, which probably happens because one group of red instances lies really close to green ones in our graph of \texttt{HSV} colour space, see figure 5b. \\ 
+
+	\texttt{LAB} colour space has no problems identifying red, green, blue and yellow but performs particularly bad on identifying black instances. We can explain mistaking black instances for green and blue ones with the fact that some of the green and blue instances are of quite dark shade. Confusion of black and white instances can be explained the same way as in \texttt{HSV} colour space. Black and white are two extremes of the grayscale and it's hard to correctly split it in two parts. \\
+
 	\section{Conclusion}
 
-	Based on the obtained results, we have two candidates to use with our robot. The first one is the one with the best score - naive bayes with \texttt{HSV}. The second one is support vector machine with linear kernel as it has consistently the highest results for \texttt{RGB} and \texttt{LAB}. We will try both in practice and decide based on the performance. The classifier we will use with our robot will be trained on both sets of images - circles and cylinders. This will make the classifier better as it will have a bigger spectrum of colours to learn from.\\
+	Based on the obtained results, we have two candidates to use with our robot. The first one is the one with the best score - naive bayes with \texttt{HSV}. The second one is naive bayes with \texttt{LAB}. \\ 
+	
+	Decision is though since naive bayes in combination with \texttt{LAB} colour space performs excellent for all except the black and white colours. In fact, \texttt{LAB} has a perfect score for identifying the first four colours. We expect those two colours to appear mainly in the environment and not as much in our objects of interest, rings and cylinders. With that assumption, the latter is definitely a better choice. \\
+
+	The classifier we will use with our robot will be trained on both sets of images - circles and cylinders. This will make the classifier better as it will have a bigger spectrum of colours to learn from.\\
 	
 	As we can see from the table above, this type of classification works well. The only problem is that we have to choose points on our object, which can sometimes be problematic. But if we sample multiple points, the probability that our classification will be correct increases. \\
 
