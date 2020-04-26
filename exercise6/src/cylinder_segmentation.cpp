@@ -33,8 +33,21 @@ double cylinder_max_iterations;
 double cylinder_distance_threshold;
 double cylinder_radius_max;
 double cylinder_radius_min;
+int cylinder_points_threshold;
 
-void find_rings(pcl::PointCloud<PointT>::Ptr &cloud) {
+// Parameters for planar segmentation
+double plane_points_threshold;
+
+/**
+ * Find rings in the given pint cloud.
+ * 
+ * First it filters out everything that is below or above the rings, what is left must be a ring
+ * beacuse there is nothing else at that height.
+ * 
+ * @param cloud Input point cloud.
+ */
+void find_rings(pcl::PointCloud<PointT>::Ptr &cloud)
+{
   pcl::PassThrough<PointT> pass;
 
   // Build a passthrough filter to leave only the toruses, publish to ros topic
@@ -50,7 +63,19 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud) {
   pub_torus.publish(outcloud_torus);
 }
 
-void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered2, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2) {
+/**
+ * Remove all planes from the point cloud.
+ * 
+ * In find_torus_and_cylinder you can specifiy a threshold. All detected planes
+ * that have more points than the threshold will be removed.
+ * 
+ * @param cloud_filtered Input point cloud.
+ * @param cloud_normals Input point cloud normals.
+ * @param cloud_filtered2 Output point cloud, all planes that have more points than the threshold have been removed from it.
+ * @param cloud_normals2 Output normals of the cloud_filtered2 point cloud.
+ */
+void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered2, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2)
+{
   // Objects needed
   pcl::ExtractIndices<PointT> extract;
   pcl::ExtractIndices<pcl::Normal> extract_normals;
@@ -60,39 +85,47 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
   pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
 
-  seg.setOptimizeCoefficients(true);
-  seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-  seg.setNormalDistanceWeight(0.1);
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setMaxIterations(100);
-  seg.setDistanceThreshold(0.03);
-  seg.setInputCloud(cloud_filtered);
-  seg.setInputNormals(cloud_normals);
-  // Obtain the plane inliers and coefficients
-  seg.segment(*inliers_plane, *coefficients_plane);
-  std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
-
-  // Extract the planar inliers from the input cloud
-  extract.setInputCloud(cloud_filtered);
-  extract.setIndices(inliers_plane);
-  extract.setNegative(false);
-  
-  // Write the planar inliers to disk
+  // Contains cloud of points that form a plane
   pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
-  extract.filter(*cloud_plane);
-  std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
 
-  pcl::PCLPointCloud2 outcloud_plane;
-  pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
-  pubx.publish(outcloud_plane);
+  do
+  {
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+    seg.setNormalDistanceWeight(0.1);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setMaxIterations(100);
+    seg.setDistanceThreshold(0.03);
+    seg.setInputCloud(cloud_filtered);
+    seg.setInputNormals(cloud_normals);
+    // Obtain the plane inliers and coefficients
+    seg.segment(*inliers_plane, *coefficients_plane);
+    std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
 
-  // Remove the planar inliers, extract the rest
-  extract.setNegative(true);
-  extract.filter(*cloud_filtered2);
-  extract_normals.setNegative(true);
-  extract_normals.setInputCloud(cloud_normals);
-  extract_normals.setIndices(inliers_plane);
-  extract_normals.filter(*cloud_normals2);
+    // Extract the planar inliers from the input cloud
+    extract.setInputCloud(cloud_filtered);
+    extract.setIndices(inliers_plane);
+    extract.setNegative(false);
+
+    // Write the planar inliers to disk
+    extract.filter(*cloud_plane);
+    std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
+
+    pcl::PCLPointCloud2 outcloud_plane;
+    pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
+    pubx.publish(outcloud_plane);
+
+    // Remove the planar inliers, extract the rest
+    extract.setNegative(true);
+    extract.filter(*cloud_filtered2);
+    extract_normals.setNegative(true);
+    extract_normals.setInputCloud(cloud_normals);
+    extract_normals.setIndices(inliers_plane);
+    extract_normals.filter(*cloud_normals2);
+    cloud_filtered = cloud_filtered2;
+    cloud_normals = cloud_normals2;
+
+  } while (cloud_plane->points.size() >= plane_points_threshold);
 }
 
 void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
@@ -142,41 +175,6 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   // TODO: remove all planes
   remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
 
-  // Create the segmentation object for the planar model and set all the parameters
-  // seg.setOptimizeCoefficients(true);
-  // seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-  // seg.setNormalDistanceWeight(0.1);
-  // seg.setMethodType(pcl::SAC_RANSAC);
-  // seg.setMaxIterations(100);
-  // seg.setDistanceThreshold(0.03);
-  // seg.setInputCloud(cloud_filtered);
-  // seg.setInputNormals(cloud_normals);
-  // // Obtain the plane inliers and coefficients
-  // seg.segment(*inliers_plane, *coefficients_plane);
-  // std::cerr << "Plane coefficients: " << *coefficients_plane << std::endl;
-
-  // // Extract the planar inliers from the input cloud
-  // extract.setInputCloud(cloud_filtered);
-  // extract.setIndices(inliers_plane);
-  // extract.setNegative(false);
-
-  // // Write the planar inliers to disk
-  // pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
-  // extract.filter(*cloud_plane);
-  // std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size() << " data points." << std::endl;
-
-  // pcl::PCLPointCloud2 outcloud_plane;
-  // pcl::toPCLPointCloud2(*cloud_plane, outcloud_plane);
-  // pubx.publish(outcloud_plane);
-
-  // // Remove the planar inliers, extract the rest
-  // extract.setNegative(true);
-  // extract.filter(*cloud_filtered2);
-  // extract_normals.setNegative(true);
-  // extract_normals.setInputCloud(cloud_normals);
-  // extract_normals.setIndices(inliers_plane);
-  // extract_normals.filter(*cloud_normals2);
-
   // Create the segmentation object for cylinder segmentation and set all the parameters
   seg.setOptimizeCoefficients(true);
   seg.setModelType(pcl::SACMODEL_CYLINDER);
@@ -200,7 +198,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   extract.filter(*cloud_cylinder);
   if (cloud_cylinder->points.empty())
     std::cerr << "Can't find the cylindrical component." << std::endl;
-  else
+  else if (cloud_cylinder->points.size() >= cylinder_points_threshold)
   {
     std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size() << " data points." << std::endl;
 
@@ -281,13 +279,17 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   }
 }
 
-void get_parameters(ros::NodeHandle nh) {
+void get_parameters(ros::NodeHandle nh)
+{
   // Get parameters for cylinder segmentation from the launch file
   nh.getParam("/cylinder_segmentation/normal_distance_weight", cylinder_normal_distance_weight);
   nh.getParam("/cylinder_segmentation/max_iterations", cylinder_max_iterations);
   nh.getParam("/cylinder_segmentation/distance_threshold", cylinder_distance_threshold);
   nh.getParam("/cylinder_segmentation/radius_max", cylinder_radius_max);
   nh.getParam("/cylinder_segmentation/radius_min", cylinder_radius_min);
+  nh.getParam("/cylinder_segmentation/cylinder_points_threshold", cylinder_points_threshold);
+  // Get parameters for plane segmentation from the launch file
+  nh.getParam("/cylinder_segmentation/plane_points_threshold", plane_points_threshold);
 }
 
 int main(int argc, char **argv)
@@ -309,7 +311,6 @@ int main(int argc, char **argv)
   pubx = nh.advertise<pcl::PCLPointCloud2>("planes", 1);
   puby = nh.advertise<pcl::PCLPointCloud2>("cylinder", 1);
   pub_torus = nh.advertise<pcl::PCLPointCloud2>("torus", 1);
-
 
   pubm = nh.advertise<visualization_msgs::Marker>("detected_cylinder", 1);
 
