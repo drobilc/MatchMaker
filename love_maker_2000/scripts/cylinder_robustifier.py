@@ -55,10 +55,11 @@ class CylinderRobustifier(object):
         self.maximum_distance = 0.5
 
         # Minimum number of detections to consider cylinder a true positive
-        self.minimum_detections = 7
+        self.minimum_detections = 3
 
         # Read positions of detected cylinders from this topic
         self.raw_cylinder_subscriber = rospy.Subscriber('/cylinder_detections_raw', PoseStamped, self.on_cylinder_detected, 10)
+
         # After determining cylinder position, send a pose to movement_controller node
         self.cylinder_publisher = rospy.Publisher('/cylinder_detections', PoseStamped, queue_size=10)
 
