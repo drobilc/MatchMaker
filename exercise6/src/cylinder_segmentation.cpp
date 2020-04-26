@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <visualization_msgs/Marker.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/ModelCoefficients.h>
@@ -216,7 +216,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     geometry_msgs::PointStamped point_camera;
     geometry_msgs::PointStamped point_map;
     visualization_msgs::Marker marker;
-    geometry_msgs::Point point_cylinder;
+    geometry_msgs::PoseStamped pose_cylinder;
     geometry_msgs::TransformStamped tss;
 
     point_camera.header.frame_id = "camera_rgb_optical_frame";
@@ -286,10 +286,11 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     puby.publish(outcloud_cylinder);
 
     // Publish location of cylinder
-    point_cylinder.x = point_map.point.x;
-    point_cylinder.y = point_map.point.y;
-    point_cylinder.z = point_map.point.z;
-    pub_cylinder.publish(point_cylinder);
+    pose_cylinder.pose.position.x = point_map.point.x;
+    pose_cylinder.pose.position.y = point_map.point.y;
+    pose_cylinder.pose.position.z = point_map.point.z;
+    pose_cylinder.header.stamp = ros::Time::now();
+    pub_cylinder.publish(pose_cylinder);
   }
 }
 
@@ -328,7 +329,7 @@ int main(int argc, char **argv)
 
   pubm = nh.advertise<visualization_msgs::Marker>("detected_cylinder", 1);
 
-  pub_cylinder = nh.advertise<geometry_msgs::Point>("detected_cylinder_point", 1);
+  pub_cylinder = nh.advertise<geometry_msgs::PoseStamped>("detected_cylinder_pose", 1);
 
   // Spin
   ros::spin();
