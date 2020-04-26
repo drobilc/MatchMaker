@@ -22,8 +22,9 @@
 
 ros::Publisher pubx;
 ros::Publisher puby;
-ros::Publisher pub_torus;
+ros::Publisher pub_torus_cloud;
 ros::Publisher pub_cylinder;
+ros::Publisher pub_torus;
 
 tf2_ros::Buffer tf2_buffer;
 
@@ -61,12 +62,70 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud)
   pass.filter(*cloud_filtered);
   std::cerr << "PointCloud for toruses has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
-  // Publish found faces
-
-  // Publish to topic
+  // Publish the point cloud
   pcl::PCLPointCloud2 outcloud_torus;
   pcl::toPCLPointCloud2(*cloud_filtered, outcloud_torus);
-  pub_torus.publish(outcloud_torus);
+  pub_torus_cloud.publish(outcloud_torus);
+
+  float x, y, z;
+
+  if (cloud_filtered->points.size() > 0)
+  {
+    x = cloud_filtered->points[1].x;
+    y = cloud_filtered->points[1].y;
+    z = cloud_filtered->points[1].z;
+  }
+  else
+  {
+    return;
+  }
+
+  float alpha = 0.25;
+  for (int i = 0; i < cloud_filtered->points.size(); i++)
+  {
+    x = alpha * cloud_filtered->points[i].x + (1.0 - alpha) * x;
+    y = alpha * cloud_filtered->points[i].y + (1.0 - alpha) * y;
+    z = alpha * cloud_filtered->points[i].z + (1.0 - alpha) * z;
+  }
+
+  // Transform coordinates to map coordinate frame
+  geometry_msgs::PointStamped point_camera;
+  geometry_msgs::PointStamped point_map;
+  visualization_msgs::Marker marker;
+  geometry_msgs::PoseStamped pose_cylinder;
+  geometry_msgs::TransformStamped tss;
+
+  point_camera.header.frame_id = "camera_rgb_optical_frame";
+  point_camera.header.stamp = ros::Time::now();
+
+  point_map.header.frame_id = "map";
+  point_map.header.stamp = ros::Time::now();
+
+  point_camera.point.x = x;
+  point_camera.point.y = y;
+  point_camera.point.z = z;
+
+  try
+  {
+    tss = tf2_buffer.lookupTransform("map", "camera_rgb_optical_frame", ros::Time::now());
+    //tf2_buffer.transform(point_camera, point_map, "map", ros::Duration(2));
+  }
+  catch (tf2::TransformException &ex)
+  {
+    ROS_WARN("Transform warning: %s\n", ex.what());
+  }
+
+  //std::cerr << tss ;
+
+  tf2::doTransform(point_camera, point_map, tss);
+
+  // Publish location of torus
+  geometry_msgs::PoseStamped pose_torus;
+  pose_torus.pose.position.x = point_map.point.x;
+  pose_torus.pose.position.y = point_map.point.y;
+  pose_torus.pose.position.z = point_map.point.z;
+  pose_torus.header.stamp = ros::Time::now();
+  pub_torus.publish(pose_torus);
 }
 
 /**
@@ -325,9 +384,10 @@ int main(int argc, char **argv)
   // Create a ROS publisher for the output point cloud
   pubx = nh.advertise<pcl::PCLPointCloud2>("planes", 1);
   puby = nh.advertise<pcl::PCLPointCloud2>("cylinder", 1);
-  pub_torus = nh.advertise<pcl::PCLPointCloud2>("torus", 1);
+  pub_torus_cloud = nh.advertise<pcl::PCLPointCloud2>("torus", 1);
 
   pub_cylinder = nh.advertise<geometry_msgs::PoseStamped>("cylinder_detections_raw", 1);
+  pub_torus = nh.advertise<geometry_msgs::PoseStamped>("torus_detections_raw", 1);
 
   // Spin
   ros::spin();
