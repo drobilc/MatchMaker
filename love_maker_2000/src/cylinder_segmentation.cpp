@@ -104,6 +104,7 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud)
   point_camera.point.x = x;
   point_camera.point.y = y;
   point_camera.point.z = z;
+  
 
   try
   {
@@ -124,6 +125,7 @@ void find_rings(pcl::PointCloud<PointT>::Ptr &cloud)
   pose_torus.pose.position.x = point_map.point.x;
   pose_torus.pose.position.y = point_map.point.y;
   pose_torus.pose.position.z = point_map.point.z;
+  pose_torus.header.frame_id = point_map.header.frame_id;
   pose_torus.header.stamp = ros::Time::now();
   pub_torus.publish(pose_torus);
 }
@@ -348,6 +350,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     pose_cylinder.pose.position.x = point_map.point.x;
     pose_cylinder.pose.position.y = point_map.point.y;
     pose_cylinder.pose.position.z = point_map.point.z;
+    pose_cylinder.header.frame_id = point_map.header.frame_id;
     pose_cylinder.header.stamp = ros::Time::now();
     pub_cylinder.publish(pose_cylinder);
   }
