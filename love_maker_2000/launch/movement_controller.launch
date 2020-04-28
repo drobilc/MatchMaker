@@ -1,6 +1,6 @@
 <launch>
 
-  <node pkg="love_maker" type="movement_controller.py" name="movement_controller" output="screen">
+  <node pkg="love_maker_2000" type="movement_controller.py" name="movement_controller" output="screen">
   </node>
 
   <!-- We need to run the sound_play node in order to be able to synthesise text -->
