@@ -494,11 +494,19 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /face_markers_raw
-      Name: MarkerArray
+      Marker Topic: /face_markers
+      Name: Face approaching points
       Namespaces:
         "": true
-      Queue Size: 100
+      Queue Size: 1000
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /faces
+      Name: Face detections
+      Namespaces:
+        "": true
+      Queue Size: 1000
       Value: true
     - Class: rviz/Image
       Enabled: true

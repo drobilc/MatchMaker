@@ -7,6 +7,7 @@
     <include file="$(find love_maker)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
         <arg name="world_file"  value="$(find love_maker)/worlds/rins_task1.world"/>
+        <arg name="gui"  value="false"/>
         <!-- another world -->
         <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
     </include>
@@ -45,8 +46,7 @@
     <node pkg="love_maker" type="face_mapper.py" name="face_mapper" output="screen">
     </node>
 
-    <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
-    </node>
+    <include file="$(find love_maker)/launch/face_robustifier.launch"/>
 
     <node pkg="love_maker" type="movement_controller.py" name="movement_controller" output="screen">
     </node>
