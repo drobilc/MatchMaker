@@ -1,8 +1,8 @@
 # Love Maker
 Love maker is a precious space for development of the basis of the Match Maker, task1.
 
-Love maker will presumably made following the scheme below.
-![scheme](https://github.com/drobilc/rins_exercises/blob/master/love_maker/scheme.png "scheme")
+Love maker will presumably be made following the scheme below.
+![scheme](https://github.com/drobilc/rins_exercises/blob/master/love_maker_2000/new_scheme.png "scheme")
 
 #### Face detector
 Face detector reads the images from the camera, preprocesses them and runs face detection. It estimates the global position of each face and sends this data to Robustifier.
