@@ -46,16 +46,11 @@
     
     <include file="$(find love_maker)/launch/face_mapper.launch"/>
 
-    <node pkg="love_maker_2000" type="robustifier.py" name="robustifier" output="screen">
-    </node>
+    <include file="$(find love_maker)/launch/face_robustifier.launch"/>
+    <include file="$(find love_maker_2000)/launch/cylinder_robustifier.launch"/>
+    <include file="$(find love_maker_2000)/launch/torus_robustifier.launch"/>
 
     <node pkg="love_maker_2000" type="movement_controller.py" name="movement_controller" output="screen">
-    </node>
-
-    <node pkg="love_maker_2000" type="cylinder_robustifier.py" name="cylinder_robustifier" output="screen">
-    </node>
-
-    <node pkg="love_maker_2000" type="torus_robustifier.py" name="torus_robustifier" output="screen">
     </node>
 
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
