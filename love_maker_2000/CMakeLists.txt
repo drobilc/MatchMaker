@@ -10,11 +10,62 @@ find_package(catkin REQUIRED COMPONENTS
 	nav_msgs
 	std_msgs
 	geometry_msgs
+	dynamic_reconfigure
+	genmsg
+	nodelet
+	nodelet_topic_tools
+	pcl_conversions
+	pcl_msgs
+	pluginlib
+	rosbag
+	rosconsole
+	roslib
+	tf2_ros
+  	tf2_geometry_msgs
 )
 
 find_package( OpenCV REQUIRED )
 
-catkin_package()
+## Find system dependencies
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
+## find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+
+## Add include directories
+include_directories(
+	${Boost_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
+  ${Eigen_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+)
+
+## Add link directories
+link_directories(
+  ${Boost_LIBRARY_DIRS}
+  ##${Eigen_LIBRARY_DIRS}
+  ${PCL_LIBRARY_DIRS}
+  ${catkin_LIBRARY_DIRS}
+)
+
+link_libraries(${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+catkin_package(
+	LIBRARIES
+    pcl_ros_filters
+    pcl_ros_io
+    pcl_ros_tf
+  CATKIN_DEPENDS
+    dynamic_reconfigure
+    pcl_conversions
+    pcl_msgs
+    roscpp
+    sensor_msgs
+    std_msgs
+  DEPENDS
+    Boost
+    ##Eigen
+    PCL
+)
 
 #include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 #add_executable(map_goals src/map_goals.cpp)
@@ -22,3 +73,5 @@ catkin_package()
 
 #catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
+add_executable (cylinder_segmentation_new src/cylinder_segmentation.cpp)
+add_executable (voxelgrid_new src/voxelgrid.cpp)

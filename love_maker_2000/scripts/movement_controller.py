@@ -3,9 +3,6 @@ from __future__ import print_function
 
 import rospy
 import actionlib
-import sound_play
-from sound_play.msg import SoundRequest
-from sound_play.libsoundplay import SoundClient
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
@@ -22,6 +19,9 @@ from map_maker import MapMaker
 # To generate map markers, we can use util functions
 import utils
 
+# Greeter says whatever we tell it to say. Yes, even cursewords or sentences like "I'm stupid". He's basically a parrot.
+import greeter
+
 # Require python module for ordered heap
 import heapq
 
@@ -34,7 +34,10 @@ class MovementController(object):
 
     def __init__(self, goals):
         # Create a Greeter object that controls speech synthetisation
-        self.greeter = Greeter()
+        self.greeter = greeter.Greeter()
+        self.greetings = [
+            "Hello there!", "How are you doing?", "Oh, hi", "Good day", "Hello"
+        ]
 
         # Create a new simple action client that will connect to move_base topic
         # The action server will listen on /move_base/goal and will notify
@@ -111,7 +114,7 @@ class MovementController(object):
 
             # If the approaching point was reached succesfully, greet.
             if status == 3 and is_face:
-                self.greeter.greet()
+                self.greet()
                 self.number_of_detected_faces += 1
                 rospy.sleep(1)
                 #time.sleep(1)
@@ -162,6 +165,13 @@ class MovementController(object):
         # Pop the item with the smallest priority from goals and move there
         next_goal = heapq.heappop(self.goals)
         self.move_to_goal(next_goal)
+
+    def greet(self, greeting = None):
+        if greeting is None:
+            random_greeting = self.greetings[randint(0, len(self.greetings) - 1)]
+            self.greeter.say(random_greeting)
+        else:
+            self.greeter.say(self.greetings[greeting])
     
     def feedback(self, data):
         # This is called repeatedly and tells us the robot position,
@@ -276,31 +286,6 @@ def pose_from_point_on_map(point, angle_z_axis = None):
         pose.pose.orientation.w = 1
 
     return pose
-
-# Object that abstracts voice commands
-class Greeter(object):
-
-    greetings = [
-        "Hello there!", "How are you doing?", "Oh, hi", "Good day", "Hello"
-    ]
-
-    def __init__(self):
-        self.voice = 'voice_kal_diphone'
-        self.volume = 1.0
-        self.client = SoundClient()
-        rospy.loginfo("Greeter created!")
-    
-    def say(self, data):
-        # Send data to the client, client outputs the data with given voice and volume
-        rospy.loginfo("Send to sound_client: " + data)
-        self.client.say(data, self.voice, self.volume)
-    
-    def greet(self, greeting = None):
-        if greeting is None:
-            random_greeting = self.greetings[randint(0, len(self.greetings) - 1)]
-            self.say(random_greeting)
-        else:
-            self.say(self.greetings[greeting])
 
 
 if __name__ == '__main__':
