@@ -114,7 +114,7 @@ class MovementController(object):
 
             # If the approaching point was reached succesfully, greet.
             if status == 3 and is_face:
-                self.greeter.greet()
+                self.greet()
                 self.number_of_detected_faces += 1
                 rospy.sleep(1)
                 #time.sleep(1)
