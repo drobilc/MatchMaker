@@ -536,7 +536,15 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /face_markers_raw
+      Marker Topic: /face_markers
+      Name: Face approaching point markers
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /faces
       Name: Face Markers
       Namespaces:
         "": true
@@ -544,7 +552,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /cylinder_markers_rawwww
+      Marker Topic: /cylinder_markers
       Name: Cylinder Markers
       Namespaces:
         "": true
@@ -552,7 +560,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /torus_markers_raw
+      Marker Topic: /torus_markers
       Name: Torus Markers
       Namespaces:
         "": true
