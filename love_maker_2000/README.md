@@ -5,16 +5,25 @@ Love maker will presumably be made following the scheme below.
 ![scheme](https://github.com/drobilc/rins_exercises/blob/master/love_maker_2000/new_scheme.png "scheme")
 
 #### Face detector
-Face detector reads the images from the camera, preprocesses them and runs face detection. It estimates the global position of each face and sends this data to Robustifier.
+Face detector reads the images from the camera, preprocesses them and runs face detection. It estimates the global position of each face and sends this data to Face mapper.
+
+#### Face mapper
+
+
+#### Cylinder and ring detector
+This 2 in 1 node is responsible for detecting cylinders and rings. It gets information from the point cloud, does the magic and sends location to Robustifier.
 
 #### Robustifier
-Keeps the global locations of previously detected faces and determines whether the new detection sent by Face detector corresponds to any already discovered faces. If so, it may modify the position of the known face and then send the global coordinates to the MovementController. Otherwise it sends the coordinates that have been received form the Face detector.
+There are 3 instances of this node, one for each type of objects we are detecting. It keeps the global locations of previously detected objects and determines whether the new detection sent by appropriate detector corresponds to any already discovered object and has been detected enough times to call it a true positive. If so, it publishes a marker and sends the approaching point coordinates to the Movement controller.
 
-#### MovementController
-This is the node, responsible for movement. Based on information from the Robustifier it decides wheteher it is time to approach the face. If so, it approaches the face and calls the Greeter. Otherwise it continues it's travel to one of the predetermined locations for space exploration.
+#### Map maker
+Based on the map it receives, intelligently sets the points for space exploration and sends them to the Movement controller.
+
+#### Movement controller
+This is the node, responsible for movement. Based on information from the Robustifier it decides wheteher it is time to approach the object. If so, it approaches the face and calls the Greeter. Otherwise it continues it's travel to one of the predetermined locations for space exploration.
 
 #### Greeter
-Says hello to the face and tells the MovementController that is has done so.
+Says whatever the Movement controller tells it to.
 
 The components can be run separately using corresponding launch files or simultaneously using the `all.launch` launch file. If the `all.launch` file is launched, it also starts Gazebo simulator, amcl simulation and Rviz visualization tool.
 ```bash
