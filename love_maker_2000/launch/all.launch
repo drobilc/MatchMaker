@@ -38,14 +38,13 @@
     <!-- Launch the localizer service -->
     <include file="$(find localizer)/launch/localizer_node_simulation.launch"></include>
 
-    <node pkg="love_maker_2000" type="face_detector.py" name="face_detector" output="screen">
-        <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
-        <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker_2000)/scripts/detectors/data/haarcascade_face.xml" />
-        <param name="downscale_factor" type="int" value="$(arg downscale)"/>
-    </node>
-
-    <node pkg="love_maker_2000" type="face_mapper.py" name="face_mapper" output="screen">
-    </node>
+    <include file="$(find love_maker)/launch/face_detector.launch">
+        <arg name="display_camera_window" value="$(arg display_camera_window)" />
+        <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+        <arg name="downscale_factor" value="$(arg downscale)"/>
+    </include>
+    
+    <include file="$(find love_maker)/launch/face_mapper.launch"/>
 
     <node pkg="love_maker_2000" type="robustifier.py" name="robustifier" output="screen">
     </node>

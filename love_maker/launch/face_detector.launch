@@ -1,20 +1,21 @@
 <launch>
 
   <arg name="display_camera_window" default="false"/>
-  <arg name="downscale" default="2"/>
+  <arg name="downscale_factor" default="2"/>
+  <arg name="haar_cascade_data_file_path" default="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
 
   <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
 
     <!-- The path to the haarcascade_face.xml used in HaarDetector -->
-    <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+    <param name="haar_cascade_data_file_path" type="string" value="$(arg haar_cascade_data_file_path)" />
 
     <!--Determine the factor by which the image will shrink before processing.-->
     <!-- 1 = no change in size -->
     <!-- 2 = image will be half the original size -->
     <!-- 3 = image will be third the original size -->
     <!-- etc -->
-    <param name="downscale_factor" type="int" value="$(arg downscale)"/>
+    <param name="downscale_factor" type="int" value="$(arg downscale_factor)"/>
   </node>
 
 </launch>
