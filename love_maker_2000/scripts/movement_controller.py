@@ -9,7 +9,18 @@ from sound_play.libsoundplay import SoundClient
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
-from std_msgs.msg import String
+from std_msgs.msg import String, ColorRGBA
+
+from visualization_msgs.msg import MarkerArray
+
+# This is the object that is used to compute which points on map are worth
+# visiting. The real life analogy is a guidebook, but instead of good places to
+# find wine, this MapMaker returns points that cover the most of the map.
+# If the tour guide did the same the trip would not be short, much less fun.
+from map_maker import MapMaker
+
+# To generate map markers, we can use util functions
+import utils
 
 # Require python module for ordered heap
 import heapq
@@ -22,12 +33,8 @@ import time
 class MovementController(object):
 
     def __init__(self, goals):
-        # Initialize node, don't allow running multiple nodes of this type
-        rospy.init_node('movement_controller', anonymous=False)
-
         # Create a Greeter object that controls speech synthetisation
         self.greeter = Greeter()
-        self.greeter.say("I am very stupid!")
 
         # Create a new simple action client that will connect to move_base topic
         # The action server will listen on /move_base/goal and will notify
@@ -59,6 +66,8 @@ class MovementController(object):
         # Number of faces that have to be detected
         self.number_of_faces_in_the_world = 3
 
+        self.goals_publisher = rospy.Publisher('goals', MarkerArray, queue_size=1000)
+
         # The goals will be added to priority heap with decreasing priority. The
         # hardcoded goals should have a high priority, so that after new goal is
         # added, we first visit the goal and then the hardcoded location
@@ -78,14 +87,24 @@ class MovementController(object):
         if len(self.goals) <= 0:
             return
         
+        self.send_marker_goals()
+        
         self.greeter.say("Hello, my name is Dora the explorer and I am ready to begin my mission!")
         self.has_goals = True
         first_goal = heapq.heappop(self.goals)
         rospy.loginfo('Robot has started to move to its first goal: {}'.format(first_goal))
         self.move_to_goal(first_goal)
     
+    def send_marker_goals(self):
+        poses = [goal[1] for goal in self.goals]
+        goal_markers = utils.stamped_poses_to_marker_array(poses, color=ColorRGBA(1, 1, 0, 1))
+        print(goal_markers.markers)
+        self.goals_publisher.publish(goal_markers)
+
     def done(self, status, result):
         rospy.sleep(1) # just to be sure it detects cylinders and toruses
+
+        self.send_marker_goals()
 
         if self.current_goal is not None:
             priority, goal, is_face = self.current_goal
@@ -230,6 +249,7 @@ class MovementController(object):
         self.start()
     
     def on_face_detection(self, face_pose):
+        return
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
         self.current_goal_priority += 1
@@ -242,6 +262,8 @@ class MovementController(object):
 def pose_from_point_on_map(point, angle_z_axis = None):
     pose = PoseStamped()
     pose.pose = Pose()
+    pose.header.frame_id = 'map'
+    pose.header.stamp = rospy.Time.now()
     pose.pose.position.x = point[0]
     pose.pose.position.y = point[1]
     pose.pose.position.z = point[2]
@@ -282,18 +304,17 @@ class Greeter(object):
 
 
 if __name__ == '__main__':
-    # Initial goals for space exploration
-    goals = [
-        (100, pose_from_point_on_map([-0.293, 0.384, 0.010],  -2.578), False),
-        (101, pose_from_point_on_map([-0.293, 0.384, 0.010],  2.918), False),
-        (103, pose_from_point_on_map([-0.631, 1.318, 0.010],  1.816), False),
-        (102, pose_from_point_on_map([0.043, 2.588, 0.010], 0.363), False),
-        (104, pose_from_point_on_map([1.336, 1.251, 0.010], -2.033), False),
-        (105, pose_from_point_on_map([1.336, 1.251, 0.010],  -1.189), False),
-        (106, pose_from_point_on_map([2.411, 0.635, 0.010],  1.586), False),
-        (107, pose_from_point_on_map([2.795, 0.134, 0.010], -0.962), False)
-    ]
+    # Initialize node, don't allow running multiple nodes of this type
+    rospy.init_node('movement_controller', anonymous=False)
 
+    goals = []
+
+    map_maker = MapMaker()
+    points_to_visit = map_maker.generate_points()
+    print(points_to_visit)
+    for index, point in enumerate(points_to_visit):
+        goals.append((100 + index, pose_from_point_on_map([point[0], point[1], 0], -2.578), False))
+    
     controller = MovementController(goals)
     rospy.loginfo('Movement controller started')
     rospy.spin()
