@@ -9,6 +9,7 @@ Panels:
         - /Global Map1/Planner1
         - /Local Map1/Planner1
         - /Local Map1/Trajectory Cloud1
+        - /PointCloud21
       Splitter Ratio: 0.5
     Tree Height: 550
   - Class: rviz/Selection
@@ -529,7 +530,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.00999999978
       Style: Flat Squares
-      Topic: /cylinder
+      Topic: /point_cloud/cylinder
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -555,7 +556,7 @@ Visualization Manager:
       Marker Topic: /cylinder_markers
       Name: Cylinder Markers
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -563,7 +564,7 @@ Visualization Manager:
       Marker Topic: /torus_markers
       Name: Torus Markers
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -571,7 +572,7 @@ Visualization Manager:
       Marker Topic: /goals
       Name: MovementController Goals
       Namespaces:
-        "": true
+        {}
       Queue Size: 1000
       Value: true
   Enabled: true
