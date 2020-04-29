@@ -2,7 +2,7 @@
 Love maker is a precious space for development of the basis of the Match Maker, task1.
 
 ## TODO
-* detect colors (Add topic for images to cylinder_segmentation, create color detection service)
+* detect colors (Add topic for images to cylinder_and_ring_detector, create color detection service)
 * ~~implement new message type (see below)~~  **DONE**
 * change all messages to `ObjectDetection` (Cylinder and ring detector)
 * write new algorithm for setting exploration points
@@ -28,7 +28,7 @@ Publishes to: `detections`
 Gets position of the face from Face detector(`detections`) and calls Localizer service to get the global position of the face and an approaching point. It send them in `ObjectDetection` format to the Rbustifier(`/face_detections_raw`).
 
 Subscribed to: `detections`  
-Publishes to: `face_detections_raw`
+Publishes to: `face_detections_raw`  
 Calls service: Localizer
 
 ### Voxelgrid
@@ -43,7 +43,6 @@ This 2 in 1 node is responsible for detecting cylinders and rings. It gets infor
 Subscribed to: `/love_maker_2000/voxelgrid`, `/camera/rgb/image_raw` (needed for Color detector)  
 Publishes to: `cylinder_detections_raw`, `torus_detections_raw`  
 Calls service: Color detector, Ring approaching point calculator, Cylinder approaching point calculator
-Real name: cylinder_segmentation
 
 ### Color detector (service)
 Based on image it receives from Cylinder and ring detector returns the color of the cylinder or ring.

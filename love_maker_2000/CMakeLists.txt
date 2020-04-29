@@ -73,5 +73,5 @@ catkin_package(
 
 #catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-add_executable (cylinder_segmentation_new src/cylinder_segmentation.cpp)
+add_executable (cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp)
 add_executable (voxelgrid_new src/voxelgrid.cpp)
