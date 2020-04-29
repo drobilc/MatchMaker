@@ -26,7 +26,7 @@ import greeter
 import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf2_geometry_msgs
-import math, random, time
+import math, random, time, numpy
 
 class MovementController(object):
 
@@ -36,6 +36,8 @@ class MovementController(object):
         'torus': 2000,
         'map_point': 3000
     }
+
+    GOAL_EPSILON_DISTANCE = 0.3
 
     def __init__(self, goals):
         # Create a Greeter object that controls speech synthetisation
@@ -110,6 +112,18 @@ class MovementController(object):
         # O(n logn). This function will also not be called very frequently, so
         # this approach is probably ok.
         robot_pose = self.current_robot_position()
+        orientation = robot_pose.pose.orientation
+        orientation = (orientation.x, orientation.y, orientation.z, orientation.w)
+        robot_direction = euler_from_quaternion(orientation)
+
+        def euclidean_distance(goal):
+            dx = (goal.approaching_point_pose.position.x - robot_pose.pose.position.x)
+            dy = (goal.approaching_point_pose.position.y - robot_pose.pose.position.y)
+            return math.sqrt(dx * dx + dy * dy)
+
+        distances = map(euclidean_distance, self.goals)
+        max_distance = max(distances)
+        unsorted_data = zip(distances, self.goals)
 
         def metric(goal):
             # The metric computes distance between point and current robot
@@ -125,14 +139,15 @@ class MovementController(object):
             # behind it. Try to pick points that are in direction where robot is
             # currently looking.
             penalty = 0
-            if goal.type in MovementController.GOAL_ORDERING:
-                penalty = MovementController.GOAL_ORDERING[goal.type]
+            if goal[1].type in MovementController.GOAL_ORDERING:
+                penalty = MovementController.GOAL_ORDERING[goal[1].type]
             
-            dx = (goal.approaching_point_pose.position.x - robot_pose.pose.position.x)
-            dy = (goal.approaching_point_pose.position.y - robot_pose.pose.position.y)
-            return math.sqrt(dx * dx + dy * dy) + penalty
+            distance_pentalty = (goal[0] / max_distance) * 500
+
+            return penalty + distance_pentalty
         
-        self.goals = sorted(self.goals, key=metric)
+        sorted_data = sorted(unsorted_data, key=metric)
+        self.goals = [goal[1] for goal in sorted_data]
     
     def send_marker_goals(self):
         poses = []
@@ -287,9 +302,13 @@ class MovementController(object):
             # We are canceling current goal, so add current_goal to list of
             # goals to visit later
             
-            # TODO: If we are in epsilon proximity of
-            # current goal, don't add it back to list of goals
-            self.goals.append(self.current_goal)
+            robot_point = self.current_robot_position().pose.position
+            approaching_point = self.current_goal.approaching_point_pose.position
+            dx = (robot_point.x - approaching_point.x)
+            dy = (robot_point.y - approaching_point.y)
+            distance = dx * dx + dy * dy
+            if distance > MovementController.GOAL_EPSILON_DISTANCE:
+                self.goals.append(self.current_goal)
             
             # When calling self.start, the goals are reordered based on their
             # euclidean distance and goal type. It also cancels all previous
