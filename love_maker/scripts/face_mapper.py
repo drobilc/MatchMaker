@@ -1,37 +1,33 @@
 #!/usr/bin/env python
 import roslib
-roslib.load_manifest('localizer')
 import rospy
-import sys, select, termios, tty
-from std_msgs.msg import String, Bool, ColorRGBA
-import sensor_msgs.msg
-import message_filters
+roslib.load_manifest('localizer')
+
+import numpy, math
 import collections
-from geometry_msgs.msg import PoseStamped
-from detection_msgs.msg import Detection
-from localizer.srv import Localize
-from sensor_msgs.msg import CameraInfo
-from visualization_msgs.msg import Marker, MarkerArray
-from image_geometry import PinholeCameraModel
-from geometry_msgs.msg import Point, Vector3
-
-import math
-import numpy as np
-import numpy
-
-from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point, Quaternion
-from visualization_msgs.msg import MarkerArray, Marker
-from std_msgs.msg import ColorRGBA
-
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
-import tf2_ros
-from tf2_geometry_msgs import PointStamped
-
 import utils
-
-from nav_msgs.srv import GetMap
-from nav_msgs.msg import OccupancyGrid
 import cv2
+
+import message_filters
+
+from std_msgs.msg import Header, ColorRGBA
+from sensor_msgs.msg import CameraInfo
+from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point, Quaternion
+from nav_msgs.msg import OccupancyGrid
+
+# Custom message types
+from detection_msgs.msg import Detection
+from object_detection_msgs.msg import ObjectDetection
+
+# Services
+from localizer.srv import Localize
+from nav_msgs.srv import GetMap
+
+from image_geometry import PinholeCameraModel
+
+import tf2_ros
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from tf2_geometry_msgs import PointStamped
 
 class DetectionMapper():
 
@@ -64,10 +60,7 @@ class DetectionMapper():
 
         self.localize = rospy.ServiceProxy('localizer/localize', Localize)
 
-        self.approaching_point_publisher = rospy.Publisher('/face_detections_raw', PoseStamped, queue_size=100)
-
-        self.markers = MarkerArray()
-        self.markers_publisher = rospy.Publisher('/faces', MarkerArray, queue_size=1000)
+        self.object_detection_publisher = rospy.Publisher('/face_detections_raw', ObjectDetection, queue_size=100)
 
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
@@ -82,13 +75,20 @@ class DetectionMapper():
         # with the face - robot vector, so that lines that.
         
         # Get face position in map coordinate system
+        face_pose = PoseStamped()
+        face_pose.header.frame_id = detected_face_position.header.frame_id
+        face_pose.header.stamp = detected_face_position.header.stamp
+        face_pose.pose.position.x = detected_face_position.pose.position.x
+        face_pose.pose.position.y = detected_face_position.pose.position.y
+        face_pose.pose.position.z = detected_face_position.pose.position.z
+        face_pose = self.tf_buf.transform(face_pose, "map")
+
         face_point = PointStamped()
-        face_point.header.frame_id = detected_face_position.header.frame_id
-        face_point.header.stamp = detected_face_position.header.stamp
-        face_point.point.x = detected_face_position.pose.position.x
-        face_point.point.y = detected_face_position.pose.position.y
-        face_point.point.z = detected_face_position.pose.position.z
-        face_point = self.tf_buf.transform(face_point, "map")
+        face_point.header.frame_id = face_pose.header.frame_id
+        face_point.header.stamp = face_pose.header.stamp
+        face_point.point.x = face_pose.pose.position.x
+        face_point.point.y = face_pose.pose.position.y
+        face_point.point.z = face_pose.pose.position.z
 
         # Get the robot position in map coordinate system
         robot_point = PointStamped()
@@ -139,7 +139,7 @@ class DetectionMapper():
             for line in lines:
                 start = numpy.asarray([line[0][0], line[0][1]])
                 end = numpy.asarray([line[0][2], line[0][3]])
-                distance = abs(((end[1]-start[1])*x0 - (end[0]-start[0])*y0 + end[0]*start[1] - end[1]*start[0]) / np.linalg.norm(end - start))
+                distance = abs(((end[1]-start[1])*x0 - (end[0]-start[0])*y0 + end[0]*start[1] - end[1]*start[0]) / numpy.linalg.norm(end - start))
                 if distance < best_distance:
                     best_distance = distance
                     best_line = (start, end)
@@ -179,7 +179,7 @@ class DetectionMapper():
         approaching_pose.pose.position.z = 0
         approaching_pose.pose.orientation = orientation_quaternion
 
-        return approaching_pose
+        return face_pose, approaching_pose
 
     def camera_callback(self, camera_info):
         self.camera_infos.append(camera_info)
@@ -216,17 +216,30 @@ class DetectionMapper():
         pose.header.frame_id = detection.header.frame_id
         pose.pose = localization.pose
 
-        face_marker = utils.stamped_pose_to_marker(pose, index=len(self.markers.markers), color=ColorRGBA(1, 0, 1, 1))
-        self.markers.markers.append(face_marker)
-        self.markers_publisher.publish(self.markers)
-
         # Compute where the approaching point for this face is. Then send this
         # data to robustifier.
         try:
-            approaching_point = self.compute_approaching_point(pose)
-            self.approaching_point_publisher.publish(approaching_point)
+            detection_point, approaching_point = self.compute_approaching_point(pose)
+                
+            message_header = Header()
+            message_header.stamp = detection_point.header.stamp
+            message_header.frame_id = detection_point.header.frame_id
+
+            object_pose = detection_point.pose
+            approaching_point_pose = approaching_point.pose
+            color = ColorRGBA(0, 0.5, 1, 1)
+            object_type = 'face'
+
+            object_detection_message = ObjectDetection()
+            object_detection_message.header = message_header
+            object_detection_message.object_pose = object_pose
+            object_detection_message.approaching_point_pose = approaching_point_pose
+            object_detection_message.color = color
+            object_detection_message.type = object_type
+            
+            self.object_detection_publisher.publish(object_detection_message)
         except Exception as e:
-            rospy.logerr(e)
+            rospy.logwarn(e)
    
 if __name__ == '__main__':
     mapper = DetectionMapper()
