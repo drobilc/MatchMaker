@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String, ColorRGBA
+from object_detection_msgs.msg import ObjectDetection
 
 from visualization_msgs.msg import MarkerArray
 
@@ -44,10 +45,10 @@ class MovementController(object):
         # us about status and provide feedback at /move_base/status
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
-        rospy.loginfo('Connected to movement server')        
+        rospy.loginfo('Connected to movement server')
 
         # The robustifier node publishes faces to /face_detections
-        self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
+        self.face_subscriber = rospy.Subscriber('/face_detections', ObjectDetection, self.on_face_detection, queue_size=10)
         
         # TODO: If we want the heap to be sorted on euclidian distance to the goal,
         # the priority parameter should be changed to distance. heapq always sorts by the first element in touple.
@@ -258,8 +259,12 @@ class MovementController(object):
         # After turtlebot has localized itself, start moving to goals in the self.faces heap
         self.start()
     
-    def on_face_detection(self, face_pose):
-        return
+    def on_face_detection(self, face_detection):
+        # Construct a new pose stamped from detected object approaching point
+        face_pose = PoseStamped()
+        face_pose.header = face_detection.header
+        face_pose.pose = face_detection.approaching_point_pose
+
         # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
         # Add received pose to the heap with priority 1
         self.current_goal_priority += 1
