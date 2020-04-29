@@ -1,0 +1,5 @@
+std_msgs/Header header
+geometry_msgs/Pose object_pose
+geometry_msgs/Pose approaching_point_pose
+std_msgs/ColorRGBA color
+string type
