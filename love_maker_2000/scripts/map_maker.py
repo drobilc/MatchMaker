@@ -9,7 +9,7 @@ import cv2
 import random
 
 def get_field(point, map_data):
-    robot_view_radius = 20 # 25 * 0.05 m = 1.25 m
+    robot_view_radius = 25 # 25 * 0.05 m = 1.25 m
     number_of_rays = 18
 
     intersections = []

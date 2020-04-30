@@ -6,6 +6,7 @@ import math
 from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point, Quaternion
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
+from object_detection_msgs.msg import ObjectDetection
 
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf2_ros
@@ -17,9 +18,8 @@ import utils
 
 class Detection(object):
     
-    def __init__(self, pose, number_of_detections = 0):
-        self.pose = pose.pose
-        self.stamped_pose = pose
+    def __init__(self, detection, number_of_detections = 0):
+        self.detection = detection
         self.number_of_detections = number_of_detections
         self.already_sent = False
 
@@ -28,23 +28,42 @@ class Detection(object):
         # How much the received position changes the current position
         self.blending = 0.5
     
-    def update(self, other_pose):
-        other_pose = other_pose.pose
+    def get_object_pose(self):
+        pose = PoseStamped()
+        pose.header.frame_id = self.detection.header.frame_id
+        pose.header.stamp = self.detection.header.stamp
+        pose.pose = self.detection.object_pose
+        return pose
+    
+    def get_approaching_point_pose(self):
+        pose = PoseStamped()
+        pose.header.frame_id = self.detection.header.frame_id
+        pose.header.stamp = self.detection.header.stamp
+        pose.pose = self.detection.approaching_point_pose
+        return pose
+    
+    def get_color(self):
+        return self.detection.color
+    
+    def update(self, other_detection):
+        self_pose = self.detection.object_pose
+        other_pose = Detection(other_detection).get_object_pose().pose
         # Calculate new position on line between current position and received position.
         # Use the blending parameter to blend current and next position (simple linear interpolation)
         # position = (1 - blending) * current + blending * next
         alpha = 1 - self.blending
         beta = self.blending
-        self.pose.position.x = self.pose.position.x * alpha + other_pose.position.x * beta
-        self.pose.position.y = self.pose.position.y * alpha + other_pose.position.y * beta
-        self.pose.position.z = self.pose.position.z * alpha + other_pose.position.z * beta
+        self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
+        self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
+        self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
     
-    def distance_to(self, other_pose):
-        other_pose = other_pose.pose
+    def distance_to(self, other_detection):
+        self_pose = self.get_object_pose().pose
+        other_pose = Detection(other_detection).get_object_pose().pose
         # Return simple Euclidean distance between this and other pose
-        dx = self.pose.position.x - other_pose.position.x
-        dy = self.pose.position.y - other_pose.position.y
-        dz = self.pose.position.z - other_pose.position.z
+        dx = self_pose.position.x - other_pose.position.x
+        dy = self_pose.position.y - other_pose.position.y
+        dz = self_pose.position.z - other_pose.position.z
         return math.sqrt(dx*dx + dy*dy + dz*dz)
 
 class Robustifier(object):
@@ -53,6 +72,7 @@ class Robustifier(object):
         'marker_type': Marker.SPHERE,
         'color': ColorRGBA(1, 0, 0, 1)
     }
+
     ROBUSTIFIED_MARKER_STYLE = {
         'marker_type': Marker.SPHERE,
         'color': ColorRGBA(0, 1, 0, 1),
@@ -78,10 +98,10 @@ class Robustifier(object):
         self.marker_topic = rospy.get_param('~marker_topic', '/face_markers')
 
         # Subscriber and publisher for object detections
-        self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, PoseStamped, self.on_object_detection, queue_size=10)
-        self.object_publisher = rospy.Publisher(self.detection_topic, PoseStamped, queue_size=10)
+        self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
+        self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
 
-        # Publisher for publishing raw face detections
+        # Publisher for publishing raw object detections
         self.markers_publisher = rospy.Publisher(self.marker_topic, MarkerArray, queue_size=1000)
         self.markers = MarkerArray()
 
@@ -93,37 +113,39 @@ class Robustifier(object):
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
 
-    def publish_marker(self, pose, marker_style={}):
-        # Construct a marker from detected object pose, add it to markers array
+    def publish_marker(self, detection, marker_style={}):
+        # Construct a marker from detected object, add it to markers array
         # and publish it to marker_topic
-        new_marker = utils.stamped_pose_to_marker(pose, index=len(self.markers.markers), **marker_style)
+        pose = detection.get_object_pose()
+        new_marker = utils.stamped_pose_to_marker(pose,
+            index=len(self.markers.markers),
+            # color=detection.color,
+            **marker_style
+        )
         self.markers.markers.append(new_marker)
         self.markers_publisher.publish(self.markers)
 
-    def already_detected(self, pose_stamped):
+    def already_detected(self, new_detection):
         for detection in self.object_detections:
-            distance = detection.distance_to(pose_stamped)
+            distance = detection.distance_to(new_detection)
             if distance <= self.maximum_distance:
                 # one solution to "location too far in history"
-                detection.stamped_pose.header.stamp = pose_stamped.header.stamp
+                detection.detection.header.stamp = new_detection.header.stamp
                 return detection
     
-    def on_object_detection(self, object_pose):
-        # A new object has been detected, robustify it
-
-        # First convert the object position to map coordinate frame, so we can
-        # check if the distance to the nearest object is less than half a metre If
-        # this is not done, the robustifier tries to compute distances between
-        # points in camera_depth_optical_frame frame, which has a different
-        # scale than map
-        object_pose = self.tf_buf.transform(object_pose, "map")
-
-        self.publish_marker(object_pose, Robustifier.RAW_MARKER_STYLE)
+    def on_object_detection(self, detection):
+        # Here we assume that detection.object_pose and
+        # detection.approaching_point_pose are in map coordinate frame.
+        if detection.header.frame_id != 'map':
+            return
+        
+        self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE)
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not
         # exactly match
-        saved_pose = self.already_detected(object_pose)
+        saved_pose = self.already_detected(detection)
+
         if saved_pose is not None:
             rospy.loginfo('Object was already detected, it has been detected {} times'.format(saved_pose.number_of_detections))
             saved_pose.number_of_detections += 1
@@ -133,20 +155,18 @@ class Robustifier(object):
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
                     rospy.loginfo('Sending object location to movement controller')
-
-                    self.publish_marker(saved_pose.stamped_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE)
-                    self.object_publisher.publish(saved_pose.stamped_pose)
-
+                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE)
+                    self.object_publisher.publish(saved_pose.detection)
                     saved_pose.already_sent = True
             else:
                 rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
                 # The detected object pose and previously saved pose are very similar,
                 # calculate mean position of both poses and save data to saved_pose
-                saved_pose.update(object_pose)
+                saved_pose.update(detection)
         else:
-            rospy.loginfo('Object has not yet been deteted')
+            rospy.loginfo('Object has not yet been detected')
             # Construct a new detection object, add it to detections
-            saved_pose = Detection(object_pose)
+            saved_pose = Detection(detection)
             self.object_detections.append(saved_pose)
 
 if __name__ == '__main__':

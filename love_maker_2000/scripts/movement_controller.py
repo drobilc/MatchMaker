@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String, ColorRGBA
+from object_detection_msgs.msg import ObjectDetection
 
 from visualization_msgs.msg import MarkerArray
 
@@ -22,15 +23,21 @@ import utils
 # Greeter says whatever we tell it to say. Yes, even cursewords or sentences like "I'm stupid". He's basically a parrot.
 import greeter
 
-# Require python module for ordered heap
-import heapq
-
-from random import randint
+import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-import math
-import time
+import tf2_geometry_msgs
+import math, random, time, numpy
 
 class MovementController(object):
+
+    GOAL_ORDERING = {
+        'face': 0,
+        'cylinder': 1000,
+        'torus': 2000,
+        'map_point': 3000
+    }
+
+    GOAL_EPSILON_DISTANCE = 0.3
 
     def __init__(self, goals):
         # Create a Greeter object that controls speech synthetisation
@@ -44,42 +51,36 @@ class MovementController(object):
         # us about status and provide feedback at /move_base/status
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
-        rospy.loginfo('Connected to movement server')        
+        rospy.loginfo('Connected to movement server')
 
-        # The robustifier node publishes faces to /face_detections
-        self.face_subscriber = rospy.Subscriber('/face_detections', PoseStamped, self.on_face_detection, queue_size=10)
-        
-        # TODO: If we want the heap to be sorted on euclidian distance to the goal,
-        # the priority parameter should be changed to distance. heapq always sorts by the first element in touple.
-        # A list of faces to visit (actually an ordered heap of tuples (priority, pose))
-        # https://docs.python.org/2/library/heapq.html
+        # Movement controller should accept faces, cylinders and toruses.
+        # Robustifiers will send the same type of object (ObjectDetection), so
+        # we can simply use on_object_detection function to get approaching
+        # points.
+        self.face_subscriber = rospy.Subscriber('/face_detections', ObjectDetection, self.on_object_detection, queue_size=10)
+        self.cylinder_subscriber = rospy.Subscriber('/cylinder_detections', ObjectDetection, self.on_object_detection, queue_size=10)
+        self.torus_subscriber = rospy.Subscriber('/torus_detections', ObjectDetection, self.on_object_detection, queue_size=10)
 
+        # Save initial goals that we have received from map_maker
         self.initial_goals = [goal for goal in goals]
+
+        # The goals list contains ObjectDetection detections
         self.goals = goals
-        heapq.heapify(goals)
 
         # The has_goals variable should be True if the bot is currently moving
         # and its heap is not empty
         self.has_goals = False
 
-        # Counter of faces. If we run out of goals but haven't found all of the faces yet,
-        # the robot hould explore some more
-        self.number_of_detected_faces = 0
-
-        # Number of faces that have to be detected
-        self.number_of_faces_in_the_world = 3
-
+        # To visualize goals, we create a new goal publisher that publishes markers
         self.goals_publisher = rospy.Publisher('goals', MarkerArray, queue_size=1000)
-
-        # The goals will be added to priority heap with decreasing priority. The
-        # hardcoded goals should have a high priority, so that after new goal is
-        # added, we first visit the goal and then the hardcoded location
-        self.current_goal_priority = 0
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is
         self.is_localized = False
         self.localize()
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
     
     def start(self):
         # When the start function is called, the robot should stop
@@ -90,18 +91,73 @@ class MovementController(object):
         if len(self.goals) <= 0:
             return
         
-        self.send_marker_goals()
+        self.send_marker_goals()        
         
-        self.greeter.say("Hello, my name is Dora the explorer and I am ready to begin my mission!")
+        self.sort_goals()
         self.has_goals = True
-        first_goal = heapq.heappop(self.goals)
+        first_goal = self.goals.pop(0)
         rospy.loginfo('Robot has started to move to its first goal: {}'.format(first_goal))
         self.move_to_goal(first_goal)
     
+    def current_robot_position(self):
+        robot_position = tf2_geometry_msgs.PoseStamped()
+        robot_position.header.frame_id = "camera_depth_optical_frame"
+        robot_position.header.stamp = rospy.Time()
+        robot_position = self.tf_buffer.transform(robot_position, "map")
+        return robot_position
+
+    def sort_goals(self):
+        # Because we will probably have a small number of goals (very rarely
+        # more than 20), we can use simple sorting function with time complexity
+        # O(n logn). This function will also not be called very frequently, so
+        # this approach is probably ok.
+        robot_pose = self.current_robot_position()
+        orientation = robot_pose.pose.orientation
+        orientation = (orientation.x, orientation.y, orientation.z, orientation.w)
+        robot_direction = euler_from_quaternion(orientation)
+
+        def euclidean_distance(goal):
+            dx = (goal.approaching_point_pose.position.x - robot_pose.pose.position.x)
+            dy = (goal.approaching_point_pose.position.y - robot_pose.pose.position.y)
+            return math.sqrt(dx * dx + dy * dy)
+
+        distances = map(euclidean_distance, self.goals)
+        max_distance = max(distances)
+        unsorted_data = zip(distances, self.goals)
+
+        def metric(goal):
+            # The metric computes distance between point and current robot
+            # position and adds a penalty that is defined for each goal type in
+            # the static variable GOAL_ORDERING.
+
+            # TODO: The metric does not check for any obstacles in the map,
+            # which results in some not optimal space exploration. Check if
+            # there is a wall between robot position and point (using
+            # raycasting) and add a pentalty.
+            
+            # TODO: The robot has to rotate if the point that is has to visit is
+            # behind it. Try to pick points that are in direction where robot is
+            # currently looking.
+            penalty = 0
+            if goal[1].type in MovementController.GOAL_ORDERING:
+                penalty = MovementController.GOAL_ORDERING[goal[1].type]
+            
+            distance_pentalty = (goal[0] / max_distance) * 500
+
+            return penalty + distance_pentalty
+        
+        sorted_data = sorted(unsorted_data, key=metric)
+        self.goals = [goal[1] for goal in sorted_data]
+    
     def send_marker_goals(self):
-        poses = [goal[1] for goal in self.goals]
+        poses = []
+        for goal in self.goals:
+            pose_stamped = PoseStamped()
+            pose_stamped.header = goal.header
+            pose_stamped.pose = goal.approaching_point_pose
+            poses.append(pose_stamped)
+        
         goal_markers = utils.stamped_poses_to_marker_array(poses, color=ColorRGBA(1, 1, 0, 1))
-        print(goal_markers.markers)
         self.goals_publisher.publish(goal_markers)
 
     def done(self, status, result):
@@ -110,25 +166,14 @@ class MovementController(object):
         self.send_marker_goals()
 
         if self.current_goal is not None:
-            priority, goal, is_face = self.current_goal
-
             # If the approaching point was reached succesfully, greet.
-            if status == 3 and is_face:
+            if status == 3 and self.current_goal.type == 'face':
                 self.greet()
-                self.number_of_detected_faces += 1
                 rospy.sleep(1)
-                #time.sleep(1)
 
         # This is called when the robot has reached our current goal
         # or something has gone wrong
         rospy.loginfo('Goal has finished with status: {}'.format(status))
-
-        # This bit was added, because the callbacks were only called on the first
-        # requested goal, then the robot moves to the second position, the server
-        # does notify our client about it, but the callback function is never called
-        # Tell the client to stop tracking current goal and cancel all previous goals
-        self.client.stop_tracking_goal()
-        self.client.cancel_all_goals()
 
         # To get more information about goal status see
         # http://docs.ros.org/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html
@@ -138,37 +183,23 @@ class MovementController(object):
         else:
             # Goal unreachable, add it back to queue, but with higher priority
             rospy.logerr('The robot could not move to the goal')
-            if is_face:
-                heapq.heappush(self.goals, (self.current_goal_priority + 111, self.current_goal[1], True))
-            else:
-                heapq.heappush(self.goals, (self.current_goal_priority + 161, self.current_goal[1], False))
-
 
         # reset current goal
         self.current_goal = None
-        
-        # If there are no more goals do nothing, otherwise move to next goal
-        if self.number_of_detected_faces >= self.number_of_faces_in_the_world:
-            self.has_goals = False
-            self.greeter.say("My work here is done. I have found all the people.")
-            return
 
         if len(self.goals) <= 0:
-            if self.number_of_detected_faces < self.number_of_faces_in_the_world:
-                # not all faces have been approached yet, add new goals to the map
-                for goal in self.initial_goals:
-                    heapq.heappush(self.goals, goal)
-            else:
-                self.has_goals = False
-                return
-
-        # Pop the item with the smallest priority from goals and move there
-        next_goal = heapq.heappop(self.goals)
+            self.has_goals = False
+            return
+        
+        # Sort goals based on the euclidean distance from current robot
+        # position, then choose the first goal and visit it.
+        self.sort_goals()
+        next_goal = self.goals.pop(0)
         self.move_to_goal(next_goal)
 
     def greet(self, greeting = None):
         if greeting is None:
-            random_greeting = self.greetings[randint(0, len(self.greetings) - 1)]
+            random_greeting = random.choice(self.greetings)
             self.greeter.say(random_greeting)
         else:
             self.greeter.say(self.greetings[greeting])
@@ -183,20 +214,19 @@ class MovementController(object):
         # This is called when our goal is being processed on the server
         pass
     
-    def move_to_goal(self, element):
-        # Get the priority and element from heap
-        priority, pose, is_face = element
-        rospy.loginfo('Moving to goal [priority = {}] {}'.format(priority, pose))
+    def move_to_goal(self, detection):
+        rospy.loginfo('Moving to goal [type = {}] {}'.format(detection.type, detection.approaching_point_pose))
+
+        # Set the goal as current goal
+        self.current_goal = detection
+
         # Create a new MoveBaseGoal object and set its position and rotation
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
 
-        # Set the goal pose as the face pose
-        goal.target_pose.pose = pose.pose
-
-        # Set the goal as current goal
-        self.current_goal = element
+        # Set the goal pose as the detected object approaching point
+        goal.target_pose.pose = detection.approaching_point_pose
 
         self.has_goals = True
 
@@ -255,37 +285,60 @@ class MovementController(object):
     def localization_finished(self):
         self.is_localized = True
         rospy.loginfo('Localization protocol finished')
+        self.greeter.say("Hello, my name is Dora the explorer and I am ready to begin my mission!")
         # After turtlebot has localized itself, start moving to goals in the self.faces heap
         self.start()
     
-    def on_face_detection(self, face_pose):
-        return
-        # rospy.loginfo('A new robustified face location found: {}'.format(face_pose))
-        # Add received pose to the heap with priority 1
-        self.current_goal_priority += 1
-        heapq.heappush(self.goals, (self.current_goal_priority, face_pose, True))
-        rospy.loginfo('New face received, there are currently {} faces in heap'.format(len(self.goals)))
+    def on_object_detection(self, object_detection):
+        # A new face / cylinder / torus has been detected. If current goal is
+        # not a map point, then cancel current goal and visit this goal.
+        # Otherwise add it to goals for later.
+        self.goals.append(object_detection)
+        rospy.loginfo('New object [type = {}] received, there are currently {} goals'.format(object_detection.type, len(self.goals)))
 
-        if self.is_localized and not self.has_goals:
+        if self.current_goal.type == 'map_point':
+            rospy.loginfo('Received goal is more promising that the one I am currently visiting. Cancelling.')
+            self.greeter.say("More promising goal found!")
+            # We are canceling current goal, so add current_goal to list of
+            # goals to visit later
+            
+            robot_point = self.current_robot_position().pose.position
+            approaching_point = self.current_goal.approaching_point_pose.position
+            dx = (robot_point.x - approaching_point.x)
+            dy = (robot_point.y - approaching_point.y)
+            distance = dx * dx + dy * dy
+            if distance > MovementController.GOAL_EPSILON_DISTANCE:
+                self.goals.append(self.current_goal)
+            
+            # When calling self.start, the goals are reordered based on their
+            # euclidean distance and goal type. It also cancels all previous
+            # goals and starts again.
+            self.start()
+
+        elif self.is_localized and not self.has_goals:
             self.start()
         
-def pose_from_point_on_map(point, angle_z_axis = None):
-    pose = PoseStamped()
-    pose.pose = Pose()
-    pose.header.frame_id = 'map'
-    pose.header.stamp = rospy.Time.now()
-    pose.pose.position.x = point[0]
-    pose.pose.position.y = point[1]
-    pose.pose.position.z = point[2]
+def detection_from_point_on_map(point, angle_z_axis = None):
+    pose = Pose()
+    pose.position.x = point[0]
+    pose.position.y = point[1]
+    pose.position.z = point[2]
 
     # set correct orientation of the point
     if angle_z_axis is not None:
         rotation = quaternion_from_euler(0, 0, angle_z_axis)
-        pose.pose.orientation = Quaternion(*rotation)
+        pose.orientation = Quaternion(*rotation)
     else:
-        pose.pose.orientation.w = 1
+        pose.orientation.w = 1
 
-    return pose
+    detection = ObjectDetection()
+    detection.header.frame_id = 'map'
+    detection.header.stamp = rospy.Time.now()
+    detection.object_pose = pose
+    detection.approaching_point_pose = pose
+    detection.type = 'map_point'
+
+    return detection
 
 
 if __name__ == '__main__':
@@ -293,12 +346,10 @@ if __name__ == '__main__':
     rospy.init_node('movement_controller', anonymous=False)
 
     goals = []
-
     map_maker = MapMaker()
     points_to_visit = map_maker.generate_points()
-    print(points_to_visit)
     for index, point in enumerate(points_to_visit):
-        goals.append((100 + index, pose_from_point_on_map([point[0], point[1], 0], -2.578), False))
+        goals.append(detection_from_point_on_map([point[0], point[1], 0], -2.578))
     
     controller = MovementController(goals)
     rospy.loginfo('Movement controller started')
