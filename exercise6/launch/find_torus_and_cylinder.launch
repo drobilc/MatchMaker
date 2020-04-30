@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
-    <node pkg="exercise6" type="cylinder_segmentation" name="cylinder_segmentation">
+    <node pkg="exercise6" type="cylinder_and_ring_detector" name="cylinder_and_ring_detector">
 
         <remap from="input" to="/exercise6/voxelgrid"/>
-
+                                                                <!-- Values given by teaching assitants -->
         <param name="normal_distance_weight" value="0.1" />  <!-- 0.1 -->
         <param name="max_iterations" value="10000" />   <!-- 10000 -->
         <param name="distance_threshold" value="0.05" />   <!-- 0.05 -->
