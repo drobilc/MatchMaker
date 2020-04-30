@@ -4,7 +4,7 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 ## TODO
 * detect colors (Add topic for images to cylinder_and_ring_detector, create color detection service)
 * ~~implement new message type (see below)~~  **DONE**
-* change all messages to `ObjectDetection` (Cylinder and ring detector)
+* ~~change all messages to `ObjectDetection` (Cylinder and ring detector)~~ **DONE**
 * write new algorithm for setting exploration points
 * make sure all points are in map coordinates before adding them to `ObjectDetection`
 * add robustifying colors in Robustifier
