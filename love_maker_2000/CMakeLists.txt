@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 	roslib
 	tf2_ros
   	tf2_geometry_msgs
+	object_detection_msgs
 )
 
 find_package( OpenCV REQUIRED )
@@ -33,7 +34,7 @@ find_package(PCL REQUIRED)
 
 ## Add include directories
 include_directories(
-	${Boost_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
