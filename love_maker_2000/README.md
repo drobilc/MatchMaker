@@ -85,7 +85,7 @@ string type
 ### All
 ```
 roslaunch love_maker_2000 all.launch
-roslaunch love_maker_2000  find_torus_and_cylinder.launch
+roslaunch love_maker_2000 find_torus_and_cylinder.launch
 ```
 
 --------Below this line, the content hasn't been updated yet--------
