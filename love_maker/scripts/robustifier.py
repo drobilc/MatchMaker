@@ -69,14 +69,34 @@ class Detection(object):
 class Robustifier(object):
 
     RAW_MARKER_STYLE = {
-        'marker_type': Marker.SPHERE,
-        'color': ColorRGBA(1, 0, 0, 1)
+        'face': {
+            'marker_type': Marker.SPHERE,
+            'color': ColorRGBA(1, 0, 0, 1)
+        },
+        'ring': {
+            'marker_type': Marker.SPHERE
+        },
+        'cylinder': {
+            'marker_type': Marker.CYLINDER
+        }
     }
 
     ROBUSTIFIED_MARKER_STYLE = {
-        'marker_type': Marker.SPHERE,
-        'color': ColorRGBA(0, 1, 0, 1),
-        'scale': Vector3(0.2, 0.2, 0.2)
+        'face': {
+            'marker_type': Marker.SPHERE,
+            'color': ColorRGBA(0, 1, 0, 1),
+            'scale': Vector3(0.2, 0.2, 0.2)
+        },
+        'ring': {
+            'marker_type': Marker.SPHERE,
+            'color': ColorRGBA(0, 1, 0, 1),
+            'scale': Vector3(0.2, 0.2, 0.2)
+        },
+        'cylinder': {
+            'marker_type': Marker.CYLINDER,
+            'color': ColorRGBA(0, 1, 0, 1),
+            'scale': Vector3(0.2, 0.2, 0.2)
+        }
     }
 
     def __init__(self):
@@ -139,7 +159,7 @@ class Robustifier(object):
         if detection.header.frame_id != 'map':
             return
         
-        self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE)
+        self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not
@@ -155,7 +175,7 @@ class Robustifier(object):
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
                     rospy.loginfo('Sending object location to movement controller')
-                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE)
+                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type])
                     self.object_publisher.publish(saved_pose.detection)
                     saved_pose.already_sent = True
             else:
