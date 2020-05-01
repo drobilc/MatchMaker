@@ -54,4 +54,7 @@
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
     </node>
 
+    <!-- Run the color classification service -->
+    <include file="$(find color_classification)/launch/color_classifier.launch"/>
+
 </launch>
