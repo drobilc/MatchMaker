@@ -50,8 +50,14 @@ class ColorClassifier(object):
         service = rospy.Service('color_classifier', ColorClassification, self.handle_color_classification_request)
     
     def predict(self, color):
-        # Use our training classifier to predict color
-        return "white"
+        # Use our training classifier to predict color. First, extract r, g and
+        # b components from received color, the alpha is not important. Then
+        # convert the color to lab color space.
+        rgb_color = numpy.asarray([color.r, color.g, color.b])
+        lab_color = rgb_to_lab(rgb_color)
+
+        # Use trained classifier to predict color
+        return self.classifier.predict([lab_color])[0]
     
     def handle_color_classification_request(self, request):
         return self.predict(request.color)
