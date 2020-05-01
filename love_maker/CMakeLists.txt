@@ -10,11 +10,19 @@ find_package(catkin REQUIRED COMPONENTS
 	nav_msgs
 	std_msgs
 	geometry_msgs
+	object_detection_msgs
+	color_classification
 )
 
 find_package( OpenCV REQUIRED )
 
-catkin_package()
+catkin_package(
+	CATKIN_DEPENDS
+    std_msgs
+	geometry_msgs
+    object_detection_msgs
+    color_classification
+)
 
 #include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 #add_executable(map_goals src/map_goals.cpp)

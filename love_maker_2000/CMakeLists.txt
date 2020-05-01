@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(love_maker_2000)
 
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
+find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
+  rospy
 	cv_bridge
 	sensor_msgs
 	visualization_msgs
@@ -20,9 +25,9 @@ find_package(catkin REQUIRED COMPONENTS
 	rosbag
 	rosconsole
 	roslib
-	tf2_ros
-  	tf2_geometry_msgs
+  tf2_geometry_msgs
 	object_detection_msgs
+  color_classification
 )
 
 find_package( OpenCV REQUIRED )
@@ -34,6 +39,7 @@ find_package(PCL REQUIRED)
 
 ## Add include directories
 include_directories(
+  include ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
@@ -43,7 +49,7 @@ include_directories(
 ## Add link directories
 link_directories(
   ${Boost_LIBRARY_DIRS}
-  ##${Eigen_LIBRARY_DIRS}
+  ${Eigen_LIBRARY_DIRS}
   ${PCL_LIBRARY_DIRS}
   ${catkin_LIBRARY_DIRS}
 )
@@ -60,11 +66,15 @@ catkin_package(
     pcl_conversions
     pcl_msgs
     roscpp
+    rospy
+    message_runtime
     sensor_msgs
     std_msgs
+    object_detection_msgs
+    color_classification
   DEPENDS
     Boost
-    ##Eigen
+    Eigen
     PCL
 )
 
@@ -75,4 +85,5 @@ catkin_package(
 #catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 add_executable (cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp)
+add_dependencies(cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp ${catkin_EXPORTED_TARGETS})
 add_executable (voxelgrid_new src/voxelgrid.cpp)

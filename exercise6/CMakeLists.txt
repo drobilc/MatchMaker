@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   object_detection_msgs
+  color_classification
 )
 
 ## Add include directories
@@ -58,6 +59,8 @@ catkin_package(
     roscpp
     sensor_msgs
     std_msgs
+    object_detection_msgs
+    color_classification
   DEPENDS
     Boost
     Eigen
