@@ -34,7 +34,6 @@ ros::Publisher pub_testing;
 ros::ServiceClient color_classifier;
 ros::ServiceClient cylinder_approaching_point_calculator;
 
-
 tf2_ros::Buffer tf2_buffer;
 
 typedef pcl::PointXYZ PointT;
@@ -324,10 +323,27 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     //std::cerr << tss ;
 
     tf2::doTransform(point_camera, point_map, tss);
-
     std::cerr << "point_camera: " << point_camera.point.x << " " << point_camera.point.y << " " << point_camera.point.z << std::endl;
-
     std::cerr << "point_map: " << point_map.point.x << " " << point_map.point.y << " " << point_map.point.z << std::endl;
+
+    // Calculate approaching point
+    geometry_msgs::Pose detection_pose;
+    detection_pose.position.x = point_map.point.x;
+    detection_pose.position.y = point_map.point.y;
+    detection_pose.position.z = point_map.point.z;
+
+    approaching_point_calculator.request.detection = detection_pose;
+
+    geometry_msgs::Pose approaching_point;
+
+    if (cylinder_approaching_point_calculator.call(approaching_point_calculator))
+    {
+      approaching_point = approaching_point_calculator.response.approaching_point;
+    }
+    else
+    {
+      ROS_ERROR("Failed to call service for calculating approaching point");
+    }
 
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
@@ -339,10 +355,8 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
       // Correctly configure the header
       cylinder_detection_message.header.stamp = ros::Time::now();
       cylinder_detection_message.header.frame_id = "map";
-      // TODO: calculate approcahing point for the cylinder
-      cylinder_detection_message.approaching_point_pose.position.x = point_map.point.x;
-      cylinder_detection_message.approaching_point_pose.position.y = point_map.point.y;
-      cylinder_detection_message.approaching_point_pose.position.z = point_map.point.z;
+      // Set detection and approaching point
+      cylinder_detection_message.approaching_point_pose = approaching_point;
       cylinder_detection_message.object_pose.position.x = point_map.point.x;
       cylinder_detection_message.object_pose.position.y = point_map.point.y;
       cylinder_detection_message.object_pose.position.z = point_map.point.z;
