@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ros/ros.h>
 #include <math.h>
+#include <cmath>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -33,10 +34,11 @@ ros::Publisher pub_testing;
 ros::ServiceClient color_classifier;
 ros::ServiceClient cylinder_approaching_point_calculator;
 
-
 tf2_ros::Buffer tf2_buffer;
 
 typedef pcl::PointXYZ PointT;
+
+ros::Time time_rec;
 
 // Parameters for cylinder segmentation
 double cylinder_normal_distance_weight;
@@ -64,57 +66,20 @@ void log_pointcloud(pcl::PointCloud<PointT>::Ptr &cloud)
 /**
  * Finds rings in a more sophisticated way, does not work yet. Use find_rings.
  */
-void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
+  // Filter the point cloud at certain heights
   pcl::PassThrough<PointT> pass;
-  pcl::ExtractIndices<PointT> extract;
-  pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
-  pcl::PointIndices::Ptr inliers_ring(new pcl::PointIndices);
-  pcl::ModelCoefficients::Ptr coefficients_ring(new pcl::ModelCoefficients);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("y");
+  pass.setFilterLimits(-0.5, -0.3);
+  pass.filter(*cloud_filtered);
+  std::cerr << "PointCloud for rings has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
-  // Build a passthrough filter to leave only points at height, where rings are
-  std::cerr << "\n-- Ring Segmentation" << std::endl;
-  // pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-  // pass.setInputCloud(cloud);
-  // pass.setFilterFieldName("y");
-  // pass.setFilterLimits(-0.5, -0.3);
-  // pass.filter(*cloud_filtered);
-  std::cerr << "PointCloud before ring segmentation has: " << cloud_filtered->points.size() << " data points." << std::endl;
+  log_pointcloud(cloud_filtered);
 
-  if (cloud_filtered->points.empty())
-  {
-    std::cerr << "Ring segmentation will not be executed because PointCloud is empty." << std::endl;
-    return;
-  }
-
-  // Fit points to model
-  seg.setOptimizeCoefficients(true);
-  seg.setModelType(pcl::SACMODEL_CIRCLE3D);
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setNormalDistanceWeight(cylinder_normal_distance_weight);
-  seg.setMaxIterations(cylinder_max_iterations);
-  seg.setDistanceThreshold(cylinder_distance_threshold);
-  seg.setRadiusLimits(0.03, 0.2);
-  seg.setInputCloud(cloud_filtered);
-  seg.setInputNormals(cloud_normals);
-
-  seg.segment(*inliers_ring, *coefficients_ring);
-  std::cerr << "Ring coefficients: " << *coefficients_ring << std::endl;
-
-  pcl::PointCloud<PointT>::Ptr cloud_ring(new pcl::PointCloud<PointT>());
-  extract.setInputCloud(cloud_filtered);
-  extract.setIndices(inliers_ring);
-  extract.setNegative(false);
-  extract.filter(*cloud_ring);
-
-  if (cloud_ring->points.empty())
-  {
-    std::cerr << "Can't find the torus component" << std::endl;
-  }
-  else
-  {
-    std::cerr << "PointCloud representing the torus: " << cloud_ring->points.size() << " data points." << std::endl;
-  }
+  // Select four random points, if they are on the same plane we can proceed
 }
 
 /**
@@ -268,56 +233,27 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
   } while (cloud_plane->points.size() >= plane_points_threshold);
 }
 
-void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
+/**
+ * Finds cylinders in the point cloud and publishes the detections. Removes found cylinders from the point cloud.
+ * 
+ * @param cloud Input point cloud.
+ * @param cloud_normals Input point cloud normals.
+ * @param cloud_filtered Output point cloud without cylinder points.
+ * @param cloud_normals_filtered Output cloud without cylinder point normals.
+ */
+void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_filtered_normals)
 {
-  // All the objects needed
+  ros::Time time_test;
 
-  ros::Time time_rec, time_test;
-  time_rec = ros::Time::now();
-
-  pcl::PassThrough<PointT> pass;
-  pcl::NormalEstimation<PointT, pcl::Normal> ne;
-  pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
-  pcl::PCDWriter writer;
+  // Objects we need
   pcl::ExtractIndices<PointT> extract;
-  pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
+  pcl::ExtractIndices<pcl::Normal> extract_normals;
+  pcl::SACSegmentationFromNormals<PointT, pcl::Normal> seg;
   Eigen::Vector4f centroid;
 
   // Datasets
-  pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
-  pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-  pcl::PointCloud<PointT>::Ptr cloud_filtered2(new pcl::PointCloud<PointT>);
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2(new pcl::PointCloud<pcl::Normal>);
   pcl::ModelCoefficients::Ptr coefficients_cylinder(new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers_cylinder(new pcl::PointIndices);
-
-  // Read in the cloud data
-  pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
-  std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
-
-  // Build a passthrough filter to remove spurious NaNs
-  pass.setInputCloud(cloud);
-  pass.setFilterFieldName("z");
-  pass.setFilterLimits(0, 2);
-  pass.filter(*cloud_filtered);
-  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
-
-  // Estimate point normals
-  ne.setSearchMethod(tree);
-  ne.setInputCloud(cloud_filtered);
-  ne.setKSearch(50);
-  ne.compute(*cloud_normals);
-
-  // Find rings
-  // find_rings2(cloud_filtered, cloud_normals);
-  find_rings(cloud_filtered);
-
-  // Remove all planes
-  remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
-
-  // This is a loggin funciton for point clouds, publishes to /point_cloud/log topic.
-  log_pointcloud(cloud_filtered2);
 
   // Create the segmentation object for cylinder segmentation and set all the parameters
   std::cerr << "\n-- Cylinder Segmentation" << std::endl;
@@ -328,22 +264,20 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   seg.setMaxIterations(cylinder_max_iterations);
   seg.setDistanceThreshold(cylinder_distance_threshold);
   seg.setRadiusLimits(cylinder_radius_min, cylinder_radius_max);
-  seg.setInputCloud(cloud_filtered2);
-  seg.setInputNormals(cloud_normals2);
+  seg.setInputCloud(cloud);
+  seg.setInputNormals(cloud_normals);
 
   // Obtain the cylinder inliers and coefficients
   seg.segment(*inliers_cylinder, *coefficients_cylinder);
   std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
 
   // Write the cylinder inliers to disk
-  extract.setInputCloud(cloud_filtered2);
+  extract.setInputCloud(cloud);
   extract.setIndices(inliers_cylinder);
   extract.setNegative(false);
   pcl::PointCloud<PointT>::Ptr cloud_cylinder(new pcl::PointCloud<PointT>());
   extract.filter(*cloud_cylinder);
-  if (cloud_cylinder->points.empty())
-    std::cerr << "Can't find the cylindrical component." << std::endl;
-  else if (cloud_cylinder->points.size() >= cylinder_points_threshold)
+  if (cloud_cylinder->points.size() >= cylinder_points_threshold)
   {
     std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size() << " data points." << std::endl;
 
@@ -370,6 +304,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     point_camera.point.y = centroid[1];
     point_camera.point.z = centroid[2];
 
+    std::cerr << "Centroids: " << centroid[0] << ", " << centroid[1] << ", " << centroid[2] << std::endl;
+
     try
     {
       time_test = ros::Time::now();
@@ -387,41 +323,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     //std::cerr << tss ;
 
     tf2::doTransform(point_camera, point_map, tss);
-
     std::cerr << "point_camera: " << point_camera.point.x << " " << point_camera.point.y << " " << point_camera.point.z << std::endl;
-
     std::cerr << "point_map: " << point_map.point.x << " " << point_map.point.y << " " << point_map.point.z << std::endl;
-
-    // We will handle markers in the robusifier
-    // marker.header.frame_id = "map";
-    // marker.header.stamp = ros::Time::now();
-
-    // marker.ns = "cylinder";
-    // marker.id = 0;
-
-    // marker.type = visualization_msgs::Marker::CYLINDER;
-    // marker.action = visualization_msgs::Marker::ADD;
-
-    // marker.pose.position.x = point_map.point.x;
-    // marker.pose.position.y = point_map.point.y;
-    // marker.pose.position.z = point_map.point.z;
-    // marker.pose.orientation.x = 0.0;
-    // marker.pose.orientation.y = 0.0;
-    // marker.pose.orientation.z = 0.0;
-    // marker.pose.orientation.w = 1.0;
-
-    // marker.scale.x = 0.1;
-    // marker.scale.y = 0.1;
-    // marker.scale.z = 0.1;
-
-    // marker.color.r = 0.7f;
-    // marker.color.g = 0.3f;
-    // marker.color.b = 0.0f;
-    // marker.color.a = 1.0f;
-
-    // marker.lifetime = ros::Duration();
-
-    // pubm.publish(marker);
 
     // Calculate approaching point
     geometry_msgs::Pose detection_pose;
@@ -434,30 +337,100 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     geometry_msgs::Pose approaching_point;
 
     if (cylinder_approaching_point_calculator.call(approaching_point_calculator))
-     {
+    {
       approaching_point = approaching_point_calculator.response.approaching_point;
-     }
-     else
-     {
+    }
+    else
+    {
       ROS_ERROR("Failed to call service for calculating approaching point");
-     }
+    }
 
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
     puby.publish(outcloud_cylinder);
 
-    // Correctly configure the header
-    cylinder_detection_message.header.stamp = ros::Time::now();
-    cylinder_detection_message.header.frame_id = "map";
-    // Set detection and approaching point
-    cylinder_detection_message.approaching_point_pose = approaching_point;
-    cylinder_detection_message.object_pose.position.x = point_map.point.x;
-    cylinder_detection_message.object_pose.position.y = point_map.point.y;
-    cylinder_detection_message.object_pose.position.z = point_map.point.z;
-    // Set type of object message
-    cylinder_detection_message.type = "ring";
-    pub_cylinder.publish(cylinder_detection_message);
+    // Publish the message only if point is not nan
+    if (point_map.point.x == point_map.point.x && point_map.point.z == point_map.point.z && point_map.point.y == point_map.point.y)
+    {
+      // Correctly configure the header
+      cylinder_detection_message.header.stamp = ros::Time::now();
+      cylinder_detection_message.header.frame_id = "map";
+      // Set detection and approaching point
+      cylinder_detection_message.approaching_point_pose = approaching_point;
+      cylinder_detection_message.object_pose.position.x = point_map.point.x;
+      cylinder_detection_message.object_pose.position.y = point_map.point.y;
+      cylinder_detection_message.object_pose.position.z = point_map.point.z;
+      // Set type of object message
+      cylinder_detection_message.type = "cylinder";
+      pub_cylinder.publish(cylinder_detection_message);
+    }
+
+    // Remove cylinder inliers and extract the rest
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers_cylinder);
+    extract.setNegative(true);
+    extract.filter(*cloud_filtered);
+    extract_normals.setNegative(true);
+    extract_normals.setInputCloud(cloud_normals);
+    extract_normals.setIndices(inliers_cylinder);
+    extract_normals.filter(*cloud_filtered_normals);
   }
+  else
+  {
+    std::cerr << "Can't find the cylindrical component." << std::endl;
+    *cloud_filtered = *cloud;
+    *cloud_filtered_normals = *cloud_normals;
+  }
+}
+
+void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
+{
+  time_rec = ros::Time::now();
+
+  // All the objects needed
+  pcl::PassThrough<PointT> pass;
+  pcl::NormalEstimation<PointT, pcl::Normal> ne;
+  pcl::PCDWriter writer;
+  pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
+
+  // Datasets
+  pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered2(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2(new pcl::PointCloud<pcl::Normal>);
+  pcl::PointCloud<PointT>::Ptr cloud_filtered3(new pcl::PointCloud<PointT>);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_normals3(new pcl::PointCloud<pcl::Normal>);
+
+  // Read in the cloud data
+  pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
+  std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
+
+  // Build a passthrough filter to remove spurious NaNs
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(0, 2);
+  pass.filter(*cloud_filtered);
+  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
+
+  // Estimate point normals
+  ne.setSearchMethod(tree);
+  ne.setInputCloud(cloud_filtered);
+  ne.setKSearch(50);
+  ne.compute(*cloud_normals);
+
+  // Find rings
+  // find_rings(cloud_filtered);
+
+  // Remove all planes
+  remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
+
+  // Find cylinders and remove them from the point cloud
+  find_cylinders(cloud_filtered2, cloud_normals2, cloud_filtered3, cloud_normals3);
+
+  // log_pointcloud(cloud_filtered3);
+
+  find_rings2(cloud_filtered3, cloud_normals3);
 }
 
 void get_parameters(ros::NodeHandle nh)
