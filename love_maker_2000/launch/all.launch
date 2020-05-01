@@ -46,6 +46,7 @@
     
     <include file="$(find love_maker)/launch/face_mapper.launch"/>
     <include file="$(find love_maker_2000)/launch/ring_approaching_point_calculator.launch"/>
+    <include file="$(find love_maker_2000)/launch/cylinder_approaching_point_calculator.launch"/>
 
     <include file="$(find love_maker)/launch/face_robustifier.launch"/>
     <include file="$(find love_maker_2000)/launch/cylinder_robustifier.launch"/>
