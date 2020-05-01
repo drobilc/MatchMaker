@@ -20,6 +20,8 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "geometry_msgs/PointStamped.h"
+#include "color_classification/ColorClassification.h"
+#include "love_maker_2000/ApproachingPointCalculator.h"
 
 ros::Publisher pubx;
 ros::Publisher puby;
@@ -27,6 +29,10 @@ ros::Publisher pub_torus_cloud;
 ros::Publisher pub_cylinder;
 ros::Publisher pub_torus;
 ros::Publisher pub_testing;
+
+ros::ServiceClient color_classifier;
+ros::ServiceClient cylinder_approaching_point_calculator;
+
 
 tf2_ros::Buffer tf2_buffer;
 
@@ -351,6 +357,9 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     object_detection_msgs::ObjectDetection cylinder_detection_message;
     geometry_msgs::TransformStamped tss;
 
+    color_classification::ColorClassification color_classificator;
+    love_maker_2000::ApproachingPointCalculator approaching_point_calculator;
+
     point_camera.header.frame_id = "camera_rgb_optical_frame";
     point_camera.header.stamp = ros::Time::now();
 
@@ -414,6 +423,25 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 
     // pubm.publish(marker);
 
+    // Calculate approaching point
+    geometry_msgs::Pose detection_pose;
+    detection_pose.position.x = point_map.point.x;
+    detection_pose.position.y = point_map.point.y;
+    detection_pose.position.z = point_map.point.z;
+
+    approaching_point_calculator.request.detection = detection_pose;
+
+    geometry_msgs::Pose approaching_point;
+
+    if (cylinder_approaching_point_calculator.call(approaching_point_calculator))
+     {
+      approaching_point = approaching_point_calculator.response.approaching_point;
+     }
+     else
+     {
+      ROS_ERROR("Failed to call service for calculating approaching point");
+     }
+
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
     puby.publish(outcloud_cylinder);
@@ -421,10 +449,8 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
     // Correctly configure the header
     cylinder_detection_message.header.stamp = ros::Time::now();
     cylinder_detection_message.header.frame_id = "map";
-    // TODO: calculate approcahing point for the cylinder
-    cylinder_detection_message.approaching_point_pose.position.x = point_map.point.x;
-    cylinder_detection_message.approaching_point_pose.position.y = point_map.point.y;
-    cylinder_detection_message.approaching_point_pose.position.z = point_map.point.z;
+    // Set detection and approaching point
+    cylinder_detection_message.approaching_point_pose = approaching_point;
     cylinder_detection_message.object_pose.position.x = point_map.point.x;
     cylinder_detection_message.object_pose.position.y = point_map.point.y;
     cylinder_detection_message.object_pose.position.z = point_map.point.z;
@@ -470,6 +496,9 @@ int main(int argc, char **argv)
 
   pub_cylinder = nh.advertise<object_detection_msgs::ObjectDetection>("cylinder_detections_raw", 1);
   pub_torus = nh.advertise<object_detection_msgs::ObjectDetection>("torus_detections_raw", 1);
+
+  color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier_server");
+  cylinder_approaching_point_calculator = nh.serviceClient<love_maker_2000::ApproachingPointCalculator>("cylinder_approaching_point_calculator");
 
   // Spin
   ros::spin();
