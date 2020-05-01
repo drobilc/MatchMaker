@@ -1,0 +1,9 @@
+<launch>
+
+    <arg name="training_data" default="$(find color_classification)/scripts/data/train.csv"/>
+
+    <node pkg="color_classification" type="color_classifier.py" name="color_classifier" output="screen">
+        <param name="training_data" type="string" value="$(arg training_data)" />
+    </node>
+
+</launch>
