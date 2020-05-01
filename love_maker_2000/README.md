@@ -10,9 +10,8 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 * add robustifying colors in Robustifier
 * make ring detection work
 * fix line fitting in approaching for faces in Face mapper
-* write services for approaching for cylinders and rings (see below)
+* ~~write services for approaching for cylinders and rings (see below)~~ **NEEDS TESTING**
 * add launching cylinder and ring detection to all.launch (when the arhitecture is changed)
-* fix scheme
 * UPDATE DOCUMENTATION AS YOU DO ANYTHING!
 
 Love maker will presumably be made following the scheme below.
@@ -88,7 +87,37 @@ roslaunch love_maker_2000 all.launch
 roslaunch love_maker_2000 find_torus_and_cylinder.launch
 ```
 
---------Below this line, the content hasn't been updated yet--------
+## What does each component do
+### Face detector
+### Cylinder detector
+### Ring detector
+### Face mapper
+### Ring approaching point calculator
+
+Detection `Pose` received from Ring detector is transformed to a 2D pixel in grid occupied by our map. During transformation, some rounding is done, which has to be considered when transforming back to coordinates. Now we search for the closest wall pixel with regard to detection pixel.  
+
+This wall pixel is then transformed back to coordinates by trying all possible errors caused by rounding to find the closest coordinate of those laying in the pixel (1m ~ 20px). We assume that the closest distance is perpendicular to the wall.  
+
+From detection and wall point computed in previous step, we can compute the orientation vector and shift detection coordinates 9cm in the direction of the orientation vector to get the approacing point coordinates. 
+
+For approaching point orientation, we have to rotate the orientation vector 90 degrees clockwise. When this is done, we send approaching point `Pose` to the Ring detector. 
+
+### Cylinder approaching point calculator
+
+Works similarly as setting approaching points for faces in task1. When a cylinder is detected, Cylinder detector sends cylinder approaching point calculator service a `Pose` with coordinates of the detection. On received detection, robot's position in map coordinates is calculated.  
+
+The difference between the detection's position and the robot's position gives us the orientation vector, which is then transformed to quaternion.  
+
+We calculate approaching point coordinates by shifting detection coordinates 0.5m in the direction of our orientation vector.  
+
+Orientation is set to our orientatin vector. And voila, this is our approaching point `Pose` in map coordinates, which we send back to Cylinder detector.
+
+### Color detector
+### Robustifier
+### Movement controller
+
+
+--------Below this line, the content hasn't been updated yet---------------------------------------------------
 
 The components can be run separately using corresponding launch files or simultaneously using the `all.launch` launch file. If the `all.launch` file is launched, it also starts Gazebo simulator, amcl simulation and Rviz visualization tool.
 ```bash
@@ -100,27 +129,6 @@ roslaunch love_maker movement_controller.launch
 # Running components simultaneously
 roslaunch love_maker all.launch
 ```
-
-## Love maker's abilities
-Before starting the task:
-- Robot should build a map of the given environment
-
-The task:
-1. Search the space for faces
-    1. Locate the starting position
-    2. Define a way to move when searching (hardcode or intelligent)
-    3. Detect the faces
-        1. ~~Test different detectors in gazebo (fps, detection success rate)~~  **DONE**
-        2. Robustify face detector to prevent detecting the same face and considering it as new
-        3. Robustyfy face detector to eliminate false positives (sockets, for example)
-        4. Put marker on the estimated face location
-2. Approach the newly detected face
-    1. Move closer to the face and turn towards it
-    2. Greet
-    3. Mark as already approached
-3. Pass detected faces that have already been approached
-4. Stop when all the faces have been detected and approached
-5. Perform the task as fast as possible
 
 ## Face detector
 As we found out in `homework1`, the **opencv haar cascade detector** gives us best results in terms of speed and detection rate. So for the first task, we will be using this detector. The code for the first task face detection lives in `love_maker/scripts/face_detector.py`.
@@ -138,6 +146,3 @@ The face detector publishes the detected positions as *Pose*s to `/face_detectio
 
 ## Robustifier
 Subscribes to `/face_detections_raw` and checks if any neighbouring cells already have a detection logged. When a new face is detected, we wait for some more similar detections before deciding that this is not a false positive. After a true positive is confirmed, Robustifier sends the coordinates to which robot should move (not where the face is) to `/face_detections`.
-
-## Run all
-To run gazebo, rviz and love maker, we can only run one command: `roslaunch love_maker all.launch`.
