@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
 	object_detection_msgs
   color_classification
+  image_transport
 )
 
 find_package( OpenCV REQUIRED )
@@ -72,18 +73,18 @@ catkin_package(
     std_msgs
     object_detection_msgs
     color_classification
+    image_transport
+    cv_bridge
   DEPENDS
     Boost
     Eigen
     PCL
 )
 
-#include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-#add_executable(map_goals src/map_goals.cpp)
-#target_link_libraries(map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
-#catkin_install_python(PROGRAMS scripts/detect_rings DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 add_executable (cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp)
-add_dependencies(cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(cylinder_and_ring_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(cylinder_and_ring_detector ${catkin_EXPORTED_TARGETS})
+
 add_executable (voxelgrid_new src/voxelgrid.cpp)
