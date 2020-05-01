@@ -35,7 +35,7 @@ find_package( OpenCV REQUIRED )
 
 ## Find system dependencies
 find_package(Boost REQUIRED COMPONENTS system filesystem thread)
-## find_package(Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 
 ## Add include directories
