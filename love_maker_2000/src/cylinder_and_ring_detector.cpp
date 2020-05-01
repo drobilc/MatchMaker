@@ -21,6 +21,8 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "geometry_msgs/PointStamped.h"
+#include "color_classification/ColorClassification.h"
+#include "love_maker_2000/ApproachingPointCalculator.h"
 
 ros::Publisher pubx;
 ros::Publisher puby;
@@ -28,6 +30,10 @@ ros::Publisher pub_torus_cloud;
 ros::Publisher pub_cylinder;
 ros::Publisher pub_torus;
 ros::Publisher pub_testing;
+
+ros::ServiceClient color_classifier;
+ros::ServiceClient cylinder_approaching_point_calculator;
+
 
 tf2_ros::Buffer tf2_buffer;
 
@@ -286,6 +292,9 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     object_detection_msgs::ObjectDetection cylinder_detection_message;
     geometry_msgs::TransformStamped tss;
 
+    color_classification::ColorClassification color_classificator;
+    love_maker_2000::ApproachingPointCalculator approaching_point_calculator;
+
     point_camera.header.frame_id = "camera_rgb_optical_frame";
     point_camera.header.stamp = ros::Time::now();
 
@@ -446,6 +455,9 @@ int main(int argc, char **argv)
 
   pub_cylinder = nh.advertise<object_detection_msgs::ObjectDetection>("cylinder_detections_raw", 1);
   pub_torus = nh.advertise<object_detection_msgs::ObjectDetection>("torus_detections_raw", 1);
+
+  color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier_server");
+  cylinder_approaching_point_calculator = nh.serviceClient<love_maker_2000::ApproachingPointCalculator>("cylinder_approaching_point_calculator");
 
   // Spin
   ros::spin();

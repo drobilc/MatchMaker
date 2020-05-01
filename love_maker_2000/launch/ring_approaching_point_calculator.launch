@@ -1,0 +1,6 @@
+<launch>
+
+    <node pkg="love_maker_2000" type="ring_approaching_point_calculator.py" name="ring_approaching_point_calculator">
+    </node>
+
+</launch>
