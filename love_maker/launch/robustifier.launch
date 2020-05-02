@@ -5,8 +5,10 @@
   <arg name="raw_detection_topic" default="/face_detections_raw"/>
   <arg name="detection_topic" default="/face_detections"/>
   <arg name="marker_topic" default="/face_markers"/>
+  <arg name="publish_raw_markers" default="true"/>
 
   <node pkg="love_maker" type="robustifier.py" name="$(anon robustifier)" output="screen">
+    <param name="publish_raw_markers" type="bool" value="$(arg publish_raw_markers)"/>
     <param name="maximum_distance" type="double" value="$(arg maximum_distance)"/>
     <param name="minimum_detections" type="int" value="$(arg minimum_detections)"/>
     <param name="raw_detection_topic" type="str" value="$(arg raw_detection_topic)"/>

@@ -1,11 +1,14 @@
 <launch>
 
+  <arg name="raw_cylinder_markers" default="true"/>
+
   <include file="$(find love_maker)/launch/robustifier.launch">
     <arg name="maximum_distance" value="0.5"/>
     <arg name="minimum_detections" value="5"/>
     <arg name="raw_detection_topic" value="/cylinder_detections_raw"/>
     <arg name="detection_topic" value="/cylinder_detections"/>
     <arg name="marker_topic" value="/cylinder_markers"/>
+    <arg name="publish_raw_markers" value="$(arg raw_cylinder_markers)"/>
   </include>
 
 </launch>

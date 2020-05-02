@@ -17,16 +17,25 @@ import numpy as np
 import utils
 
 class Detection(object):
+
+    COLOR_MAP = {
+        "red": ColorRGBA(1, 0, 0, 1),
+        "green": ColorRGBA(0, 1, 0, 1),
+        "blue": ColorRGBA(0, 0, 1, 1),
+        "yellow": ColorRGBA(1, 1, 0, 1),
+        "white": ColorRGBA(1, 1, 1, 1),
+        "black": ColorRGBA(0, 0, 0, 1)
+    }
     
     def __init__(self, detection, number_of_detections = 0):
         self.detection = detection
         self.number_of_detections = number_of_detections
         self.already_sent = False
-
-        # TODO: set parameter based on the distance and angle to face at the time of detection
-        # The parameter that is used to blend two different positions together.
-        # How much the received position changes the current position
         self.blending = 0.5
+
+        self.color_classifications = []
+        if detection.classified_color:
+            self.color_classifications.append(detection.classified_color)
     
     def get_object_pose(self):
         pose = PoseStamped()
@@ -42,20 +51,51 @@ class Detection(object):
         pose.pose = self.detection.approaching_point_pose
         return pose
     
-    def get_color(self):
-        return self.detection.color
+    def get_real_color(self):
+        color = ColorRGBA()
+        color.r = self.detection.color.r / 255.0
+        color.g = self.detection.color.g / 255.0
+        color.b = self.detection.color.b / 255.0
+        color.a = 1.0
+        return color
     
-    def update(self, other_detection):
+    def get_color(self):
+        if len(self.color_classifications) <= 0:
+            return self.get_real_color()
+        
+        most_frequent = max(set(self.color_classifications), key = self.color_classifications.count) 
+        return self.COLOR_MAP[most_frequent]
+        
+    
+    def update_object_position(self, other_detection, blending=0.5):
         self_pose = self.detection.object_pose
         other_pose = Detection(other_detection).get_object_pose().pose
+
         # Calculate new position on line between current position and received position.
         # Use the blending parameter to blend current and next position (simple linear interpolation)
         # position = (1 - blending) * current + blending * next
-        alpha = 1 - self.blending
-        beta = self.blending
+        alpha, beta = 1 - blending, blending
         self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
         self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
         self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
+    
+    def update_approaching_point_position(self, other_detection, blending=0.5):
+        self_pose = self.detection.approaching_point_pose
+        other_pose = Detection(other_detection).get_approaching_point_pose().pose
+        alpha, beta = 1 - blending, blending
+        self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
+        self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
+        self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
+
+    def update(self, other_detection):
+        # Update detected object position, then update approacing point
+        # position.
+        self.update_object_position(other_detection, self.blending)
+        self.update_approaching_point_position(other_detection, self.blending)
+
+        # Add color classification to list of color classifications
+        if other_detection.classified_color:
+            self.color_classifications.append(other_detection.classified_color)
     
     def distance_to(self, other_detection):
         self_pose = self.get_object_pose().pose
@@ -84,17 +124,15 @@ class Robustifier(object):
     ROBUSTIFIED_MARKER_STYLE = {
         'face': {
             'marker_type': Marker.SPHERE,
-            'color': ColorRGBA(0, 1, 0, 1),
-            'scale': Vector3(0.2, 0.2, 0.2)
+            'scale': Vector3(0.2, 0.2, 0.2),
+            'color': ColorRGBA(0, 1, 0, 1)
         },
         'ring': {
             'marker_type': Marker.SPHERE,
-            'color': ColorRGBA(0, 1, 0, 1),
             'scale': Vector3(0.2, 0.2, 0.2)
         },
         'cylinder': {
             'marker_type': Marker.CYLINDER,
-            'color': ColorRGBA(0, 1, 0, 1),
             'scale': Vector3(0.2, 0.2, 0.2)
         }
     }
@@ -117,6 +155,8 @@ class Robustifier(object):
         self.detection_topic = rospy.get_param('~detection_topic', '/face_detections')
         self.marker_topic = rospy.get_param('~marker_topic', '/face_markers')
 
+        self.publish_raw_markers = rospy.get_param('~publish_raw_markers', True)
+
         # Subscriber and publisher for object detections
         self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
         self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
@@ -137,10 +177,20 @@ class Robustifier(object):
         # Construct a marker from detected object, add it to markers array
         # and publish it to marker_topic
         pose = detection.get_object_pose()
+
+        marker_style_copy = marker_style.copy()
+
+        # If color is defined in marker style, it overrides the received color
+        color = detection.get_color()
+        if 'color' in marker_style:
+            color = marker_style['color']
+            marker_style_copy.pop('color')
+        
+        marker_style_copy['color'] = color
+
         new_marker = utils.stamped_pose_to_marker(pose,
             index=len(self.markers.markers),
-            # color=detection.color,
-            **marker_style
+            **marker_style_copy
         )
         self.markers.markers.append(new_marker)
         self.markers_publisher.publish(self.markers)
@@ -159,7 +209,8 @@ class Robustifier(object):
         if detection.header.frame_id != 'map':
             return
         
-        self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
+        if self.publish_raw_markers:
+            self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not
