@@ -31,11 +31,11 @@ class Detection(object):
         self.detection = detection
         self.number_of_detections = number_of_detections
         self.already_sent = False
-
-        # TODO: set parameter based on the distance and angle to face at the time of detection
-        # The parameter that is used to blend two different positions together.
-        # How much the received position changes the current position
         self.blending = 0.5
+
+        self.color_classifications = []
+        if detection.classified_color:
+            self.color_classifications.append(detection.classified_color)
     
     def get_object_pose(self):
         pose = PoseStamped()
@@ -60,21 +60,42 @@ class Detection(object):
         return color
     
     def get_color(self):
-        if self.detection.classified_color:
-            return self.COLOR_MAP[self.detection.classified_color]
-        return self.get_real_color()
+        if len(self.color_classifications) <= 0:
+            return self.get_real_color()
+        
+        most_frequent = max(set(self.color_classifications), key = self.color_classifications.count) 
+        return self.COLOR_MAP[most_frequent]
+        
     
-    def update(self, other_detection):
+    def update_object_position(self, other_detection, blending=0.5):
         self_pose = self.detection.object_pose
         other_pose = Detection(other_detection).get_object_pose().pose
+
         # Calculate new position on line between current position and received position.
         # Use the blending parameter to blend current and next position (simple linear interpolation)
         # position = (1 - blending) * current + blending * next
-        alpha = 1 - self.blending
-        beta = self.blending
+        alpha, beta = 1 - blending, blending
         self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
         self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
         self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
+    
+    def update_approaching_point_position(self, other_detection, blending=0.5):
+        self_pose = self.detection.approaching_point_pose
+        other_pose = Detection(other_detection).get_approaching_point_pose().pose
+        alpha, beta = 1 - blending, blending
+        self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
+        self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
+        self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
+
+    def update(self, other_detection):
+        # Update detected object position, then update approacing point
+        # position.
+        self.update_object_position(other_detection, self.blending)
+        self.update_approaching_point_position(other_detection, self.blending)
+
+        # Add color classification to list of color classifications
+        if other_detection.classified_color:
+            self.color_classifications.append(other_detection.classified_color)
     
     def distance_to(self, other_detection):
         self_pose = self.get_object_pose().pose
