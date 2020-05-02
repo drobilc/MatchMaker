@@ -155,6 +155,8 @@ class Robustifier(object):
         self.detection_topic = rospy.get_param('~detection_topic', '/face_detections')
         self.marker_topic = rospy.get_param('~marker_topic', '/face_markers')
 
+        self.publish_raw_markers = rospy.get_param('~publish_raw_markers', True)
+
         # Subscriber and publisher for object detections
         self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
         self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
@@ -207,7 +209,8 @@ class Robustifier(object):
         if detection.header.frame_id != 'map':
             return
         
-        self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
+        if self.publish_raw_markers:
+            self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not
