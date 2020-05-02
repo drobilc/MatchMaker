@@ -17,6 +17,15 @@ import numpy as np
 import utils
 
 class Detection(object):
+
+    COLOR_MAP = {
+        "red": ColorRGBA(1, 0, 0, 1),
+        "green": ColorRGBA(0, 1, 0, 1),
+        "blue": ColorRGBA(0, 0, 1, 1),
+        "yellow": ColorRGBA(1, 1, 0, 1),
+        "white": ColorRGBA(1, 1, 1, 1),
+        "black": ColorRGBA(0, 0, 0, 1)
+    }
     
     def __init__(self, detection, number_of_detections = 0):
         self.detection = detection
@@ -42,8 +51,18 @@ class Detection(object):
         pose.pose = self.detection.approaching_point_pose
         return pose
     
+    def get_real_color(self):
+        color = ColorRGBA()
+        color.r = self.detection.color.r / 255.0
+        color.g = self.detection.color.g / 255.0
+        color.b = self.detection.color.b / 255.0
+        color.a = 1.0
+        return color
+    
     def get_color(self):
-        return self.detection.color
+        if self.detection.classified_color:
+            return self.COLOR_MAP[self.detection.classified_color]
+        return self.get_real_color()
     
     def update(self, other_detection):
         self_pose = self.detection.object_pose
@@ -84,17 +103,15 @@ class Robustifier(object):
     ROBUSTIFIED_MARKER_STYLE = {
         'face': {
             'marker_type': Marker.SPHERE,
-            'color': ColorRGBA(0, 1, 0, 1),
-            'scale': Vector3(0.2, 0.2, 0.2)
+            'scale': Vector3(0.2, 0.2, 0.2),
+            'color': ColorRGBA(0, 1, 0, 1)
         },
         'ring': {
             'marker_type': Marker.SPHERE,
-            'color': ColorRGBA(0, 1, 0, 1),
             'scale': Vector3(0.2, 0.2, 0.2)
         },
         'cylinder': {
             'marker_type': Marker.CYLINDER,
-            'color': ColorRGBA(0, 1, 0, 1),
             'scale': Vector3(0.2, 0.2, 0.2)
         }
     }
@@ -137,10 +154,20 @@ class Robustifier(object):
         # Construct a marker from detected object, add it to markers array
         # and publish it to marker_topic
         pose = detection.get_object_pose()
+
+        marker_style_copy = marker_style.copy()
+
+        # If color is defined in marker style, it overrides the received color
+        color = detection.get_color()
+        if 'color' in marker_style:
+            color = marker_style['color']
+            marker_style_copy.pop('color')
+        
+        marker_style_copy['color'] = color
+
         new_marker = utils.stamped_pose_to_marker(pose,
             index=len(self.markers.markers),
-            # color=detection.color,
-            **marker_style
+            **marker_style_copy
         )
         self.markers.markers.append(new_marker)
         self.markers_publisher.publish(self.markers)
