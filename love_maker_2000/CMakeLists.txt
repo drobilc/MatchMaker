@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
 	object_detection_msgs
   color_classification
   image_transport
+  message_generation
 )
 
 find_package( OpenCV REQUIRED )
@@ -57,6 +58,15 @@ link_directories(
 
 link_libraries(${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
+add_service_files(FILES 
+  ApproachingPointCalculator.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
+
 catkin_package(
 	LIBRARIES
     pcl_ros_filters
@@ -75,6 +85,7 @@ catkin_package(
     color_classification
     image_transport
     cv_bridge
+    geometry_msgs
   DEPENDS
     Boost
     Eigen
