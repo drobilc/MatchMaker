@@ -2,16 +2,18 @@
 Love maker is a precious space for development of the basis of the Match Maker, task1.
 
 ## TODO
-* detect colors (Add topic for images to cylinder_and_ring_detector, create color detection service)
+* detect ring color
+* ~~detect cylinder color~~  **DONE**
 * ~~implement new message type (see below)~~  **DONE**
 * ~~change all messages to `ObjectDetection` (Cylinder and ring detector)~~ **DONE**
+* make ring detection work
+* add approaching point calculation for cylinders
+* add approaching point calculation for rings
+* add launching cylinder and ring detection to all.launch (when the arhitecture is changed)
 * write new algorithm for setting exploration points
 * make sure all points are in map coordinates before adding them to `ObjectDetection`
-* add robustifying colors in Robustifier
-* make ring detection work
+* ~~add robustifying colors in Robustifier~~  **DONE**
 * fix line fitting in approaching for faces in Face mapper
-* ~~write services for approaching for cylinders and rings (see below)~~ **NEEDS TESTING**
-* add launching cylinder and ring detection to all.launch (when the arhitecture is changed)
 * UPDATE DOCUMENTATION AS YOU DO ANYTHING!
 
 Love maker will presumably be made following the scheme below.
@@ -37,20 +39,14 @@ Subscribes to: `/camera/depth/points`
 Publishes to: `/love_maker_2000/voxelgrid`
 
 ### Cylinder and ring detector
-This 2 in 1 node is responsible for detecting cylinders and rings. It gets information from the point cloud through the Voxelgrid (`/love_maker_2000/voxelgrid`). Now it finds the object and calls Color detector service to get it's color. It then calls appropriate services to calculate approaching points and then sends `ObjectDetection` message to appropriate Robustifier(`cylinder_detections_raw`, `torus_detections_raw`).
+This 2 in 1 node is responsible for detecting cylinders and rings. It gets information from the point cloud through the Voxelgrid (`/love_maker_2000/voxelgrid`). Now it finds the object and calls Color detector service to get it's color. It then sends `ObjectDetection` message to appropriate Robustifier(`cylinder_detections_raw`, `torus_detections_raw`).
 
 Subscribed to: `/love_maker_2000/voxelgrid`, `/camera/rgb/image_raw` (needed for Color detector)  
 Publishes to: `cylinder_detections_raw`, `torus_detections_raw`  
-Calls service: Color detector, Ring approaching point calculator, Cylinder approaching point calculator
+Calls service: Color detector
 
 ### Color detector (service)
 Based on image it receives from Cylinder and ring detector returns the color of the cylinder or ring.
-
-### Ring approaching point calculator (service)
-Computes the approaching point for detected ring from Cylinder and ring detector, fills the field for approaching point in the `ObjectDetection` message and returns it.
-
-### Cylinder approaching point calculator (service)
-Computes the approaching point for detected cylinder from Cylinder and ring detector, fills the field for approaching point in the `ObjectDetection` message and returns it.
 
 ### Robustifier
 There are 3 instances of this node, one for each type of objects we are detecting. Face mapper(`face_detections_raw`) and Cylinder and ring detector() send it the locations. It keeps the global locations of previously detected objects and determines whether the new detection sent by appropriate detector corresponds to any already discovered object and has been detected enough times to call it a true positive. If so, it sends `ObjectDetection` message to Movement controller(`face_detections`, `cylinder_detections`, `torus_detections`). It also publishes all markers (`face_markers`, `cylinder_markers`, `torus_markers`). Besides object location it also robustifies the color of the object.
@@ -77,8 +73,11 @@ std_msgs/Header header
 geometry_msgs/Pose object_pose
 geometry_msgs/Pose approaching_point_pose
 std_msgs/ColorRGBA color
+string classified_color
 string type
 ```
+`type`: `face`, `cylinder`, `ring`  
+`classified_color`: `white`, `yellow`, `red`, `blue`, `green`, `black`
 
 ## How to run
 ### All
