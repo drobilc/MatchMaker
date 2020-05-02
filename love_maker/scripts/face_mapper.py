@@ -133,7 +133,7 @@ class DetectionMapper():
         def closest_line(face_pixel, wall_pixel, max_distance=5):
             map_region = self.map_data[face_pixel[1]-max_distance-1:face_pixel[1]+max_distance, face_pixel[0]-max_distance-1:face_pixel[0]+max_distance]
             x0, y0 = wall_pixel - face_pixel + max_distance
-            lines = cv2.HoughLinesP(map_region, 1, 1, 5, 5, 2)
+            lines = cv2.HoughLinesP(map_region, rho=1, theta=numpy.pi / 180.0, threshold=8, minLineLength=8, maxLineGap=3)
             best_line = None
             best_distance = 100000
             for line in lines:
