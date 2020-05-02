@@ -90,6 +90,9 @@ bool are_points_coplanar(std::vector<Vector3f> points)
   return abs(result) < 0.1 ? true : false;
 }
 
+/**
+ * Calculates circle center. Based on this: http://www.mathopenref.com/constcirclecenter.html
+ */
 PointT calculate_circle_center(std::vector<Vector3f> points) {
   Vector3f pA, pB, pC, pD;
   pA = points[0];
@@ -97,9 +100,15 @@ PointT calculate_circle_center(std::vector<Vector3f> points) {
   pC = points[2];
   pD = points[3];
 
-  Vector3f plane_normal = (pA - pB).cross(pA - pC);
-  Vector3f middle_AB = (pA + pB) / 2;
-  Vector3f middle_CD = (pC + pD) / 2;
+  Vector3f plane_normal = (pB - pA).cross(pC - pA);
+  plane_normal.normalize();
+  Vector3f middle_AB = (pB - pA) / 2;
+  Vector3f middle_CD = (pD - pC) / 2;
+
+  Vector3f vector_towards_center_1 = (pB - pA).cross(plane_normal);
+  Vector3f vector_towards_center_2 = (pD - pC).cross(plane_normal);
+  vector_towards_center_1.normalize();
+  vector_towards_center_2.normalize();
   
   return PointT(1, 1, 1);
 }
@@ -142,7 +151,7 @@ void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Norma
   
   std::cerr << "Points are coplanar" << std::endl;
 
-  PointT ring_center = calculate_circle_center(four_points_cloud);
+  PointT ring_center = calculate_circle_center(points);
 }
 
 /**
