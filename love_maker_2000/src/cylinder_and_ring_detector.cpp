@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <cmath>
+#include <Eigen/Dense>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -17,12 +18,15 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/random_sample.h>
 #include "pcl/point_cloud.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "geometry_msgs/PointStamped.h"
 #include "color_classification/ColorClassification.h"
 #include "love_maker_2000/ApproachingPointCalculator.h"
+
+using namespace Eigen;
 
 ros::Publisher pubx;
 ros::Publisher puby;
@@ -64,22 +68,81 @@ void log_pointcloud(pcl::PointCloud<PointT>::Ptr &cloud)
 }
 
 /**
+ * Works only for four points. Returns true if points are coplanar.
+ */
+bool are_points_coplanar(std::vector<Vector3f> points)
+{
+  Vector3f pA, pB, pC, pD;
+  pA = points[0];
+  pB = points[1];
+  pC = points[2];
+  pD = points[3];
+
+
+  Vector3f vAB(pB[0] - pA[0], pB[1] - pA[1], pB[2] - pA[2]);
+  Vector3f vAC(pC[0] - pA[0], pC[1] - pA[1], pC[2] - pA[2]);
+  Vector3f vAD(pD[0] - pA[0], pD[1] - pA[1], pD[2] - pA[2]);
+
+  // If result of following equation is 0, points are coplanar
+  float result = vAD.dot(vAB.cross(vAC));
+  std::cerr << "Result of AD * (AB x AC): " << result << std::endl;
+
+  return abs(result) < 0.1 ? true : false;
+}
+
+PointT calculate_circle_center(std::vector<Vector3f> points) {
+  Vector3f pA, pB, pC, pD;
+  pA = points[0];
+  pB = points[1];
+  pC = points[2];
+  pD = points[3];
+
+  Vector3f plane_normal = (pA - pB).cross(pA - pC);
+  Vector3f middle_AB = (pA + pB) / 2;
+  Vector3f middle_CD = (pC + pD) / 2;
+  
+  return PointT(1, 1, 1);
+}
+
+/**
  * Finds rings in a more sophisticated way, does not work yet. Use find_rings.
  */
 void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
-  // Filter the point cloud at certain heights
   pcl::PassThrough<PointT> pass;
   pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
+  pcl::RandomSample<PointT> sample;
+  pcl::PointCloud<PointT> four_points_cloud;
+  std::vector<Vector3f> points;
+
+  // Filter the point cloud at certain heights
+  std::cerr << "\n-- Rings" << std::endl;
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("y");
   pass.setFilterLimits(-0.5, -0.3);
   pass.filter(*cloud_filtered);
   std::cerr << "PointCloud for rings has: " << cloud_filtered->points.size() << " data points." << std::endl;
-
   log_pointcloud(cloud_filtered);
 
-  // Select four random points, if they are on the same plane we can proceed
+  if (cloud_filtered->points.size() < 4) return;
+
+
+  // Select four random points
+  sample.setInputCloud(cloud_filtered);
+  sample.setSample(4);
+  sample.filter(four_points_cloud);
+
+  // Convert them into vectors
+  for (int i = 0; i < four_points_cloud.points.size(); i++)
+    points.push_back(Vector3f(four_points_cloud.points[i].x, four_points_cloud[i].y, four_points_cloud.points[i].z));
+
+  // If points are coplanar, we can continue
+  if (!are_points_coplanar(points))
+    return;
+  
+  std::cerr << "Points are coplanar" << std::endl;
+
+  PointT ring_center = calculate_circle_center(four_points_cloud);
 }
 
 /**
@@ -229,7 +292,6 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
       cloud_filtered = cloud_filtered2;
       cloud_normals = cloud_normals2;
     }
-
   } while (cloud_plane->points.size() >= plane_points_threshold);
 }
 
