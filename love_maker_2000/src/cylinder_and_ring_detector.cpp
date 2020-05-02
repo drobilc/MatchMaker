@@ -3,6 +3,7 @@
 #include <math.h>
 #include <cmath>
 #include <Eigen/Dense>
+#include "std_msgs/String.h"
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -25,6 +26,10 @@
 #include "geometry_msgs/PointStamped.h"
 #include "color_classification/ColorClassification.h"
 #include "love_maker_2000/ApproachingPointCalculator.h"
+
+
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 
 using namespace Eigen;
 
@@ -54,6 +59,18 @@ int cylinder_points_threshold;
 
 // Parameters for planar segmentation
 double plane_points_threshold;
+
+// The last received image from camera source
+cv_bridge::CvImagePtr lastImageMessage;
+
+void cameraCallback(const sensor_msgs::ImageConstPtr& msg) {
+  try {
+    // Convert received image to opencv image message
+    lastImageMessage = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
+  } catch (cv_bridge::Exception& e) {
+    ROS_ERROR("Could not convert from '%s' to 'rgb8'.", msg->encoding.c_str());
+  }
+}
 
 /**
  * Logs the point cloud to /point_cloud/log topic.
@@ -107,7 +124,7 @@ PointT calculate_circle_center(std::vector<Vector3f> points) {
 /**
  * Finds rings in a more sophisticated way, does not work yet. Use find_rings.
  */
-void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+/*void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
   pcl::PassThrough<PointT> pass;
   pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
@@ -143,7 +160,7 @@ void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Norma
   std::cerr << "Points are coplanar" << std::endl;
 
   PointT ring_center = calculate_circle_center(four_points_cloud);
-}
+}*/
 
 /**
  * Find rings in the given pint cloud.
@@ -295,6 +312,47 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
   } while (cloud_plane->points.size() >= plane_points_threshold);
 }
 
+cv::Point pointToPixel(Eigen::Vector4f point) {
+  // This data is available from the projection matrix in camera info topic
+  // rostopic echo /camera/rgb/camera_info.
+  float fx = 554.254691191187;
+  float fy = 554.254691191187;
+  float cx = 320.5;
+  float cy = 240.5;
+
+  // Use pinhole camera model to compute (x, y) coordinates of the centroid on image
+  float y = (point[1] / point[2]) * fy + cy;
+  float x = (point[0] / point[2]) * fx + cx;
+
+  return cv::Point((int) x, (int) y);
+}
+
+std_msgs::ColorRGBA averageColorAround(cv::Mat image, cv::Point center, int regionSize) {
+  // Compute average color of a window of size regionSize around the
+  // cylinder centroid on image
+  int numberOfSamples = (regionSize * 2 + 1) * (regionSize * 2 + 1);
+
+  int red = 0;
+  int green = 0;
+  int blue = 0;
+  for (int i = -regionSize; i <= regionSize; i++) {
+    for (int j = -regionSize; j <= regionSize; j++) {
+      cv::Point point = cv::Point(center.x + j, center.y + i);
+      cv::Vec3b color = image.at<cv::Vec3b>(point);
+      red += color[0];
+      green += color[1];
+      blue += color[2];
+    }
+  }
+
+  std_msgs::ColorRGBA color;
+  color.r = red / numberOfSamples;
+  color.g = green / numberOfSamples;
+  color.b = blue / numberOfSamples;
+  color.a = 255;
+  return color;
+}
+
 /**
  * Finds cylinders in the point cloud and publishes the detections. Removes found cylinders from the point cloud.
  * 
@@ -353,7 +411,6 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     object_detection_msgs::ObjectDetection cylinder_detection_message;
     geometry_msgs::TransformStamped tss;
 
-    color_classification::ColorClassification color_classificator;
     love_maker_2000::ApproachingPointCalculator approaching_point_calculator;
 
     point_camera.header.frame_id = "camera_rgb_optical_frame";
@@ -411,6 +468,31 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
     puby.publish(outcloud_cylinder);
 
+
+    // If the last image message is available, get color of the centroid from the received image
+    color_classification::ColorClassification colorClassificator;
+    std_msgs::ColorRGBA color;
+    std_msgs::String classifiedColor;
+
+    if (lastImageMessage) {
+      cv::Point centroidPoint = pointToPixel(centroid);
+      color = averageColorAround(lastImageMessage->image, centroidPoint, 5);
+
+      // After average color has been calculated, classify it
+      colorClassificator.request.color = color;
+
+      // Classify the selected color using color_classification service
+      if (color_classifier.call(colorClassificator)) {
+        std::cerr << "CLASSIFIED COLOR: " << colorClassificator.response.classified_color << std::endl;
+        classifiedColor.data = colorClassificator.response.classified_color;
+        // Color has beem successfully classified
+      } else {
+        ROS_ERROR("Failed to call color_classifier service");
+        return;
+      }
+
+    }
+
     // Publish the message only if point is not nan
     if (point_map.point.x == point_map.point.x && point_map.point.z == point_map.point.z && point_map.point.y == point_map.point.y)
     {
@@ -422,6 +504,9 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
       cylinder_detection_message.object_pose.position.x = point_map.point.x;
       cylinder_detection_message.object_pose.position.y = point_map.point.y;
       cylinder_detection_message.object_pose.position.z = point_map.point.z;
+      // Set color classification to message
+      cylinder_detection_message.color = color;
+      cylinder_detection_message.classified_color = classifiedColor.data;
       // Set type of object message
       cylinder_detection_message.type = "cylinder";
       pub_cylinder.publish(cylinder_detection_message);
@@ -492,7 +577,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 
   // log_pointcloud(cloud_filtered3);
 
-  find_rings2(cloud_filtered3, cloud_normals3);
+  // find_rings2(cloud_filtered3, cloud_normals3);
 }
 
 void get_parameters(ros::NodeHandle nh)
@@ -523,6 +608,10 @@ int main(int argc, char **argv)
   // Create a ROS subscriber for the input point cloud
   ros::Subscriber sub = nh.subscribe("input", 1, cloud_cb);
 
+  // Also create a ROS subscriber for camera image
+  image_transport::ImageTransport imageTransport(nh);
+  image_transport::Subscriber cameraSubscriber = imageTransport.subscribe("/camera/rgb/image_raw", 1, cameraCallback);
+
   // Create a ROS publisher for the output point cloud
   pubx = nh.advertise<pcl::PCLPointCloud2>("point_cloud/planes", 1);
   puby = nh.advertise<pcl::PCLPointCloud2>("point_cloud/cylinder", 1);
@@ -532,7 +621,7 @@ int main(int argc, char **argv)
   pub_cylinder = nh.advertise<object_detection_msgs::ObjectDetection>("cylinder_detections_raw", 1);
   pub_torus = nh.advertise<object_detection_msgs::ObjectDetection>("torus_detections_raw", 1);
 
-  color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier_server");
+  color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier");
   cylinder_approaching_point_calculator = nh.serviceClient<love_maker_2000::ApproachingPointCalculator>("cylinder_approaching_point_calculator");
 
   // Spin
