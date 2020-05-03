@@ -180,7 +180,7 @@ class MovementController(object):
 
         if self.current_goal is not None:
             # If the approaching point was reached succesfully, greet.
-            if status == 3 and self.current_goal.type == 'face':
+            if status == 3 and (self.current_goal.type in ["face", "cylinder", "ring"]):
                 self.greet()
                 rospy.sleep(1)
 

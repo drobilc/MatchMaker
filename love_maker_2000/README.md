@@ -3,17 +3,23 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 
 ## TODO
 * detect ring color
-* ~~detect cylinder color~~  **DONE**
-* ~~implement new message type (see below)~~  **DONE**
-* ~~change all messages to `ObjectDetection` (Cylinder and ring detector)~~ **DONE**
+* fix color detection on yellow cylinder
+* stop the robot when it finds all objects even if it hasn't explored the whole map
+* greet cylinders and rings
 * make ring detection work
 * add approaching point calculation for cylinders
 * add approaching point calculation for rings
+* add approaching point markers to robustifier
+* crop the map
+* fine tune exploration points algorithm once all components work
 * add launching cylinder and ring detection to all.launch (when the arhitecture is changed)
-* write new algorithm for setting exploration points
 * make sure all points are in map coordinates before adding them to `ObjectDetection`
+* ~~write new algorithm for setting exploration points~~  **DONE**
+* ~~detect cylinder color~~  **DONE**
+* ~~implement new message type (see below)~~  **DONE**
+* ~~change all messages to `ObjectDetection` (Cylinder and ring detector)~~ **DONE**
 * ~~add robustifying colors in Robustifier~~  **DONE**
-* fix line fitting in approaching for faces in Face mapper
+* ~~fix line fitting in approaching for faces in Face mapper~~  **DONE**
 * UPDATE DOCUMENTATION AS YOU DO ANYTHING!
 
 Love maker will presumably be made following the scheme below.
