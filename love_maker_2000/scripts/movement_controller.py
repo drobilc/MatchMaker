@@ -42,8 +42,19 @@ class MovementController(object):
     def __init__(self, goals):
         # Create a Greeter object that controls speech synthetisation
         self.greeter = greeter.Greeter()
-        self.greetings = [
+        self.greetings = []
+        self.face_greetings = [
             "Hello there!", "How are you doing?", "Oh, hi", "Good day", "Hello"
+        ]
+        self.color = ""
+        self.object_type = ""
+        self.cylinder_and_ring_greetings = [
+            "What a beautiful {} {}!".format(self.color, self.object_type), 
+            "Well, this is a nice {} {}.".format(self.color, self.object_type),
+            "I see a {} {}.".format(self.color, self.object_type),
+            "My senses tell me this is a {} {}.".format(self.color, self.object_type),
+            "I declare this a {} {}.".format(self.color, self.object_type),
+            "{} {}, not suprising.".format(self.color, self.object_type)
         ]
 
         # Create a new simple action client that will connect to move_base topic
@@ -198,6 +209,14 @@ class MovementController(object):
         self.move_to_goal(next_goal)
 
     def greet(self, greeting = None):
+        # Based on object type, choose a greeting
+        self.color = self.current_goal.classified_color
+        self.object_type = self.current_goal.type
+        if self.object_type == "face":
+            self.greetings = self.face_greetings
+        else:
+            self.greetings = self.cylinder_and_ring_greetings
+
         if greeting is None:
             random_greeting = random.choice(self.greetings)
             self.greeter.say(random_greeting)
