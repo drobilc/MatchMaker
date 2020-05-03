@@ -682,6 +682,13 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
 
     std::cerr << "Centroids: " << centroid[0] << ", " << centroid[1] << ", " << centroid[2] << std::endl;
 
+    // Get robot coordinates in map frame
+    geometry_msgs::PointStamped pointRobot, pointRobotMap;
+    pointRobot.header.frame_id = "camera_rgb_optical_frame";
+    pointRobot.header.stamp = point_camera.header.stamp;
+    pointRobotMap.header.frame_id = "map";
+    pointRobotMap.header.stamp = pointRobot.header.stamp;
+
     try
     {
       time_test = ros::Time::now();
@@ -696,9 +703,37 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
       ROS_WARN("Transform warning: %s\n", ex.what());
     }
 
-    //std::cerr << tss ;
-
     tf2::doTransform(point_camera, point_map, tss);
+    tf2::doTransform(pointRobot, pointRobotMap, tss);
+
+    // Now that we have computed cylinder position and robot position in map
+    // coordinate frame, we can compute the approaching point for cylinder
+    // To compute approaching point, compute vector v pointing from cylinder to
+    // robot. Then compute point that is 0.5m far from the cylinder center. This
+    // is the approaching point. To get the robot orientation, flip the vector.
+    double dx = pointRobotMap.point.x - point_map.point.x;
+    double dy = pointRobotMap.point.y - point_map.point.y;
+    double dz = pointRobotMap.point.z - point_map.point.z;
+    double norm = sqrt(dx * dx + dy * dy + dz * dz);
+    dx /= norm; dy /= norm; dz /= norm;
+
+    // Now that vector components have been initialized, we can multiply them by
+    // 0.5 to get a point 0.5m away from the cylinder centroid. The approaching
+    // point is then at point_map + v * 0.5
+    double approachingPointX = point_map.point.x + dx * 0.5;
+    double approachingPointY = point_map.point.y + dy * 0.5;
+    double approachingPointZ = point_map.point.z + dz * 0.5;
+
+    // Get the orientation of the approaching point
+    tf2::Quaternion approachingPointOrientation;
+    double angle = atan2(-dy, -dx);
+    approachingPointOrientation.setRPY(0, 0, angle);
+
+    geometry_msgs::Quaternion approachingPointOrientationMessage;
+    approachingPointOrientationMessage = tf2::toMsg(approachingPointOrientation);
+
+    std::cerr << "VECTOR: " << dx << ", " << dy << ", " << dz << std::endl;
+
     std::cerr << "point_camera: " << point_camera.point.x << " " << point_camera.point.y << " " << point_camera.point.z << std::endl;
     std::cerr << "point_map: " << point_map.point.x << " " << point_map.point.y << " " << point_map.point.z << std::endl;
 
@@ -737,9 +772,10 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
       cylinder_detection_message.header.stamp = ros::Time::now();
       cylinder_detection_message.header.frame_id = "map";
       // Set detection and approaching point
-      cylinder_detection_message.approaching_point_pose.position.x = point_map.point.x;
-      cylinder_detection_message.approaching_point_pose.position.y = point_map.point.y;
-      cylinder_detection_message.approaching_point_pose.position.z = point_map.point.z;
+      cylinder_detection_message.approaching_point_pose.position.x = approachingPointX;
+      cylinder_detection_message.approaching_point_pose.position.y = approachingPointY;
+      cylinder_detection_message.approaching_point_pose.position.z = approachingPointZ;
+      cylinder_detection_message.approaching_point_pose.orientation = approachingPointOrientationMessage;
       cylinder_detection_message.object_pose.position.x = point_map.point.x;
       cylinder_detection_message.object_pose.position.y = point_map.point.y;
       cylinder_detection_message.object_pose.position.z = point_map.point.z;
