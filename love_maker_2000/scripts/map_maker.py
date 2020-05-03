@@ -92,7 +92,7 @@ class MapMaker(object):
         # Filter triangles that are too small and their center doesn't lie inside
         # free space
         min_area = 60
-        min_distance=26
+        min_distance= 26
         points = []
         # filtered_triangles = []
 
@@ -113,29 +113,33 @@ class MapMaker(object):
             # coordinate back to original map coordinate.
             points.append([left + center_x, top + center_y])
 
-        # Perform hierarhical clustering with stooping criteria being the min_distance between points (play with this parameter)
-        distances = pdist(points)
-        clustering_data = centroid(distances)
-        clustered = fcluster(clustering_data, min_distance, criterion="distance")
+        # If the map is big enough (has enough corners), perform clustering
+        if len(points) > 10:
+            # Perform hierarhical clustering with stooping criteria being the min_distance between points (play with this parameter)
+            distances = pdist(points)
+            clustering_data = centroid(distances)
+            clustered = fcluster(clustering_data, min_distance, criterion="distance")
 
-        # Figure out how to join the points within the same cluster
-        new_points = []
-        max_cluster_id = max(clustered)
-        for cluster_id in range(1, max_cluster_id + 1):
-            # For each possible cluster find all point that are assigned to it
-            in_cluster = []
-            for point_index in enumerate(points):
-                if clustered[point_index[0]] == cluster_id:
-                    in_cluster.append(points[point_index[0]])
-            # Convert these points to one point -> averaging (for now)
-            sum_x = 0
-            sum_y = 0
-            for cluster_member in in_cluster:
-                sum_x += cluster_member[0]
-                sum_y += cluster_member[1]
-            avg_x = sum_x / len(in_cluster)
-            avg_y = sum_y / len(in_cluster)
-            new_points.append([avg_x, avg_y])
+            # Figure out how to join the points within the same cluster
+            new_points = []
+            max_cluster_id = max(clustered)
+            for cluster_id in range(1, max_cluster_id + 1):
+                # For each possible cluster find all point that are assigned to it
+                in_cluster = []
+                for point_index in enumerate(points):
+                    if clustered[point_index[0]] == cluster_id:
+                        in_cluster.append(points[point_index[0]])
+                # Convert these points to one point -> averaging (for now)
+                sum_x = 0
+                sum_y = 0
+                for cluster_member in in_cluster:
+                    sum_x += cluster_member[0]
+                    sum_y += cluster_member[1]
+                avg_x = sum_x / len(in_cluster)
+                avg_y = sum_y / len(in_cluster)
+                new_points.append([avg_x, avg_y])
+        else:
+            new_points = points
 
         # Convert point from pixels to map coordinates
         for point in new_points:
