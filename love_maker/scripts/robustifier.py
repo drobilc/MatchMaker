@@ -108,6 +108,11 @@ class Detection(object):
 
 class Robustifier(object):
 
+    APPROACHING_POINT_STYLE = {
+        'marker_type': Marker.SPHERE,
+        'color': ColorRGBA(1, 1, 0, 1)
+    }
+
     RAW_MARKER_STYLE = {
         'face': {
             'marker_type': Marker.SPHERE,
@@ -173,7 +178,7 @@ class Robustifier(object):
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
 
-    def publish_marker(self, detection, marker_style={}):
+    def publish_marker(self, detection, marker_style={}, approaching_point=False):
         # Construct a marker from detected object, add it to markers array
         # and publish it to marker_topic
         pose = detection.get_object_pose()
@@ -193,6 +198,15 @@ class Robustifier(object):
             **marker_style_copy
         )
         self.markers.markers.append(new_marker)
+
+        if approaching_point:
+            approaching_pose = detection.get_approaching_point_pose()
+            approaching_point_marker = utils.stamped_pose_to_marker(approaching_pose,
+                index=len(self.markers.markers),
+                **Robustifier.APPROACHING_POINT_STYLE
+            )
+            self.markers.markers.append(approaching_point_marker)
+
         self.markers_publisher.publish(self.markers)
 
     def already_detected(self, new_detection):
@@ -226,7 +240,7 @@ class Robustifier(object):
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
                     rospy.loginfo('Sending object location to movement controller')
-                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type])
+                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
                     self.object_publisher.publish(saved_pose.detection)
                     saved_pose.already_sent = True
             else:
