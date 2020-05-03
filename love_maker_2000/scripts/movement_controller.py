@@ -64,13 +64,8 @@ class MovementController(object):
         self.client.wait_for_server()
         rospy.loginfo('Connected to movement server')
 
-        # Movement controller should accept faces, cylinders and toruses.
-        # Robustifiers will send the same type of object (ObjectDetection), so
-        # we can simply use on_object_detection function to get approaching
-        # points.
-        self.face_subscriber = rospy.Subscriber('/face_detections', ObjectDetection, self.on_object_detection, queue_size=10)
-        self.cylinder_subscriber = rospy.Subscriber('/cylinder_detections', ObjectDetection, self.on_object_detection, queue_size=10)
-        self.torus_subscriber = rospy.Subscriber('/torus_detections', ObjectDetection, self.on_object_detection, queue_size=10)
+        # To visualize goals, we create a new goal publisher that publishes markers
+        self.goals_publisher = rospy.Publisher('goals', MarkerArray, queue_size=1000)
 
         # Save initial goals that we have received from map_maker
         self.initial_goals = [goal for goal in goals]
@@ -82,8 +77,15 @@ class MovementController(object):
         # and its heap is not empty
         self.has_goals = False
 
-        # To visualize goals, we create a new goal publisher that publishes markers
-        self.goals_publisher = rospy.Publisher('goals', MarkerArray, queue_size=1000)
+        self.send_marker_goals() 
+
+        # Movement controller should accept faces, cylinders and toruses.
+        # Robustifiers will send the same type of object (ObjectDetection), so
+        # we can simply use on_object_detection function to get approaching
+        # points.
+        self.face_subscriber = rospy.Subscriber('/face_detections', ObjectDetection, self.on_object_detection, queue_size=10)
+        self.cylinder_subscriber = rospy.Subscriber('/cylinder_detections', ObjectDetection, self.on_object_detection, queue_size=10)
+        self.torus_subscriber = rospy.Subscriber('/torus_detections', ObjectDetection, self.on_object_detection, queue_size=10)    
 
         # When this node finishes intializing itself, it should first try to
         # localize itself, so it knows where it is

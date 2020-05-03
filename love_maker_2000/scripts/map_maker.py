@@ -4,89 +4,32 @@ import rospy
 from nav_msgs.srv import GetMap
 from nav_msgs.msg import OccupancyGrid
 
-import numpy, math
+import numpy
 import cv2
-import random
-
-def get_field(point, map_data):
-    robot_view_radius = 25 # 25 * 0.05 m = 1.25 m
-    number_of_rays = 18
-
-    intersections = []
-    for ray_index in range(number_of_rays):
-        ray_direction = ray_index * (2 * numpy.pi / number_of_rays)
-        
-        current_distance = 0
-        intersection = None
-        while current_distance < robot_view_radius:
-            x = int(math.cos(ray_direction) * current_distance) + point[0]
-            y = int(math.sin(ray_direction) * current_distance) + point[1]
-            if map_data[y, x] != 0:
-                intersection = (x, y)
-                break
-            current_distance += 0.5
-        
-        if intersection is not None:
-            intersections.append(intersection)
-        else:
-            x = int(math.cos(ray_direction) * current_distance) + point[0]
-            y = int(math.sin(ray_direction) * current_distance) + point[1]
-            intersections.append((x, y))
-    
-    return intersections
-
-def poisson_disc_samples(width, height, r, k=5):
-    cellsize = r / math.sqrt(2)
-
-    grid_width = int(math.ceil(width / cellsize))
-    grid_height = int(math.ceil(height / cellsize))
-    grid = [None] * (grid_width * grid_height)
-
-    def grid_coordinates(point):
-        return int(math.floor(point[0] / cellsize)), int(math.floor(point[1] / cellsize))
-
-    def fits(p, gx, gy):
-        yrange = list(range(max(gy - 2, 0), min(gy + 3, grid_height)))
-        for x in range(max(gx - 2, 0), min(gx + 3, grid_width)):
-            for y in yrange:
-                g = grid[x + y * grid_width]
-                if g is None:
-                    continue
-                if (p[1] - g[1]) * (p[1] - g[1]) + (p[0] - g[0]) * (p[0] - g[0])  <= r * r:
-                    return False
-        return True
-
-    initial_point = width * random.random(), height * random.random()
-    queue = [initial_point]
-    grid_x, grid_y = grid_coordinates(initial_point)
-    grid[grid_x + grid_y * grid_width] = initial_point
-    p = initial_point
-
-    while queue:
-        qi = int(random.random() * len(queue))
-        qx, qy = queue[qi]
-        queue[qi] = queue[-1]
-        queue.pop()
-        for _ in range(k):
-            alpha = 2 * math.pi * random.random()
-            d = r * math.sqrt(3 * random.random() + 1)
-            px = qx + d * math.cos(alpha)
-            py = qy + d * math.sin(alpha)
-            if not (0 <= px < width and 0 <= py < height):
-                continue
-            p = (px, py)
-            grid_x, grid_y = grid_coordinates(p)
-            if not fits(p, grid_x, grid_y):
-                continue
-            queue.append(p)
-            grid[grid_x + grid_y * grid_width] = p
-    return [p for p in grid if p is not None]
+from scipy.spatial import Delaunay
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import fcluster, single, centroid
 
 class MapMaker(object):
 
     def __init__(self):
         self.get_map = rospy.ServiceProxy('static_map', GetMap)
         rospy.wait_for_service('static_map')
+    
+    def non_maxima_suppression(self, image, region_size=5):
+        height, width = image.shape
+        new_image = numpy.zeros_like(image)
+        for y in range(len(image)):
+            for x in range(len(image[y])):
+                left_x = max(0, x - region_size)
+                right_x = min(width, x + region_size)
+                top_y = max(0, y - region_size)
+                bottom_y = min(height, y + region_size)
+                region = image[top_y:bottom_y,left_x:right_x]
+                region_maximum = numpy.max(region)
+                if region_maximum != 0 and image[y,x] == region_maximum:
+                    new_image[y,x] = 255
+        return new_image
     
     def generate_points(self):
         occupancy_grid = self.get_map().map
@@ -101,12 +44,17 @@ class MapMaker(object):
         non_occupied = map_data == 0
         non_occupied = non_occupied.astype('uint8')
         non_occupied = non_occupied * 255
-        non_occupied_pixels = numpy.count_nonzero(non_occupied)
 
-        non_occupied = cv2.morphologyEx(non_occupied, cv2.MORPH_ERODE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10)))
-        # cv2.imshow('test', non_occupied)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        # Erode the image using a circular kernel, because our robot is circular.
+        # This will remove a part of the free space that can't be visited by robot
+        # because it is too close to the wall. The robot's radius is 18 cm, if the
+        # map resolution is 0.05 meters / pixels that means, that we must erode 20
+        # cm / 5 cm = 4 pixels. We can also include 10 cm of padding.
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6))
+
+        non_occupied = cv2.dilate(non_occupied, kernel, iterations=1)
+        non_occupied = cv2.erode(non_occupied, kernel, iterations=1)
+        non_occupied = cv2.dilate(non_occupied, kernel, iterations=1)
 
         # Find our map bounding box. Do that by finding indices of columns and
         # rows that contain element that is not False, then find the minimum and
@@ -116,58 +64,85 @@ class MapMaker(object):
         top, bottom = numpy.where(rows)[0][[0, -1]]
         left, right = numpy.where(columns)[0][[0, -1]]
 
-        # Each map cell (or pixel) contains a probability in the inverval [0,
-        # 100] of the cell being occupied or -1 if the value is not known.
-        map_data[map_data == 100] = 255
-        map_data[map_data == -1] = 0
-        map_data = map_data.astype('uint8')
+        free_space = non_occupied[top:bottom, left:right]
 
-        map_image = numpy.empty_like(map_data)
-        map_image[:] = map_data
+        # Find corners using either Harris corner detector
+        corners = cv2.cornerHarris(free_space, blockSize=3, ksize=5, k=0.04)
+        # Apply non-maxima-suppression, so we only get the most probable corners
+        corners = self.non_maxima_suppression(corners, region_size=3)
 
-        # Now that we have found our bounding rectangle, we can sample random
-        # points inside of it. If the point doesn't lie inside non_occupied
-        # area, we can simply ignore it.
-        points = map(lambda point: (int(point[0] + left), int(point[1] + top)), poisson_disc_samples(width=right - left, height=bottom - top, r=5))
-        points = filter(lambda point: non_occupied[point[1],point[0]], points)
-        
-        selected_points = []
-        while numpy.any(non_occupied) and len(points) > 0:
+        # Get corner map coordinates (y, x)
+        corner_positions = numpy.argwhere(corners)
 
-            best_point = points[0]
-            best_field = None
-            best_number_of_pixels = 0
+        # Perform triangulation on corner coordinates (using Delaunay triangulation)
+        triangulation = Delaunay(corner_positions)
 
-            for point in points:
-                field = numpy.array(get_field(point, map_data))
-                mask = numpy.zeros_like(non_occupied).astype('uint8')
-                cv2.drawContours(mask, [field], 0, (255,255,255), -1)
+        # Function that computes triangle area, used for filtering too small triangles
+        def triangle_area(triangle_points):
+            a, b, c = triangle_points
+            return (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])) / 2
 
-                # test = cv2.bitwise_and(non_occupied, non_occupied, mask = mask)
-                test = cv2.bitwise_and(map_data, map_data, mask = mask)
+        # Function that returns center of triangle
+        def triangle_centroid(triangle_points):
+            a, b, c = triangle_points
+            y = (a[0] + b[0] + c[0]) / 3
+            x = (a[1] + b[1] + c[1]) / 3
+            return numpy.asarray([int(y), int(x)])
 
-                number_of_pixels = numpy.count_nonzero(test)
-                if number_of_pixels > best_number_of_pixels:
-                    best_number_of_pixels = number_of_pixels
-                    best_point = point
-                    best_field = field
+        # Filter triangles that are too small and their center doesn't lie inside
+        # free space
+        min_area = 60
+        min_distance=26
+        points = []
+        # filtered_triangles = []
 
-            point = best_point
-            points.remove(point)
+        for i, triangle in enumerate(triangulation.simplices):
+            triangle_points = corner_positions[triangle]
 
-            # Convert point from pixels to map coordinates
-            converted_point_x = occupancy_grid.info.origin.position.x + point[0] * occupancy_grid.info.resolution
-            converted_point_y = occupancy_grid.info.origin.position.y + point[1] * occupancy_grid.info.resolution
-            selected_points.append((converted_point_x, converted_point_y))
-
-            field = best_field
-            cv2.drawContours(non_occupied, [field], 0, (0,0,0), -1)
-            cv2.drawContours(map_data, [field], 0, (255,255,255), -1)
+            # Compute center point of the triangle
+            center_y, center_x = triangle_centroid(triangle_points)
             
-            if numpy.count_nonzero(non_occupied) <= 0.01 * non_occupied_pixels:
-                break
-        
-        return selected_points
+            if triangle_area(triangle_points) < min_area:
+                continue
+
+            if free_space[center_y, center_x] != 255:
+                continue
+            
+            # The center point of the triangle is the point that our robot has to
+            # visit. The free_space image has been cropped, so transform the
+            # coordinate back to original map coordinate.
+            points.append([left + center_x, top + center_y])
+
+        # Perform hierarhical clustering with stooping criteria being the min_distance between points (play with this parameter)
+        distances = pdist(points)
+        clustering_data = centroid(distances)
+        clustered = fcluster(clustering_data, min_distance, criterion="distance")
+
+        # Figure out how to join the points within the same cluster
+        new_points = []
+        max_cluster_id = max(clustered)
+        for cluster_id in range(1, max_cluster_id + 1):
+            # For each possible cluster find all point that are assigned to it
+            in_cluster = []
+            for point_index in enumerate(points):
+                if clustered[point_index[0]] == cluster_id:
+                    in_cluster.append(points[point_index[0]])
+            # Convert these points to one point -> averaging (for now)
+            sum_x = 0
+            sum_y = 0
+            for cluster_member in in_cluster:
+                sum_x += cluster_member[0]
+                sum_y += cluster_member[1]
+            avg_x = sum_x / len(in_cluster)
+            avg_y = sum_y / len(in_cluster)
+            new_points.append([avg_x, avg_y])
+
+        # Convert point from pixels to map coordinates
+        for point in new_points:
+            point[0] = occupancy_grid.info.origin.position.x + point[0] * occupancy_grid.info.resolution
+            point[1] = occupancy_grid.info.origin.position.y + point[1] * occupancy_grid.info.resolution
+
+        return new_points
 
 if __name__ == '__main__':
     map_maker = MapMaker()

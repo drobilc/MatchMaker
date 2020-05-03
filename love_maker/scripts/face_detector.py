@@ -36,6 +36,8 @@ class FaceFinder(object):
         # We can use dlib, haar, or hog detector here
         self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
+        rospy.sleep(10)
+
         # Subscriber for new camera images (the video_stream_opencv publishes to different topic)
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback, queue_size=1)
 
