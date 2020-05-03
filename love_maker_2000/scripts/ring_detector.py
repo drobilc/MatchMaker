@@ -48,7 +48,7 @@ class RingDetector(object):
         self.image_publisher.publish(image_ros)
 
     def create_message_from_keypoint(self, keypoint):
-        
+        pass
 
     def detect_circles(self, image):
         image = cv2.GaussianBlur(image, (3, 3), 0)
@@ -70,18 +70,18 @@ class RingDetector(object):
         detector = cv2.SimpleBlobDetector_create()
         keypoints = detector.detect(image)
 
-        self.publish_image_with_marked_rings(image, keypoints)
-
         # Filter out false positives, blobs that are too low to be rings
         height_threshold = (len(image) * 4) // 9
         true_ring_keypoints = []
         for keypoint in keypoints:
-            if keypoints.pt.y < height_threshold:
+            if keypoint.pt[1] < height_threshold:
                 true_ring_keypoints.append(keypoint)
+
+        self.publish_image_with_marked_rings(image, true_ring_keypoints)
         
         for keypoint in true_ring_keypoints:
             detection = self.create_message_from_keypoint(keypoint)
-            self.detections_publisher.publish(detection)
+            # self.detections_publisher.publish(detection)
 
     def image_callback(self, depth_image_message):
         # Convert image so we can process it with the cv2 library

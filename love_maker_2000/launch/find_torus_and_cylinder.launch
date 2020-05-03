@@ -13,6 +13,8 @@
         <param name="cylinder_points_threshold" value="700"/>
 
         <param name="plane_points_threshold" value="500" />
+
+        <param name="torus_ransac_max_iterations" value="1000" />
     </node>
 
     <!-- Node that makes the cloud point sparser -->

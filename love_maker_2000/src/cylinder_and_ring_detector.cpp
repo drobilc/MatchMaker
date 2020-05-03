@@ -2,7 +2,9 @@
 #include <ros/ros.h>
 #include <math.h>
 #include <cmath>
+#include <limits>
 #include <Eigen/Dense>
+#include <visualization_msgs/MarkerArray.h>
 #include "std_msgs/String.h"
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -37,6 +39,8 @@ ros::Publisher pub_torus_cloud;
 ros::Publisher pub_cylinder;
 ros::Publisher pub_torus;
 ros::Publisher pub_testing;
+ros::Publisher pub_markers;
+visualization_msgs::MarkerArray markers;
 
 ros::ServiceClient color_classifier;
 
@@ -57,8 +61,16 @@ int cylinder_points_threshold;
 // Parameters for planar segmentation
 double plane_points_threshold;
 
+// Parameters for ring segmentation
+int torus_ransac_max_iterations;
+
 // The last received image from camera source
 cv_bridge::CvImagePtr lastImageMessage;
+
+float absf(float x)
+{
+  return x >= 0 ? x : -x;
+}
 
 void cameraCallback(const sensor_msgs::ImageConstPtr& msg) {
   try {
@@ -92,7 +104,6 @@ bool are_points_coplanar(std::vector<Vector3f> points)
   pC = points[2];
   pD = points[3];
 
-
   Vector3f vAB(pB[0] - pA[0], pB[1] - pA[1], pB[2] - pA[2]);
   Vector3f vAC(pC[0] - pA[0], pC[1] - pA[1], pC[2] - pA[2]);
   Vector3f vAD(pD[0] - pA[0], pD[1] - pA[1], pD[2] - pA[2]);
@@ -104,11 +115,86 @@ bool are_points_coplanar(std::vector<Vector3f> points)
   return abs(result) < 0.1 ? true : false;
 }
 
+void filter_point_cloud_height(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<PointT>::Ptr &cloud_filtered, float min_height, float max_height)
+{
+  pcl::PassThrough<PointT> pass;
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("y");
+  pass.setFilterLimits(min_height, max_height);
+  pass.filter(*cloud_filtered);
+}
+
+/**
+ * Calculates point pa on one line and pb on the second line, that are closest to each other.
+ */
+bool two_lines_intersection(Vector3f p1, Vector3f p2, Vector3f p3, Vector3f p4, Vector3f &pa, Vector3f &pb, float &mua, float &mub)
+{
+  std::cerr << "Calculating intersection of two lines" << std::endl;
+  float eps = 0.0001;
+  Vector3f p13, p43, p21;
+  float d1343, d4321, d1321, d4343, d2121;
+  float numer, denom;
+
+  std::cerr << "p1: x = " << p1[0] << ", y = " << p1[1] << ", z = " << p1[2] << std::endl;
+  std::cerr << "p2: x = " << p2[0] << ", y = " << p2[1] << ", z = " << p2[2] << std::endl;
+  std::cerr << "p3: x = " << p3[0] << ", y = " << p3[1] << ", z = " << p3[2] << std::endl;
+  std::cerr << "p4: x = " << p4[0] << ", y = " << p4[1] << ", z = " << p4[2] << std::endl;
+
+  p13[0] = p1[0] - p3[0];
+  p13[1] = p1[1] - p3[1];
+  p13[2] = p1[2] - p3[2];
+  p43[0] = p4[0] - p3[0];
+  p43[1] = p4[1] - p3[1];
+  p43[2] = p4[2] - p3[2];
+  if (absf(p43[0]) < eps && absf(p43[1]) < eps && absf(p43[2]) < eps)
+  {
+    return false;
+  }
+  p21[0] = p2[0] - p1[0];
+  p21[1] = p2[1] - p1[1];
+  p21[2] = p2[2] - p1[2];
+  if (absf(p21[0]) < eps && absf(p21[1]) < eps && absf(p21[2]) < eps)
+  {
+    return false;
+  }
+
+  d1343 = p13[0] * p43[0] + p13[1] * p43[1] + p13[2] * p43[2];
+  d4321 = p43[0] * p21[0] + p43[1] * p21[1] + p43[2] * p21[2];
+  d1321 = p13[0] * p21[0] + p13[1] * p21[1] + p13[2] * p21[2];
+  d4343 = p43[0] * p43[0] + p43[1] * p43[1] + p43[2] * p43[2];
+  d2121 = p21[0] * p21[0] + p21[1] * p21[1] + p21[2] * p21[2];
+
+  denom = d2121 * d4343 - d4321 * d4321;
+  if (absf(denom) < eps)
+  {
+    return false;
+  }
+  numer = d1343 * d4321 - d1321 * d4343;
+
+  mua = numer / denom;
+  mub = (d1343 + d4321 * mua) / d4343;
+
+  pa[0] = p1[0] + mua * p21[0];
+  pa[1] = p1[1] + mua * p21[1];
+  pa[2] = p1[2] + mua * p21[2];
+  pb[0] = p3[0] + mub * p43[0];
+  pb[1] = p3[1] + mub * p43[1];
+  pb[2] = p3[2] + mub * p43[2];
+
+  return true;
+}
+
 /**
  * Calculates circle center. Based on this: http://www.mathopenref.com/constcirclecenter.html
  */
-PointT calculate_circle_center(std::vector<Vector3f> points) {
+bool calculate_circle_center(std::vector<Vector3f> points, PointT &center)
+{
+  std::cerr << "Started calculating center of the circle" << std::endl;
   Vector3f pA, pB, pC, pD;
+  Vector3f p1, p2, p3, p4, p_result_1, p_result_2;
+  Vector3f intersection;
+  float mua, mub;
+
   pA = points[0];
   pB = points[1];
   pC = points[2];
@@ -116,56 +202,223 @@ PointT calculate_circle_center(std::vector<Vector3f> points) {
 
   Vector3f plane_normal = (pB - pA).cross(pC - pA);
   plane_normal.normalize();
-  Vector3f middle_AB = (pB - pA) / 2;
-  Vector3f middle_CD = (pD - pC) / 2;
+  Vector3f pAB_half = (pB - pA) / 2;
+  Vector3f pCD_half = (pD - pC) / 2;
+  p1 = pA + pAB_half;
+  p3 = pC + pCD_half;
 
-  Vector3f vector_towards_center_1 = (pB - pA).cross(plane_normal);
-  Vector3f vector_towards_center_2 = (pD - pC).cross(plane_normal);
-  vector_towards_center_1.normalize();
-  vector_towards_center_2.normalize();
-  
-  return PointT(1, 1, 1);
+  Vector3f orthogonal_to_pAB = (pB - pA).cross(plane_normal);
+  Vector3f orthogonal_to_pCD = (pD - pC).cross(plane_normal);
+  orthogonal_to_pAB.normalize();
+  orthogonal_to_pCD.normalize();
+  p2 = p1 + orthogonal_to_pAB;
+  p4 = p3 + orthogonal_to_pCD;
+
+  // If the two lines do not intersect return
+  if (!two_lines_intersection(p1, p2, p3, p4, p_result_1, p_result_2, mua, mub))
+    return false;
+  intersection = (p_result_1 - p_result_2) / 2 + p_result_2;
+
+  std::cerr << "Intersection: x = " << intersection[0] << ", y = " << intersection[1] << ", z = " << intersection[2] << std::endl;
+
+  center.x = intersection[0];
+  center.y = intersection[1];
+  center.z = intersection[2];
+
+  return true;
+}
+
+void publish_marker(PointT point, float r_col, float g_col)
+{
+  // Convert to global coordinates and publishgeometry_msgs::PointStamped point_camera;
+  geometry_msgs::PointStamped point_camera;
+  geometry_msgs::PointStamped point_map;
+  visualization_msgs::Marker marker;
+  geometry_msgs::TransformStamped tss;
+
+  point_camera.header.frame_id = "camera_rgb_optical_frame";
+  point_camera.header.stamp = time_rec;
+
+  point_map.header.frame_id = "map";
+  point_map.header.stamp = time_rec;
+
+  point_camera.point.x = point.x;
+  point_camera.point.y = point.y;
+  point_camera.point.z = point.z;
+
+  try
+  {
+    tss = tf2_buffer.lookupTransform("map", "camera_rgb_optical_frame", time_rec);
+    //tf2_buffer.transform(point_camera, point_map, "map", ros::Duration(2));
+  }
+  catch (tf2::TransformException &ex)
+  {
+    ROS_WARN("Transform warning: %s\n", ex.what());
+  }
+
+  //std::cerr << tss ;
+
+  tf2::doTransform(point_camera, point_map, tss);
+
+  marker.header.frame_id = "map";
+  marker.header.stamp = time_rec;
+  marker.type = visualization_msgs::Marker::SPHERE;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.id = markers.markers.size();
+  marker.pose.position.x = point_map.point.x;
+  marker.pose.position.y = point_map.point.y;
+  marker.pose.position.z = point_map.point.z;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = 0.02;
+  marker.scale.y = 0.02;
+  marker.scale.z = 0.02;
+  marker.color.r = r_col;
+  marker.color.g = g_col;
+  marker.color.b = 0.0;
+  marker.color.a = 1.0f;
+  marker.lifetime = ros::Duration();
+
+  markers.markers.push_back(marker);
+  visualization_msgs::MarkerArray marray;
+  for (int i = 0; i < markers.markers.size(); i++)
+  {
+    marray.markers.push_back(markers.markers[i]);
+  }
+  pub_markers.publish(marray);
+}
+
+void publish_detection(PointT point)
+{
+  // Convert to global coordinates and publishgeometry_msgs::PointStamped point_camera;
+  geometry_msgs::PointStamped point_camera;
+  geometry_msgs::PointStamped point_map;
+  visualization_msgs::Marker marker;
+  geometry_msgs::TransformStamped tss;
+
+  point_camera.header.frame_id = "camera_rgb_optical_frame";
+  point_camera.header.stamp = time_rec;
+
+  point_map.header.frame_id = "map";
+  point_map.header.stamp = time_rec;
+
+  point_camera.point.x = point.x;
+  point_camera.point.y = point.y;
+  point_camera.point.z = point.z;
+
+  try
+  {
+    tss = tf2_buffer.lookupTransform("map", "camera_rgb_optical_frame", time_rec);
+    //tf2_buffer.transform(point_camera, point_map, "map", ros::Duration(2));
+  }
+  catch (tf2::TransformException &ex)
+  {
+    ROS_WARN("Transform warning: %s\n", ex.what());
+  }
+
+  //std::cerr << tss ;
+
+  tf2::doTransform(point_camera, point_map, tss);
+
+  // Publish location of torus
+  object_detection_msgs::ObjectDetection detection_torus;
+  detection_torus.object_pose.position.x = point_map.point.x;
+  detection_torus.object_pose.position.y = point_map.point.y;
+  detection_torus.object_pose.position.z = point_map.point.z;
+  detection_torus.approaching_point_pose.position.x = point_map.point.x;
+  detection_torus.approaching_point_pose.position.y = point_map.point.y;
+  detection_torus.approaching_point_pose.position.z = point_map.point.z;
+  detection_torus.header.stamp = time_rec;
+  detection_torus.header.frame_id = "map";
+  detection_torus.type = "ring";
+  pub_torus.publish(detection_torus);
 }
 
 /**
  * Finds rings in a more sophisticated way, does not work yet. Use find_rings.
  */
-/*void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+void find_rings2(pcl::PointCloud<PointT>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
-  pcl::PassThrough<PointT> pass;
   pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);
-  pcl::RandomSample<PointT> sample;
   pcl::PointCloud<PointT> four_points_cloud;
   std::vector<Vector3f> points;
+  PointT best_center;
+  float min_mse = std::numeric_limits<float>::max();
+  float min_range = std::numeric_limits<float>::max();
 
   // Filter the point cloud at certain heights
   std::cerr << "\n-- Rings" << std::endl;
-  pass.setInputCloud(cloud);
-  pass.setFilterFieldName("y");
-  pass.setFilterLimits(-0.5, -0.3);
-  pass.filter(*cloud_filtered);
+  filter_point_cloud_height(cloud, cloud_filtered, -0.5, -0.3);
   std::cerr << "PointCloud for rings has: " << cloud_filtered->points.size() << " data points." << std::endl;
   log_pointcloud(cloud_filtered);
 
-  if (cloud_filtered->points.size() < 4) return;
-
-
-  // Select four random points
-  sample.setInputCloud(cloud_filtered);
-  sample.setSample(4);
-  sample.filter(four_points_cloud);
-
-  // Convert them into vectors
-  for (int i = 0; i < four_points_cloud.points.size(); i++)
-    points.push_back(Vector3f(four_points_cloud.points[i].x, four_points_cloud[i].y, four_points_cloud.points[i].z));
-
-  // If points are coplanar, we can continue
-  if (!are_points_coplanar(points))
+  if (cloud_filtered->points.size() < 4)
     return;
-  
-  std::cerr << "Points are coplanar" << std::endl;
 
-  PointT ring_center = calculate_circle_center(points);
+  for (int iter = 0; iter < torus_ransac_max_iterations; iter++)
+  {
+    // Sample four random points
+    pcl::RandomSample<PointT> sample;
+    pcl::PointCloud<PointT> four_points_cloud2;
+    sample.setInputCloud(cloud_filtered);
+    sample.setSample(4);
+    sample.setSeed(rand());
+    sample.filter(four_points_cloud2);
+
+    // Convert them into vectors
+    for (int i = 0; i < four_points_cloud2.points.size(); i++)
+      points.push_back(Vector3f(four_points_cloud2.points[i].x, four_points_cloud2[i].y, four_points_cloud2.points[i].z));
+
+    // If points are not coplanar, continue with next loop iteration and next four points
+    if (!are_points_coplanar(points))
+      continue;
+
+    PointT center;
+    if (!calculate_circle_center(points, center))
+      continue;
+
+    // Calculate radius
+    VectorXf radiuses(cloud_filtered->points.size());
+    float radius = 0;
+    float mse = 0;
+    float range = 0;
+    for (int i = 0; i < cloud_filtered->points.size(); i++)
+    {
+      radiuses(i, 1) = sqrtf(powf(cloud_filtered->points[i].x, 2.0) + powf(cloud_filtered->points[i].y, 2.0) + powf(cloud_filtered->points[i].z, 2.0));
+    }
+    radius = radiuses.sum() / radiuses.size();
+    range = radiuses.maxCoeff() - radiuses.minCoeff();
+
+    // Calculate MSE
+    for (int i = 0; i < radiuses.size(); i++)
+    {
+      radiuses[i] -= radius;
+    }
+    radiuses = radiuses * radiuses;
+    mse = radiuses.sum() / radiuses.size();
+
+    if (range < min_range)
+    {
+      min_mse = mse;
+      best_center = center;
+      radius = radius;
+      four_points_cloud = four_points_cloud2;
+      min_range = range;
+    }
+    points.clear();
+  }
+
+  // TEST: publish four points
+  for (int i = 0; i < four_points_cloud.points.size(); i++)
+  {
+    publish_marker(four_points_cloud.points[i], 1.0, 0.0);
+  }
+  std::cerr << "Four points size: " << four_points_cloud.points.size() << std::endl;
+
+  publish_marker(best_center, 0.0, 1.0);
+  std::cin.get();
 }
 
 /**
@@ -518,6 +771,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
 
 void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 {
+  std::cerr << "\nEntered cloud callback" << std::endl;
   time_rec = ros::Time::now();
 
   // All the objects needed
@@ -554,6 +808,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 
   // Find rings
   // find_rings(cloud_filtered);
+  // find_rings2(cloud_filtered, cloud_normals3); // Unusable
 
   // Remove all planes
   remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
@@ -577,6 +832,8 @@ void get_parameters(ros::NodeHandle nh)
   nh.getParam("/cylinder_and_ring_detector/cylinder_points_threshold", cylinder_points_threshold);
   // Get parameters for plane segmentation from the launch file
   nh.getParam("/cylinder_and_ring_detector/plane_points_threshold", plane_points_threshold);
+
+  nh.getParam("/cylinder_and_ring_detector/torus_ransac_max_iterations", torus_ransac_max_iterations);
 }
 
 int main(int argc, char **argv)
@@ -606,6 +863,7 @@ int main(int argc, char **argv)
 
   pub_cylinder = nh.advertise<object_detection_msgs::ObjectDetection>("cylinder_detections_raw", 1);
   pub_torus = nh.advertise<object_detection_msgs::ObjectDetection>("torus_detections_raw", 1);
+  pub_markers = nh.advertise<visualization_msgs::MarkerArray>("torus_detections_marker_raw", 100);
 
   color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier");
 
