@@ -13,7 +13,7 @@ def stamped_poses_to_marker_array(poses, marker_type=Marker.CUBE, lifetime=10, s
         markers.markers.append(marker)
     return markers
 
-def stamped_pose_to_marker(pose_stamped, marker_type=Marker.CUBE, lifetime=10, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1), index=1):
+def stamped_pose_to_marker(pose_stamped, marker_type=Marker.CUBE, lifetime=30, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1), index=1):
     marker = Marker()
     marker.action = Marker.ADD
     marker.frame_locked = False
