@@ -21,6 +21,8 @@ class RingDetector(object):
         rospy.init_node('ring_detector_beta', anonymous=False)
         rospy.loginfo('Ring detector started')
 
+        self.current_message_number = 0
+
         self.bridge = CvBridge()
 
         # Subscriber for new depth images
@@ -33,6 +35,10 @@ class RingDetector(object):
         self.detections_publisher = rospy.Publisher('/ring_detections', Detection, queue_size=10)
     
     def publish_image_with_marked_rings(self, image, keypoints):
+        keypoint = keypoints[0]
+        keypoint_x = int(keypoint.pt[0] - keypoint.size // 2)
+        keypoint_y = int(keypoint.pt[1] - keypoint.size // 2)
+        keypoint_size = int(keypoint.size)
         # Draw the blobs on the image
         blank = np.zeros((1, 1))
         blobs = cv2.drawKeypoints(image, keypoints, blank, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -41,14 +47,27 @@ class RingDetector(object):
         # all detected blobs ("rings") will be discarded, these are mainly square empty spaces below the fence
         height_detection_threshold = (len(blobs) * 4) // 9
         # Draw the line on the image for visualization purposes
-        cv2.line(blobs, (0, height_detection_threshold), (len(blobs[0]), height_detection_threshold), (0, 255, 0), 2)   
+        cv2.line(blobs, (0, height_detection_threshold), (len(blobs[0]), height_detection_threshold), (0, 255, 0), 2)
+        cv2.circle(blobs, (keypoint_x, keypoint_y), 2, (255, 0, 0), 2)
+        cv2.circle(blobs, (keypoint_x + keypoint_size, keypoint_y + keypoint_size), 2, (255, 0, 0), 2)
 
         # Convert the image into right format, 8 bit unsigned char with 3 channels and publish it
         image_ros = self.bridge.cv2_to_imgmsg(blobs, '8UC3')
         self.image_publisher.publish(image_ros)
 
-    def create_message_from_keypoint(self, keypoint):
-        pass
+    def construct_detection_message(self, keypoint, timestamp, frame_id):
+        self.current_message_number += 1
+        detection = Detection()
+        detection.header.seq = self.current_message_number
+        detection.header.stamp = timestamp
+        detection.header.frame_id = frame_id
+        detection.x = int(keypoint.pt[0] - keypoint.size / 2)
+        detection.y = int(keypoint.pt[1] - keypoint.size / 2)
+        detection.width = keypoint.size
+        detection.width = keypoint.size
+        detection.source = 'opencv'
+        detection.confidence = 1
+        return detection
 
     def get_ring_color(self, depth_image, rgb_image, keypoint, depth_threshold=10):
         # Compute the ring bounding box from its radius and center
@@ -79,7 +98,7 @@ class RingDetector(object):
 
         return dominant_color
 
-    def detect_circles(self, image):
+    def detect_circles(self, image, timestamp, frame_id):
         image = cv2.GaussianBlur(image, (3, 3), 0)
 
         # Object for specyfiying detection parameters, it will not be used in this case
@@ -117,9 +136,12 @@ class RingDetector(object):
 
             for keypoint in true_ring_keypoints:
                 ring_color = self.get_ring_color(image, rgb_image, keypoint)
-                detection = self.create_message_from_keypoint(keypoint)
+                detection = self.construct_detection_message(keypoint, timestamp, frame_id)
+                self.detections_publisher.publish(detection)
 
     def image_callback(self, depth_image_message):
+        timestamp = depth_image_message.header.stamp
+        frame_id = depth_image_message.header.frame_id
         # Convert image so we can process it with the cv2 library
         depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
         depth_image = np.nan_to_num(depth_image)
@@ -128,7 +150,7 @@ class RingDetector(object):
         depth_image = np.floor(depth_image)
         depth_image = depth_image.astype(np.uint8)
 
-        self.detect_circles(depth_image)
+        self.detect_circles(depth_image, timestamp, frame_id)
 
 if __name__ == '__main__':
     ring_detector = RingDetector()
