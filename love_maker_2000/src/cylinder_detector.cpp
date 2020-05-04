@@ -828,6 +828,7 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   // Read in the cloud data
   pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
   std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
+  if (cloud->points.size() == 0) return;
 
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud(cloud);

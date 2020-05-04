@@ -1,0 +1,5 @@
+<launch>
+
+  <node pkg="love_maker_2000" type="ring_mapper.py" name="ring_mapper" />
+
+</launch>

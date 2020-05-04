@@ -54,13 +54,21 @@
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
 
+    <!-- Cylinders -->
+    <include file="$(find love_maker_2000)/launch/cylinder_detector.launch"/>
+
     <include file="$(find love_maker_2000)/launch/cylinder_robustifier.launch">
         <arg name="raw_cylinder_markers" value="$(arg raw_cylinder_markers)"/>
     </include>
 
+    <!-- Rings -->
     <include file="$(find love_maker_2000)/launch/ring_robustifier.launch">
         <arg name="raw_ring_markers" value="$(arg raw_ring_markers)"/>
     </include>
+
+    <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
+
+    <include file="$(find love_maker_2000)/launch/ring_mapper.launch"/>
 
     <include file="$(find love_maker_2000)/launch/movement_controller.launch"/>
 

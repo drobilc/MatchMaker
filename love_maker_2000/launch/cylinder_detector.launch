@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <node pkg="love_maker_2000" type="cylinder_and_ring_detector" name="cylinder_and_ring_detector">
+    <node pkg="love_maker_2000" type="cylinder_detector" name="cylinder_detector">
 
         <remap from="input" to="/love_maker_2000/voxelgrid"/>
 

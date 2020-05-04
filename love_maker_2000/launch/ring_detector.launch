@@ -1,0 +1,5 @@
+<launch>
+
+  <node pkg="love_maker_2000" type="ring_detector.py" name="ring_detector" />
+
+</launch>

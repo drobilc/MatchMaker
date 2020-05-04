@@ -83,8 +83,8 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-add_executable (cylinder_and_ring_detector src/cylinder_and_ring_detector.cpp)
-target_link_libraries(cylinder_and_ring_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(cylinder_and_ring_detector ${catkin_EXPORTED_TARGETS})
+add_executable (cylinder_detector src/cylinder_detector.cpp)
+target_link_libraries(cylinder_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(cylinder_detector ${catkin_EXPORTED_TARGETS})
 
 add_executable (voxelgrid_new src/voxelgrid.cpp)
