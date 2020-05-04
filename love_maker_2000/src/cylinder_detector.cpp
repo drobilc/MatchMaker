@@ -861,16 +861,16 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 void get_parameters(ros::NodeHandle nh)
 {
   // Get parameters for cylinder segmentation from the launch file
-  nh.getParam("/cylinder_and_ring_detector/normal_distance_weight", cylinder_normal_distance_weight);
-  nh.getParam("/cylinder_and_ring_detector/max_iterations", cylinder_max_iterations);
-  nh.getParam("/cylinder_and_ring_detector/distance_threshold", cylinder_distance_threshold);
-  nh.getParam("/cylinder_and_ring_detector/radius_max", cylinder_radius_max);
-  nh.getParam("/cylinder_and_ring_detector/radius_min", cylinder_radius_min);
-  nh.getParam("/cylinder_and_ring_detector/cylinder_points_threshold", cylinder_points_threshold);
+  nh.getParam("/cylinder_detector/normal_distance_weight", cylinder_normal_distance_weight);
+  nh.getParam("/cylinder_detector/max_iterations", cylinder_max_iterations);
+  nh.getParam("/cylinder_detector/distance_threshold", cylinder_distance_threshold);
+  nh.getParam("/cylinder_detector/radius_max", cylinder_radius_max);
+  nh.getParam("/cylinder_detector/radius_min", cylinder_radius_min);
+  nh.getParam("/cylinder_detector/cylinder_points_threshold", cylinder_points_threshold);
   // Get parameters for plane segmentation from the launch file
-  nh.getParam("/cylinder_and_ring_detector/plane_points_threshold", plane_points_threshold);
+  nh.getParam("/cylinder_detector/plane_points_threshold", plane_points_threshold);
 
-  nh.getParam("/cylinder_and_ring_detector/torus_ransac_max_iterations", torus_ransac_max_iterations);
+  nh.getParam("/cylinder_detector/torus_ransac_max_iterations", torus_ransac_max_iterations);
 }
 
 int main(int argc, char **argv)
