@@ -5,13 +5,13 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 * detect ring color
 * fix color detection on yellow cylinder
 * make ring detection work
-* ~~add approaching point calculation for cylinders~~
 * add approaching point calculation for rings
-* ~~add approaching point markers to robustifier~~
 * crop the map
 * fine tune exploration points algorithm once all components work
 * add launching cylinder and ring detection to all.launch (when the arhitecture is changed)
 * make sure all points are in map coordinates before adding them to `ObjectDetection`
+* ~~add approaching point markers to robustifier~~ **DONE**
+* ~~add approaching point calculation for cylinders~~ **DONE**
 * ~~greet cylinders and rings~~  **DONE**
 * ~~write new algorithm for setting exploration points~~  **DONE**
 * ~~detect cylinder color~~  **DONE**
