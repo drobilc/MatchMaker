@@ -30,11 +30,11 @@ class RingDetector(object):
         self.image_publisher = rospy.Publisher('/camera/test', Image, queue_size=1)
 
         # Publisher for ring locations, (maybe publish poses?)
-        self.detections_publisher = rospy.Publisher('ring_detections_raw', Detection, queue_size=10)
+        self.detections_publisher = rospy.Publisher('/ring_detections', Detection, queue_size=10)
     
     def publish_image_with_marked_rings(self, image, keypoints):
         # Draw the blobs on the image
-        blank = np.zeros((1,1))
+        blank = np.zeros((1, 1))
         blobs = cv2.drawKeypoints(image, keypoints, blank, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
         # Calculate the height threshold below which (in this case above, because y coord in images goes from top to bottom)
@@ -48,6 +48,7 @@ class RingDetector(object):
         self.image_publisher.publish(image_ros)
 
     def create_message_from_keypoint(self, keypoint):
+        
         pass
 
     def detect_circles(self, image):
@@ -74,6 +75,7 @@ class RingDetector(object):
         height_threshold = (len(image) * 4) // 9
         true_ring_keypoints = []
         for keypoint in keypoints:
+            rospy.loginfo(keypoint.size)
             if keypoint.pt[1] < height_threshold:
                 true_ring_keypoints.append(keypoint)
 
