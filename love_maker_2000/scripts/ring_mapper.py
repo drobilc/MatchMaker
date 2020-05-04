@@ -22,6 +22,7 @@ from object_detection_msgs.msg import ObjectDetection
 # Services
 from localizer.srv import Localize
 from nav_msgs.srv import GetMap
+from color_classification.srv import ColorClassification, ColorClassificationResponse
 
 from image_geometry import PinholeCameraModel
 
@@ -40,6 +41,9 @@ class DetectionMapper():
 
         self.get_map = rospy.ServiceProxy('static_map', GetMap)
         rospy.wait_for_service('static_map')
+
+        rospy.wait_for_service('color_classifier')
+        self.classify_color = rospy.ServiceProxy('color_classifier', ColorClassification)
 
         self.occupancy_grid = self.get_map().map
         width, height = self.occupancy_grid.info.width, self.occupancy_grid.info.height
@@ -84,104 +88,6 @@ class DetectionMapper():
         face_pose = self.tf_buf.transform(face_pose, "map")
 
         return face_pose, face_pose
-
-        """face_point = PointStamped()
-        face_point.header.frame_id = face_pose.header.frame_id
-        face_point.header.stamp = face_pose.header.stamp
-        face_point.point.x = face_pose.pose.position.x
-        face_point.point.y = face_pose.pose.position.y
-        face_point.point.z = face_pose.pose.position.z
-
-        # Get the robot position in map coordinate system
-        robot_point = PointStamped()
-        robot_point.header.frame_id = "camera_depth_optical_frame"
-        robot_point.header.stamp = detected_face_position.header.stamp
-        robot_point = self.tf_buf.transform(robot_point, "map")
-        
-        def to_map_pixel(position):
-            # Convert position from map coordinates in m to pixel position (u, v) 
-            pixel_x = int((position.point.x - self.map_origin.x) / self.map_resolution)
-            pixel_y = int((position.point.y - self.map_origin.y) / self.map_resolution)
-            return numpy.asarray([pixel_x, pixel_y])
-        
-        def closest_wall_pixel(pixel, max_distance=5):
-            # Use flood fill algorithm with breadth first search to find the
-            # closest wall pixel. Use neighboring pixels as defined below
-            neighborhood = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-
-            # First, extract a small region around the pixel (a square region of
-            # size 2 * max_distance + 1)
-            map_region = self.map_data[pixel[1]-max_distance-1:pixel[1]+max_distance, pixel[0]-max_distance-1:pixel[0]+max_distance]
-            
-            visited = numpy.zeros_like(map_region, dtype=bool)
-            frontier = [(max_distance, max_distance)]
-            while len(frontier) > 0:
-                current_pixel = frontier.pop(0)
-
-                # If current pixel has a non-zero probability, we have found the closest wall point
-                if map_region[current_pixel[1], current_pixel[0]] == 255:
-                    return (current_pixel[0] + pixel[0] - max_distance, current_pixel[1] + pixel[1] - max_distance)
-
-                # Mark pixel as visited
-                visited[current_pixel[1], current_pixel[0]] = True
-                
-                # Add four neighbours to frontier
-                for neighbor in neighborhood:
-                    new_x, new_y = current_pixel[0] + neighbor[0], current_pixel[1] + neighbor[1]
-                    if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x]:
-                        continue
-                    frontier.append((new_x, new_y))
-
-        def closest_line(face_pixel, wall_pixel, max_distance=5):
-            map_region = self.map_data[face_pixel[1]-max_distance-1:face_pixel[1]+max_distance, face_pixel[0]-max_distance-1:face_pixel[0]+max_distance]
-            x0, y0 = wall_pixel - face_pixel + max_distance
-            lines = cv2.HoughLinesP(map_region, rho=1, theta=numpy.pi / 180.0, threshold=8, minLineLength=8, maxLineGap=3)
-            best_line = None
-            best_distance = 100000
-            for line in lines:
-                start = numpy.asarray([line[0][0], line[0][1]])
-                end = numpy.asarray([line[0][2], line[0][3]])
-                distance = abs(((end[1]-start[1])*x0 - (end[0]-start[0])*y0 + end[0]*start[1] - end[1]*start[0]) / numpy.linalg.norm(end - start))
-                if distance < best_distance:
-                    best_distance = distance
-                    best_line = (start, end)
-            return best_line, best_distance
-
-        # Convert map coordinates to map pixel coordinates
-        face_pixel = to_map_pixel(face_point)
-        robot_pixel = to_map_pixel(robot_point)        
-
-        # Find the closest wall pixel and line that passes closest to that wall
-        # pixel (preferably line that goes through the wall pixel)
-        closest_wall = closest_wall_pixel(face_pixel)
-        line, distance = closest_line(face_pixel, closest_wall)
-
-        # Compute which side of the line robot currently is
-        line_direction = line[1] - line[0]
-        normal = numpy.asarray([line_direction[1], -line_direction[0]])
-        orientation = normal
-        if numpy.dot(robot_pixel - closest_wall, normal) < 0:
-            orientation = -orientation
-        
-        # Now that we have a wall vector and face position, we can calculate the
-        # approaching point
-        face_orientation = orientation / numpy.linalg.norm(orientation)
-        approaching_point = numpy.asarray([self.map_origin.x, self.map_origin.y]) + (face_pixel * self.map_resolution) + face_orientation * 0.5
-
-        orientation = -orientation
-        orientation = math.atan2(orientation[1], orientation[0])
-        orientation_quaternion = quaternion_from_euler(0, 0, orientation)
-        orientation_quaternion = Quaternion(*orientation_quaternion)
-
-        approaching_pose = PoseStamped()
-        approaching_pose.header = face_point.header
-        approaching_pose.header.frame_id = 'map'
-        approaching_pose.pose.position.x = approaching_point[0]
-        approaching_pose.pose.position.y = approaching_point[1]
-        approaching_pose.pose.position.z = 0
-        approaching_pose.pose.orientation = orientation_quaternion"""
-
-        return face_pose, approaching_pose
 
     def camera_callback(self, camera_info):
         self.camera_infos.append(camera_info)
@@ -232,12 +138,15 @@ class DetectionMapper():
             color = detection.color
             object_type = 'ring'
 
+            color_classification_response = self.classify_color(color)
+
             object_detection_message = ObjectDetection()
             object_detection_message.header = message_header
             object_detection_message.object_pose = object_pose
             object_detection_message.approaching_point_pose = approaching_point_pose
             object_detection_message.color = color
             object_detection_message.type = object_type
+            object_detection_message.classified_color = color_classification_response.classified_color
             
             self.object_detection_publisher.publish(object_detection_message)
         except Exception as e:
