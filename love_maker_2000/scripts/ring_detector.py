@@ -35,10 +35,11 @@ class RingDetector(object):
         self.detections_publisher = rospy.Publisher('/detection_ring', Detection, queue_size=10)
     
     def publish_image_with_marked_rings(self, image, keypoints):
-        keypoint = keypoints[0]
-        keypoint_x = int(keypoint.pt[0] - keypoint.size // 2)
-        keypoint_y = int(keypoint.pt[1] - keypoint.size // 2)
-        keypoint_size = int(keypoint.size)
+        if (len(keypoints) != 0):
+            keypoint = keypoints[0]
+            keypoint_x = int(keypoint.pt[0] - keypoint.size // 2)
+            keypoint_y = int(keypoint.pt[1] - keypoint.size // 2)
+            keypoint_size = int(keypoint.size)
         # Draw the blobs on the image
         blank = np.zeros((1, 1))
         blobs = cv2.drawKeypoints(image, keypoints, blank, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -48,8 +49,9 @@ class RingDetector(object):
         height_detection_threshold = (len(blobs) * 4) // 9
         # Draw the line on the image for visualization purposes
         cv2.line(blobs, (0, height_detection_threshold), (len(blobs[0]), height_detection_threshold), (0, 255, 0), 2)
-        cv2.circle(blobs, (keypoint_x, keypoint_y), 2, (255, 0, 0), 2)
-        cv2.circle(blobs, (keypoint_x + keypoint_size, keypoint_y + keypoint_size), 2, (255, 0, 0), 2)
+        if (len(keypoints) != 0):
+            cv2.circle(blobs, (keypoint_x, keypoint_y), 2, (255, 0, 0), 2)
+            cv2.circle(blobs, (keypoint_x + keypoint_size, keypoint_y + keypoint_size), 2, (255, 0, 0), 2)
 
         # Convert the image into right format, 8 bit unsigned char with 3 channels and publish it
         image_ros = self.bridge.cv2_to_imgmsg(blobs, '8UC3')
