@@ -75,34 +75,27 @@ class RingDetector(object):
     def get_ring_color(self, depth_image, rgb_image, keypoint, depth_threshold=10):
         # Compute the ring bounding box from its radius and center
         center_x, center_y = keypoint.pt
-        radius = keypoint.size
+        radius = keypoint.size / 2.0
         left, right = int(center_x - radius), int(center_x + radius)
         top, bottom = int(center_y - radius), int(center_y + radius)
         
         # Crop a small region around the ring
         depth_region = depth_image[top:bottom, left:right]
-        region = rgb_image[top:bottom, left:right]
+        region = np.copy(rgb_image)[top:bottom, left:right]
 
         # Threshold depth region with fixed distance to obtain mask,
         # then mask the rgb image
         ring_mask = depth_region > depth_threshold
         region = region * ring_mask[...,None]
+        
+        pixels = region.reshape(-1, 3)
+        pixel_mask = np.any(pixels != [0, 0, 0], axis=-1)
+        
+        non_black_pixels = pixels[pixel_mask]
+        average_color = np.mean(non_black_pixels, axis=0)
 
-        # Get the dominant color of the region
-        # Code taken from https://stackoverflow.com/questions/43111029
-        region_not_zero = region[region != 0]
-        if (len(region_not_zero) % 3 != 0):
-            region_not_zero = np.resize(region_not_zero, len(region_not_zero) + (3 - len(region_not_zero) % 3))   # Just in case len(array) % 3 != 0, otherwise we get an error
-        pixels = np.float32(region_not_zero.reshape(-1, 3))
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, .1)
-        _, labels, palette = cv2.kmeans(pixels, 5, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        _, counts = np.unique(labels, return_counts=True)
-        dominant = palette[np.argmax(counts)]
-
-        # Convert color from BGR to RGB color space
-        dominant_color = (dominant[2], dominant[1], dominant[0])
-
-        return dominant_color
+        color = (int(average_color[2]), int(average_color[1]), int(average_color[0]))
+        return color
 
     def detect_circles(self, image, timestamp, frame_id):
         image = cv2.GaussianBlur(image, (3, 3), 0)
