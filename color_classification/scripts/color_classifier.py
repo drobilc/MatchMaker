@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 
 from colormath.color_objects import sRGBColor, LabColor
 from colormath.color_conversions import convert_color
@@ -44,7 +45,8 @@ class ColorClassifier(object):
         self.train_x = numpy.apply_along_axis(rgb_to_lab, 1, self.train_x)
         
         # Train our naive bayes classifier
-        self.classifier = GaussianNB()
+        # self.classifier = GaussianNB()
+        self.classifier = KNeighborsClassifier(n_neighbors=7)
         self.classifier.fit(self.train_x, self.train_y)
 
         service = rospy.Service('color_classifier', ColorClassification, self.handle_color_classification_request)
