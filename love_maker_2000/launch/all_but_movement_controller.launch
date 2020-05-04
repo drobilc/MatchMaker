@@ -58,7 +58,7 @@
         <arg name="raw_cylinder_markers" value="$(arg raw_cylinder_markers)"/>
     </include>
 
-    <include file="$(find love_maker_2000)/launch/torus_robustifier.launch">
+    <include file="$(find love_maker_2000)/launch/ring_robustifier.launch">
         <arg name="raw_ring_markers" value="$(arg raw_ring_markers)"/>
     </include>
 

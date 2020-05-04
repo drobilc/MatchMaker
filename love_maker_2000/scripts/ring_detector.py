@@ -9,7 +9,7 @@ import numpy as np
 
 from localizer.srv import Localize
 
-from std_msgs.msg import Header
+from std_msgs.msg import Header, ColorRGBA
 from detection_msgs.msg import Detection
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped, Pose, Quaternion
@@ -32,7 +32,7 @@ class RingDetector(object):
         self.image_publisher = rospy.Publisher('/camera/test', Image, queue_size=1)
 
         # Publisher for ring locations, (maybe publish poses?)
-        self.detections_publisher = rospy.Publisher('/ring_detections', Detection, queue_size=10)
+        self.detections_publisher = rospy.Publisher('/detection_ring', Detection, queue_size=10)
     
     def publish_image_with_marked_rings(self, image, keypoints):
         keypoint = keypoints[0]
@@ -55,7 +55,7 @@ class RingDetector(object):
         image_ros = self.bridge.cv2_to_imgmsg(blobs, '8UC3')
         self.image_publisher.publish(image_ros)
 
-    def construct_detection_message(self, keypoint, timestamp, frame_id):
+    def construct_detection_message(self, keypoint, timestamp, frame_id, color):
         self.current_message_number += 1
         detection = Detection()
         detection.header.seq = self.current_message_number
@@ -67,6 +67,7 @@ class RingDetector(object):
         detection.width = keypoint.size
         detection.source = 'opencv'
         detection.confidence = 1
+        detection.color = ColorRGBA(color[0], color[1], color[2], 255)
         return detection
 
     def get_ring_color(self, depth_image, rgb_image, keypoint, depth_threshold=10):
@@ -136,7 +137,7 @@ class RingDetector(object):
 
             for keypoint in true_ring_keypoints:
                 ring_color = self.get_ring_color(image, rgb_image, keypoint)
-                detection = self.construct_detection_message(keypoint, timestamp, frame_id)
+                detection = self.construct_detection_message(keypoint, timestamp, frame_id, ring_color)
                 self.detections_publisher.publish(detection)
 
     def image_callback(self, depth_image_message):

@@ -52,7 +52,7 @@ class DetectionMapper():
         self.map_data = self.map_data.astype('uint8')
 
         self.camera_infos = collections.deque(maxlen = self.buffer_size)
-        self.detections_sub = message_filters.Subscriber('/ring_detections', Detection)
+        self.detections_sub = message_filters.Subscriber('/detection_ring', Detection)
         self.detections_sub.registerCallback(self.detections_callback)
 
         self.camera_sub = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
@@ -83,7 +83,9 @@ class DetectionMapper():
         face_pose.pose.position.z = detected_face_position.pose.position.z
         face_pose = self.tf_buf.transform(face_pose, "map")
 
-        face_point = PointStamped()
+        return face_pose, face_pose
+
+        """face_point = PointStamped()
         face_point.header.frame_id = face_pose.header.frame_id
         face_point.header.stamp = face_pose.header.stamp
         face_point.point.x = face_pose.pose.position.x
@@ -177,7 +179,7 @@ class DetectionMapper():
         approaching_pose.pose.position.x = approaching_point[0]
         approaching_pose.pose.position.y = approaching_point[1]
         approaching_pose.pose.position.z = 0
-        approaching_pose.pose.orientation = orientation_quaternion
+        approaching_pose.pose.orientation = orientation_quaternion"""
 
         return face_pose, approaching_pose
 
@@ -227,8 +229,8 @@ class DetectionMapper():
 
             object_pose = detection_point.pose
             approaching_point_pose = approaching_point.pose
-            color = ColorRGBA(0, 0.5, 1, 1)
-            object_type = 'face'
+            color = detection.color
+            object_type = 'ring'
 
             object_detection_message = ObjectDetection()
             object_detection_message.header = message_header

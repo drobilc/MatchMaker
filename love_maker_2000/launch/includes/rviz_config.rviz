@@ -561,8 +561,8 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /torus_markers
-      Name: Torus Markers
+      Marker Topic: /ring_markers
+      Name: Ring Markers
       Namespaces:
         {}
       Queue Size: 100

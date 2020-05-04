@@ -6,4 +6,5 @@ int32 width
 string source
 string label
 float32 confidence
+std_msgs/ColorRGBA color
 sensor_msgs/Image image
