@@ -63,7 +63,12 @@ class Detection(object):
         if len(self.color_classifications) <= 0:
             return self.get_real_color()
         
-        most_frequent = max(set(self.color_classifications), key = self.color_classifications.count) 
+        ignore = set(['white', 'black'])
+        colors = set(self.color_classifications).difference(ignore)
+        if len(colors) <= 0:
+            return self.COLOR_MAP['white']
+        
+        most_frequent = max(colors, key=self.color_classifications.count)
         return self.COLOR_MAP[most_frequent]
         
     
