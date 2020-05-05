@@ -74,14 +74,18 @@ class MapMaker(object):
             neighbours_down.append([point[0], point[1] + neighbour])
             neighbours_up.append([point[0], point[1] + (-1) * neighbour])
 
-            extended_neighbours_right.append([point[0] + 2 * neighbour, point[1]])
-            extended_neighbours_left.append([point[0] + (-1) * 2* neighbour, point[1]])
-            extended_neighbours_down.append([point[0], point[1] + 2 *neighbour])
-            extended_neighbours_up.append([point[0], point[1] + (-1) * 2* neighbour])
-            extended_neighbours_right.append([point[0] + 2 * neighbour + 1, point[1]])
-            extended_neighbours_left.append([point[0] + (-1) * 2 * neighbour + 1, point[1]])
-            extended_neighbours_down.append([point[0], point[1] + 2 * neighbour + 1])
-            extended_neighbours_up.append([point[0], point[1] + (-1) * 2 * neighbour + 1])
+            extended_neighbours_right.append([point[0] + 3 * neighbour, point[1]])
+            extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour, point[1]])
+            extended_neighbours_down.append([point[0], point[1] + 3 * neighbour])
+            extended_neighbours_up.append([point[0], point[1] + (-1) * 3* neighbour])
+            extended_neighbours_right.append([point[0] + 3 * neighbour + 1, point[1]])
+            extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour + 1, point[1]])
+            extended_neighbours_down.append([point[0], point[1] + 3 * neighbour + 1])
+            extended_neighbours_up.append([point[0], point[1] + (-1) * 3 * neighbour + 1])
+            extended_neighbours_right.append([point[0] + 3 * neighbour + 2, point[1]])
+            extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour + 2, point[1]])
+            extended_neighbours_down.append([point[0], point[1] + 3 * neighbour + 2])
+            extended_neighbours_up.append([point[0], point[1] + (-1) * 3 * neighbour + 2])
         
         # Check for walls in each direction
         wall_to_the_right = False
@@ -102,32 +106,40 @@ class MapMaker(object):
             if map_data[neighbours_down[i][1]][neighbours_down[i][0]] < 250:
                 wall_to_the_bottom = True
 
-            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
                 wall_to_the_right = False
-            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+            if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
                 wall_to_the_right = False
 
         # For each wall to close, move the point too_close pixels in the opposite direction
         if wall_to_the_right and free_to_move_right:
-            point[0] -= too_close
+            point[0] -= 2 * too_close
         if wall_to_the_left and free_to_move_left:
-            point[0] += too_close
-        if wall_to_the_bottom and free_to_move_down:
-            point[1] -= too_close
-        if wall_to_the_top and free_to_move_up:
-            point[1] += too_close
+            point[0] += 2 * too_close
+        if wall_to_the_bottom and free_to_move_right:
+            point[1] -= 2 * too_close
+        if wall_to_the_top and free_to_move_right:
+            point[1] += 2 * too_close
 
         return point
     
@@ -256,7 +268,7 @@ class MapMaker(object):
         # If any of the points is too close to the wall, move it away from it
         # First check if the point is too close to the wall.
         for point in new_points:
-            if self.too_close_to_the_wall(non_occupied, point, 3):
+            if self.too_close_to_the_wall(non_occupied, point, 6):
                 # if so, find out in which of the four basic directions do we have a wall 
                 # within 3px and move it in the opposite direction for 3px
                 point = self.move_away_from_the_wall(non_occupied, point, 4)
