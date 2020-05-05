@@ -112,6 +112,17 @@ class Detection(object):
         dy = self_pose.position.y - other_pose.position.y
         dz = self_pose.position.z - other_pose.position.z
         return math.sqrt(dx*dx + dy*dy + dz*dz)
+    
+    def get_detection(self):        
+        ignore = set(['white'])
+        colors = set(self.color_classifications).difference(ignore)
+        if len(colors) <= 0:
+            self.detection.classified_color = 'white'
+        else:
+            most_frequent = max(colors, key=self.color_classifications.count)
+            self.detection.classified_color = most_frequent
+        
+        return self.detection
 
 class Robustifier(object):
 
@@ -248,7 +259,7 @@ class Robustifier(object):
                 if not saved_pose.already_sent:
                     rospy.loginfo('Sending object location to movement controller')
                     self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
-                    self.object_publisher.publish(saved_pose.detection)
+                    self.object_publisher.publish(saved_pose.get_detection())
                     saved_pose.already_sent = True
             else:
                 rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
