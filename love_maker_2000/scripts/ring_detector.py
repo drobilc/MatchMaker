@@ -82,19 +82,22 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
 
         # This part is needed to detect circles in image with better precision
         depth_image = numpy.nan_to_num(depth_image)
-        depth_image = depth_image / numpy.amax(depth_image)
+        depth_image[depth_image > 3] = 0
+        minimum = numpy.min(depth_image)
+        maximum = numpy.max(depth_image)
+        depth_image = (depth_image - minimum) / (maximum - minimum)
         depth_image = depth_image * 255
         depth_image = numpy.floor(depth_image)
         depth_image = depth_image.astype(numpy.uint8)
 
-        depth_image = cv2.GaussianBlur(depth_image, (3, 3), 0)
+        # depth_image = cv2.GaussianBlur(depth_image, (3, 3), 0)
 
         # Object for specyfiying detection parameters, it will not be used in this case
         params = cv2.SimpleBlobDetector_Params()
@@ -123,7 +126,7 @@ class RingDetector(object):
         for keypoint in true_ring_keypoints:
             # Compute the ring bounding box from its radius and center
             center_x, center_y = keypoint.pt
-            radius = keypoint.size / 2.0
+            radius = keypoint.size / 2.0 + circle_padding
             left, right = int(center_x - radius), int(center_x + radius)
             top, bottom = int(center_y - radius), int(center_y + radius)
             
@@ -132,13 +135,28 @@ class RingDetector(object):
             image_region = numpy.copy(rgb_image[top:bottom, left:right])
             disparity_region = disparity[top:bottom, left:right]
 
+            # Try to filter depth_region to only include circle (basically, get
+            # the highest bin in histogram and filter out everything that is not
+            # in this bin)
+            histogram, bins = numpy.histogram(depth_region[depth_region != 0], bins=10, range=(0, 255))
+            best_bin = numpy.argmax(histogram)
+            depth_region[numpy.abs(depth_region - bins[best_bin]) > 25] = 0
+            
+            depth_mask = depth_region > 0
+            disparity_region = disparity_region * depth_mask
+            image_region = image_region * depth_mask[...,None]
+
             # Compute the average ring color from image and then use the color
             # classification service to get color as string
-            ring_color = self.get_ring_color(depth_region, image_region)
-            classified_color = self.classify_color(ring_color).classified_color
+            try:
+                ring_color = self.get_ring_color(image_region)
+                classified_color = self.classify_color(ring_color).classified_color
+            except Exception:
+                rospy.logwarn('Ring detected, but the ring color could not be determined')
+                continue
 
             # Compute position of ring in 3d world coordinate system
-            ring_position = self.to_world_position(keypoint, disparity_region, camera_model, timestamp)
+            ring_position = self.to_world_position(keypoint, disparity_region, camera_model, timestamp, maximum_distance)
 
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
@@ -146,6 +164,10 @@ class RingDetector(object):
                 if approaching_point is not None:
                     detection = self.construct_detection_message(ring_position, approaching_point, ring_color, classified_color, timestamp)
                     self.detections_publisher.publish(detection)
+                else:
+                    rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
+            else:
+                rospy.logwarn('Ring detected, but the ring position could not be determined')
     
     def to_world_position(self, keypoint, disparity_region, camera_model, timestamp, maximum_distance=2.5):
         # Get average distance to the ring
@@ -187,12 +209,9 @@ class RingDetector(object):
         detection.type = 'ring'
         return detection
 
-    def get_ring_color(self, depth_region, image_region, depth_threshold=10):
-        """Get average color of image_region but ignore all black pixels"""
-        ring_mask = depth_region > depth_threshold
-        region = image_region * ring_mask[...,None]
-        
-        pixels = region.reshape(-1, 3)
+    def get_ring_color(self, image_region):
+        """Get average color of image_region but ignore all black pixels"""        
+        pixels = image_region.reshape(-1, 3)
         pixel_mask = numpy.any(pixels != [0, 0, 0], axis=-1)
         
         non_black_pixels = pixels[pixel_mask]
@@ -256,7 +275,7 @@ class RingDetector(object):
                         continue
                     frontier.append((new_x, new_y))
 
-        def closest_line(ring_pixel, wall_pixel, max_distance=5):
+        def closest_line(ring_pixel, wall_pixel, max_distance=8):
             map_region = self.map_data[ring_pixel[1]-max_distance-1:ring_pixel[1]+max_distance, ring_pixel[0]-max_distance-1:ring_pixel[0]+max_distance]
             x0, y0 = wall_pixel - ring_pixel + max_distance
             lines = cv2.HoughLinesP(map_region, rho=1, theta=numpy.pi / 180.0, threshold=8, minLineLength=8, maxLineGap=3)
