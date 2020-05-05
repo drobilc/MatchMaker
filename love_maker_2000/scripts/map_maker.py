@@ -30,6 +30,20 @@ class MapMaker(object):
                 if region_maximum != 0 and image[y,x] == region_maximum:
                     new_image[y,x] = 255
         return new_image
+
+    def too_close_to_the_wall(self, map_data, point):
+        is_too_close_to_the_wall = False
+        neighbourhood_base = [-3, -2, -1, 0, 1, 2, 3]
+        neighbourhood = []
+        for neighbour_x in neighbourhood_base:
+            for neighbour_y in neighbourhood_base:
+                neighbourhood.append([point[0] + neighbour_x, point[1] + neighbour_y])
+        for member in neighbourhood:
+            suspect = map_data[member[1]][member[0]]
+            if suspect < 250:
+                is_too_close_to_the_wall = True
+                return is_too_close_to_the_wall
+        return is_too_close_to_the_wall
     
     def generate_points(self):
         occupancy_grid = self.get_map().map
@@ -64,7 +78,7 @@ class MapMaker(object):
         top, bottom = numpy.where(rows)[0][[0, -1]]
         left, right = numpy.where(columns)[0][[0, -1]]
 
-        free_space = non_occupied[top:bottom, left:right]
+        free_space = non_occupied[top-1:bottom+2, left-1:right+1]
 
         # Find corners using either Harris corner detector
         corners = cv2.cornerHarris(free_space, blockSize=3, ksize=5, k=0.04)
@@ -112,6 +126,10 @@ class MapMaker(object):
             # visit. The free_space image has been cropped, so transform the
             # coordinate back to original map coordinate.
             points.append([left + center_x, top + center_y])
+c
+        for point in points:
+            if self.too_close_to_the_wall(map_data, point):
+                points.remove(point)
 
         # If the map is big enough (has enough corners), perform clustering
         if len(points) > 10:
