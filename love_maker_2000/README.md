@@ -4,6 +4,7 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 ## TODO
 * detect ring color
 * make ring detection work
+* fix detection of blue cylinder from the wrong side
 * add approaching point calculation for rings
 * fix approaching points for cylinders so they are not too close to the wall
 * fine tune exploration points algorithm once all components work
@@ -21,6 +22,15 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 * ~~add robustifying colors in Robustifier~~  **DONE**
 * ~~fix line fitting in approaching for faces in Face mapper~~  **DONE**
 * UPDATE DOCUMENTATION AS YOU DO ANYTHING!
+
+## Prepare environment
+For map_maker to run in python2, we need specific versions of the libraries. To install them, go to folder with `requirements.txt` and run command: 
+
+```
+pip install -r requirements.txt
+```
+
+---------------------------------
 
 Love maker will presumably be made following the scheme below.
 ![scheme](https://github.com/drobilc/rins_exercises/blob/master/love_maker_2000/new_scheme.png "scheme")
