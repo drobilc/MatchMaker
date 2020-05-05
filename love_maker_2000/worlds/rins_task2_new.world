@@ -54,7 +54,7 @@
         <collision name='classroom_collision'>
           <geometry>
             <mesh>
-              <uri>model://exercise6/meshes/rins_task2_new.dae</uri>
+              <uri>model://love_maker_2000/meshes/rins_task2_new.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -75,7 +75,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://exercise6/meshes/rins_task2_new.dae</uri>
+              <uri>model://love_maker_2000/meshes/rins_task2_new.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
