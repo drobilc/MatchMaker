@@ -128,9 +128,12 @@ class RingDetector(object):
                 detection = self.construct_detection_message(ring_position, ring_color, classified_color, timestamp)
                 self.detections_publisher.publish(detection)
     
-    def to_world_position(self, keypoint, disparity_region, camera_model, timestamp):
+    def to_world_position(self, keypoint, disparity_region, camera_model, timestamp, maximum_distance=2.5):
         # Get average distance to the ring
         average_distance = np.nanmean(disparity_region)
+
+        if average_distance > maximum_distance:
+            return None
         
         # Construct a ray from camera center to pixel on image, then stretch
         # it, so its length is the distance from camera to point in 3d space
