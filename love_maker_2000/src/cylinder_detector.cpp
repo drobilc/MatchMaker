@@ -799,7 +799,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
   }
   else
   {
-    std::cerr << "Can't find the cylindrical component." << std::endl;
+    // std::cerr << "Can't find the cylindrical component." << std::endl;
     *cloud_filtered = *cloud;
     *cloud_filtered_normals = *cloud_normals;
   }
