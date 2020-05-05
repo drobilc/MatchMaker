@@ -28,6 +28,8 @@ class RingDetector(object):
 
         self.bridge = CvBridge()
 
+        rospy.sleep(8)
+
         # Create a new time synchronizer to synchronize depth and rgb image callbacks.
         # Also subscribe to camera info so we can get camera calibration matrix.
         self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)

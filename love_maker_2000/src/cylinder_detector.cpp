@@ -887,6 +887,8 @@ int main(int argc, char **argv)
   image_transport::ImageTransport imageTransport(nh);
   image_transport::Subscriber cameraSubscriber = imageTransport.subscribe("/camera/rgb/image_raw", 1, cameraCallback);
 
+  ros::Duration(8.0).sleep();
+
   // Create a ROS publisher for the output point cloud
   pubx = nh.advertise<pcl::PCLPointCloud2>("point_cloud/planes", 1);
   puby = nh.advertise<pcl::PCLPointCloud2>("point_cloud/cylinder", 1);
