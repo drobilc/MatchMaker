@@ -4,9 +4,9 @@
     <arg name="downscale" default="2"/>
     <arg name="gazebo_gui" default="true"/>
 
-    <arg name="raw_face_markers" default="true"/>
-    <arg name="raw_cylinder_markers" default="true"/>
-    <arg name="raw_ring_markers" default="true"/>
+    <arg name="raw_face_markers" default="false"/>
+    <arg name="raw_cylinder_markers" default="false"/>
+    <arg name="raw_ring_markers" default="false"/>
 
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
