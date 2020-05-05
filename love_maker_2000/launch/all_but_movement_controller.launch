@@ -11,7 +11,7 @@
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
-        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2.world"/>
+        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2_new.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
         <!-- another world -->
         <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
@@ -54,15 +54,19 @@
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
 
+    <!-- Cylinders -->
+    <include file="$(find love_maker_2000)/launch/cylinder_detector.launch"/>
+
     <include file="$(find love_maker_2000)/launch/cylinder_robustifier.launch">
         <arg name="raw_cylinder_markers" value="$(arg raw_cylinder_markers)"/>
     </include>
 
+    <!-- Rings -->
     <include file="$(find love_maker_2000)/launch/ring_robustifier.launch">
         <arg name="raw_ring_markers" value="$(arg raw_ring_markers)"/>
     </include>
 
-    <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
+    <!-- <include file="$(find love_maker_2000)/launch/ring_detector.launch"/> -->
 
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
