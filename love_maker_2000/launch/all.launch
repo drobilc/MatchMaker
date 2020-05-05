@@ -68,8 +68,6 @@
 
     <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
 
-    <include file="$(find love_maker_2000)/launch/ring_mapper.launch"/>
-
     <include file="$(find love_maker_2000)/launch/movement_controller.launch"/>
 
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
