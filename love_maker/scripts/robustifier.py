@@ -44,11 +44,13 @@ class Detection(object):
         pose.pose = self.detection.object_pose
         return pose
     
-    def get_approaching_point_pose(self):
+    def get_approaching_point_pose(self, on_floor=True):
         pose = PoseStamped()
         pose.header.frame_id = self.detection.header.frame_id
         pose.header.stamp = self.detection.header.stamp
         pose.pose = self.detection.approaching_point_pose
+        if on_floor:
+            pose.pose.position.z = 0
         return pose
     
     def get_real_color(self):
@@ -63,7 +65,7 @@ class Detection(object):
         if len(self.color_classifications) <= 0:
             return self.get_real_color()
         
-        ignore = set(['white', 'black'])
+        ignore = set(['white'])
         colors = set(self.color_classifications).difference(ignore)
         if len(colors) <= 0:
             return self.COLOR_MAP['white']
