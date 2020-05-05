@@ -11,7 +11,7 @@
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
-        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2.world"/>
+        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2_new.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
         <!-- another world -->
         <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
@@ -67,8 +67,6 @@
     </include>
 
     <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
-
-    <include file="$(find love_maker_2000)/launch/ring_mapper.launch"/>
 
     <include file="$(find love_maker_2000)/launch/movement_controller.launch"/>
 

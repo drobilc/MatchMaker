@@ -2,103 +2,82 @@
 from __future__ import print_function
 
 import sys
-import math
 import rospy
 import cv2
 import numpy as np
+import message_filters
 
-from localizer.srv import Localize
+import tf2_geometry_msgs
+import tf2_ros
 
 from std_msgs.msg import Header, ColorRGBA
 from detection_msgs.msg import Detection
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseStamped, Pose, Quaternion
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion, Point
+from object_detection_msgs.msg import ObjectDetection
 
 from cv_bridge import CvBridge, CvBridgeError
+from image_geometry import PinholeCameraModel
+
+from color_classification.srv import ColorClassification, ColorClassificationResponse
 
 class RingDetector(object):
     def __init__(self):
         rospy.init_node('ring_detector_beta', anonymous=False)
         rospy.loginfo('Ring detector started')
 
-        self.current_message_number = 0
-
         self.bridge = CvBridge()
 
-        # Subscriber for new depth images
-        self.image_subscriber = rospy.Subscriber('/camera/depth/image_raw', Image, self.image_callback, queue_size=1)
+        # Create a new time synchronizer to synchronize depth and rgb image callbacks.
+        # Also subscribe to camera info so we can get camera calibration matrix.
+        self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
+        self.image_subscriber = message_filters.Subscriber('/camera/rgb/image_raw', Image)
+        self.camera_info_subscriber = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
+        self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
+        self.image_synchronizer.registerCallback(self.on_data_received)
 
-        # Image publisher for testing reasons
-        self.image_publisher = rospy.Publisher('/camera/test', Image, queue_size=1)
+        # Color classification service
+        rospy.wait_for_service('color_classifier')
+        self.classify_color = rospy.ServiceProxy('color_classifier', ColorClassification)
 
-        # Publisher for ring locations, (maybe publish poses?)
-        self.detections_publisher = rospy.Publisher('/detection_ring', Detection, queue_size=10)
+        # Publisher for ring ObjectDetections
+        self.detections_publisher = rospy.Publisher('/ring_detections_raw', ObjectDetection, queue_size=10)
+
+        # Transformation buffer nd listener
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
     
-    def publish_image_with_marked_rings(self, image, keypoints):
-        if (len(keypoints) != 0):
-            keypoint = keypoints[0]
-            keypoint_x = int(keypoint.pt[0] - keypoint.size // 2)
-            keypoint_y = int(keypoint.pt[1] - keypoint.size // 2)
-            keypoint_size = int(keypoint.size)
-        # Draw the blobs on the image
-        blank = np.zeros((1, 1))
-        blobs = cv2.drawKeypoints(image, keypoints, blank, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    def on_data_received(self, depth_image_message, image_message, camera_info):
+        """Callback for when depth image, rgb image and camera information is received"""
+        # Because of the TimeSynchronizer, depth image, rgb image and camera
+        # information have the same timestamps.
+        timestamp = depth_image_message.header.stamp
 
-        # Calculate the height threshold below which (in this case above, because y coord in images goes from top to bottom)
-        # all detected blobs ("rings") will be discarded, these are mainly square empty spaces below the fence
-        height_detection_threshold = (len(blobs) * 4) // 9
-        # Draw the line on the image for visualization purposes
-        cv2.line(blobs, (0, height_detection_threshold), (len(blobs[0]), height_detection_threshold), (0, 255, 0), 2)
-        if (len(keypoints) != 0):
-            cv2.circle(blobs, (keypoint_x, keypoint_y), 2, (255, 0, 0), 2)
-            cv2.circle(blobs, (keypoint_x + keypoint_size, keypoint_y + keypoint_size), 2, (255, 0, 0), 2)
+        # Convert images so we can process it with the cv2 library
+        depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
+        rgb_image = self.bridge.imgmsg_to_cv2(image_message, "bgr8")
 
-        # Convert the image into right format, 8 bit unsigned char with 3 channels and publish it
-        image_ros = self.bridge.cv2_to_imgmsg(blobs, '8UC3')
-        self.image_publisher.publish(image_ros)
+        # Construct a new PinholeCameraModel from received camera information.
+        # This can be used to create rays from camera center to points in 3d
+        # world.
+        camera_model = PinholeCameraModel()
+        camera_model.fromCameraInfo(camera_info)
 
-    def construct_detection_message(self, keypoint, timestamp, frame_id, color):
-        self.current_message_number += 1
-        detection = Detection()
-        detection.header.seq = self.current_message_number
-        detection.header.stamp = timestamp
-        detection.header.frame_id = frame_id
-        detection.x = int(keypoint.pt[0] - keypoint.size / 2)
-        detection.y = int(keypoint.pt[1] - keypoint.size / 2)
-        detection.width = keypoint.size
-        detection.width = keypoint.size
-        detection.source = 'opencv'
-        detection.confidence = 1
-        detection.color = ColorRGBA(color[0], color[1], color[2], 255)
-        return detection
+        self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
+    
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp):
+        """Detect circles in depth image and send detections to ring robustifier"""
+        # Disparity is computed in meters from the camera center
+        disparity = np.copy(depth_image)
 
-    def get_ring_color(self, depth_image, rgb_image, keypoint, depth_threshold=10):
-        # Compute the ring bounding box from its radius and center
-        center_x, center_y = keypoint.pt
-        radius = keypoint.size / 2.0
-        left, right = int(center_x - radius), int(center_x + radius)
-        top, bottom = int(center_y - radius), int(center_y + radius)
-        
-        # Crop a small region around the ring
-        depth_region = depth_image[top:bottom, left:right]
-        region = np.copy(rgb_image)[top:bottom, left:right]
+        # This part is needed to detect circles in image with better precision
+        depth_image = np.nan_to_num(depth_image)
+        depth_image = depth_image / np.amax(depth_image)
+        depth_image = depth_image * 255
+        depth_image = np.floor(depth_image)
+        depth_image = depth_image.astype(np.uint8)
 
-        # Threshold depth region with fixed distance to obtain mask,
-        # then mask the rgb image
-        ring_mask = depth_region > depth_threshold
-        region = region * ring_mask[...,None]
-        
-        pixels = region.reshape(-1, 3)
-        pixel_mask = np.any(pixels != [0, 0, 0], axis=-1)
-        
-        non_black_pixels = pixels[pixel_mask]
-        average_color = np.mean(non_black_pixels, axis=0)
-
-        color = (int(average_color[2]), int(average_color[1]), int(average_color[0]))
-        return color
-
-    def detect_circles(self, image, timestamp, frame_id):
-        image = cv2.GaussianBlur(image, (3, 3), 0)
+        depth_image = cv2.GaussianBlur(depth_image, (3, 3), 0)
 
         # Object for specyfiying detection parameters, it will not be used in this case
         params = cv2.SimpleBlobDetector_Params()
@@ -115,41 +94,92 @@ class RingDetector(object):
         # Detect blobs, if we wanted to specify custom detection parameters
         # we would pass the params object to the below constructor as argument
         detector = cv2.SimpleBlobDetector_create()
-        keypoints = detector.detect(image)
+        keypoints = detector.detect(depth_image)
 
         # Filter out false positives, blobs that are too low to be rings
-        height_threshold = (len(image) * 4) // 9
+        height_threshold = (len(depth_image) * 4) // 9
         true_ring_keypoints = []
         for keypoint in keypoints:
-            rospy.loginfo(keypoint.size)
             if keypoint.pt[1] < height_threshold:
                 true_ring_keypoints.append(keypoint)
         
-        self.publish_image_with_marked_rings(image, true_ring_keypoints)
-        
-        if len(true_ring_keypoints) > 0:
-            # Rings were detected, wait until rgb image is received so we can
-            # get ring color
-            rgb_image_message = rospy.wait_for_message("/camera/rgb/image_raw", Image)
-            rgb_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
+        for keypoint in true_ring_keypoints:
+            # Compute the ring bounding box from its radius and center
+            center_x, center_y = keypoint.pt
+            radius = keypoint.size / 2.0
+            left, right = int(center_x - radius), int(center_x + radius)
+            top, bottom = int(center_y - radius), int(center_y + radius)
+            
+            # Crop a small region around the ring
+            depth_region = np.copy(depth_image[top:bottom, left:right])
+            image_region = np.copy(rgb_image[top:bottom, left:right])
+            disparity_region = disparity[top:bottom, left:right]
 
-            for keypoint in true_ring_keypoints:
-                ring_color = self.get_ring_color(image, rgb_image, keypoint)
-                detection = self.construct_detection_message(keypoint, timestamp, frame_id, ring_color)
+            # Compute the average ring color from image and then use the color
+            # classification service to get color as string
+            ring_color = self.get_ring_color(depth_region, image_region)
+            classified_color = self.classify_color(ring_color).classified_color
+
+            # Compute position of ring in 3d world coordinate system
+            ring_position = self.to_world_position(keypoint, disparity_region, camera_model, timestamp)
+
+            # Send the ring position to robustifier, if it is 
+            if ring_position is not None:
+                detection = self.construct_detection_message(ring_position, ring_color, classified_color, timestamp)
                 self.detections_publisher.publish(detection)
+    
+    def to_world_position(self, keypoint, disparity_region, camera_model, timestamp, maximum_distance=2.5):
+        # Get average distance to the ring
+        average_distance = np.nanmean(disparity_region)
 
-    def image_callback(self, depth_image_message):
-        timestamp = depth_image_message.header.stamp
-        frame_id = depth_image_message.header.frame_id
-        # Convert image so we can process it with the cv2 library
-        depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
-        depth_image = np.nan_to_num(depth_image)
-        depth_image = depth_image / np.amax(depth_image)
-        depth_image = depth_image * 255
-        depth_image = np.floor(depth_image)
-        depth_image = depth_image.astype(np.uint8)
+        if average_distance > maximum_distance:
+            return None
+        
+        # Construct a ray from camera center to pixel on image, then stretch
+        # it, so its length is the distance from camera to point in 3d space
+        center_x, center_y = keypoint.pt
+        ray = camera_model.projectPixelTo3dRay((center_x, center_y))
+        point = (ray[0] * average_distance, ray[1] * average_distance, ray[2] * average_distance)
+        
+        # Convert 3d point from camera frame to world frame and publish it
+        ring_camera = PoseStamped()
+        ring_camera.pose.position.x = point[0]
+        ring_camera.pose.position.y = point[1]
+        ring_camera.pose.position.z = point[2]
+        ring_camera.header.frame_id = "camera_rgb_optical_frame"
+        ring_camera.header.stamp = timestamp
 
-        self.detect_circles(depth_image, timestamp, frame_id)
+        try:
+            ring_position = self.tf_buffer.transform(ring_camera, "map")
+            return ring_position
+        except Exception as e:
+            rospy.logwarn(e)
+            return None
+
+    def construct_detection_message(self, ring_pose, ring_color, classified_color, timestamp):
+        """Construct ObjectDetection from ring detection"""
+        detection = ObjectDetection()
+        detection.header.frame_id = 'map'
+        detection.header.stamp = timestamp
+        detection.object_pose = ring_pose.pose
+        detection.approaching_point_pose = ring_pose.pose
+        detection.color = ring_color
+        detection.classified_color = classified_color
+        detection.type = 'ring'
+        return detection
+
+    def get_ring_color(self, depth_region, image_region, depth_threshold=10):
+        """Get average color of image_region but ignore all black pixels"""
+        ring_mask = depth_region > depth_threshold
+        region = image_region * ring_mask[...,None]
+        
+        pixels = region.reshape(-1, 3)
+        pixel_mask = np.any(pixels != [0, 0, 0], axis=-1)
+        
+        non_black_pixels = pixels[pixel_mask]
+        average_color = np.mean(non_black_pixels, axis=0)
+
+        return ColorRGBA(int(average_color[2]), int(average_color[1]), int(average_color[0]), 255)
 
 if __name__ == '__main__':
     ring_detector = RingDetector()
