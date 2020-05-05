@@ -126,7 +126,7 @@ class MapMaker(object):
             # visit. The free_space image has been cropped, so transform the
             # coordinate back to original map coordinate.
             points.append([left + center_x, top + center_y])
-c
+
         for point in points:
             if self.too_close_to_the_wall(map_data, point):
                 points.remove(point)
