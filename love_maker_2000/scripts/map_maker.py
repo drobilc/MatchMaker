@@ -33,7 +33,7 @@ class MapMaker(object):
 
     def too_close_to_the_wall(self, map_data, point):
         is_too_close_to_the_wall = False
-        neighbourhood_base = [-3, -2, -1, 0, 1, 2, 3]
+        neighbourhood_base = [-1, 0, 1]
         neighbourhood = []
         for neighbour_x in neighbourhood_base:
             for neighbour_y in neighbourhood_base:
@@ -59,6 +59,10 @@ class MapMaker(object):
         non_occupied = non_occupied.astype('uint8')
         non_occupied = non_occupied * 255
 
+        walls = map_data == 100
+        walls = walls.astype('uint8')
+        walls = walls * 255
+
         # Erode the image using a circular kernel, because our robot is circular.
         # This will remove a part of the free space that can't be visited by robot
         # because it is too close to the wall. The robot's radius is 18 cm, if the
@@ -68,7 +72,7 @@ class MapMaker(object):
 
         non_occupied = cv2.dilate(non_occupied, kernel, iterations=1)
         non_occupied = cv2.erode(non_occupied, kernel, iterations=1)
-        non_occupied = cv2.dilate(non_occupied, kernel, iterations=1)
+        # non_occupied = cv2.dilate(non_occupied, kernel, iterations=1)
 
         # Find our map bounding box. Do that by finding indices of columns and
         # rows that contain element that is not False, then find the minimum and
@@ -77,11 +81,16 @@ class MapMaker(object):
         columns = numpy.any(non_occupied, axis=0)
         top, bottom = numpy.where(rows)[0][[0, -1]]
         left, right = numpy.where(columns)[0][[0, -1]]
+        top -= 10
+        bottom += 10
+        left -= 10
+        right += 10
 
-        free_space = non_occupied[top-1:bottom+2, left-1:right+1]
+        free_space = non_occupied[top:bottom, left:right]
+        only_walls = walls[top:bottom, left:right]
 
         # Find corners using either Harris corner detector
-        corners = cv2.cornerHarris(free_space, blockSize=3, ksize=5, k=0.04)
+        corners = cv2.cornerHarris(only_walls, blockSize=3, ksize=5, k=0.04)
         # Apply non-maxima-suppression, so we only get the most probable corners
         corners = self.non_maxima_suppression(corners, region_size=3)
 
@@ -105,8 +114,8 @@ class MapMaker(object):
 
         # Filter triangles that are too small and their center doesn't lie inside
         # free space
-        min_area = 60
-        min_distance= 26
+        min_area = 0
+        min_distance=18
         points = []
         # filtered_triangles = []
 
@@ -118,18 +127,21 @@ class MapMaker(object):
             
             if triangle_area(triangle_points) < min_area:
                 continue
-
+            
             if free_space[center_y, center_x] != 255:
+                continue
+
+            if self.too_close_to_the_wall(free_space, [center_x, center_y]):
                 continue
             
             # The center point of the triangle is the point that our robot has to
             # visit. The free_space image has been cropped, so transform the
             # coordinate back to original map coordinate.
             points.append([left + center_x, top + center_y])
-c
-        for point in points:
-            if self.too_close_to_the_wall(map_data, point):
-                points.remove(point)
+
+        # for point in points:
+        #     if self.too_close_to_the_wall(map_data, point):
+        #         points.remove(point)
 
         # If the map is big enough (has enough corners), perform clustering
         if len(points) > 10:
