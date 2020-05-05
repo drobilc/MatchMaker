@@ -31,19 +31,105 @@ class MapMaker(object):
                     new_image[y,x] = 255
         return new_image
 
-    def too_close_to_the_wall(self, map_data, point):
+    def too_close_to_the_wall(self, map_data, point, neighbourhood_size):
         is_too_close_to_the_wall = False
-        neighbourhood_base = [-1, 0, 1]
+
+        #create neighbourhood
+        neighbourhood_base = [0]
+        for i in range(1, neighbourhood_size + 1):
+            neighbourhood_base.append(i)
+            neighbourhood_base.append(i*(-1))
+
         neighbourhood = []
         for neighbour_x in neighbourhood_base:
             for neighbour_y in neighbourhood_base:
                 neighbourhood.append([point[0] + neighbour_x, point[1] + neighbour_y])
+        
+        # Check if any of the neighbours lays outside of free space
         for member in neighbourhood:
             suspect = map_data[member[1]][member[0]]
             if suspect < 250:
                 is_too_close_to_the_wall = True
                 return is_too_close_to_the_wall
         return is_too_close_to_the_wall
+
+    def move_away_from_the_wall(self, map_data, point, too_close):
+        # Create neighbourhoods
+        neighbours_base = [0]
+        for i in range(1, too_close + 1):
+            neighbours_base.append(i)
+
+        neighbours_left = []
+        neighbours_right = []
+        neighbours_up = []
+        neighbours_down = []
+        extended_neighbours_left = []
+        extended_neighbours_right = []
+        extended_neighbours_up = []
+        extended_neighbours_down = []
+
+        for neighbour in neighbours_base:
+            neighbours_right.append([point[0] + neighbour, point[1]])
+            neighbours_left.append([point[0] + (-1) * neighbour, point[1]])
+            neighbours_down.append([point[0], point[1] + neighbour])
+            neighbours_up.append([point[0], point[1] + (-1) * neighbour])
+
+            extended_neighbours_right.append([point[0] + 2 * neighbour, point[1]])
+            extended_neighbours_left.append([point[0] + (-1) * 2* neighbour, point[1]])
+            extended_neighbours_down.append([point[0], point[1] + 2 *neighbour])
+            extended_neighbours_up.append([point[0], point[1] + (-1) * 2* neighbour])
+            extended_neighbours_right.append([point[0] + 2 * neighbour + 1, point[1]])
+            extended_neighbours_left.append([point[0] + (-1) * 2 * neighbour + 1, point[1]])
+            extended_neighbours_down.append([point[0], point[1] + 2 * neighbour + 1])
+            extended_neighbours_up.append([point[0], point[1] + (-1) * 2 * neighbour + 1])
+        
+        # Check for walls in each direction
+        wall_to_the_right = False
+        wall_to_the_left = False
+        wall_to_the_bottom = False
+        wall_to_the_top = False
+        free_to_move_right = True
+        free_to_move_left = True
+        free_to_move_down = True
+        free_to_move_up = True
+        for i in range(1, too_close + 1):
+            if map_data[neighbours_right[i][1]][neighbours_right[i][0]] < 250:
+                wall_to_the_right = True
+            if map_data[neighbours_left[i][1]][neighbours_left[i][0]] < 250:
+                wall_to_the_left = True
+            if map_data[neighbours_up[i][1]][neighbours_up[i][0]] < 250:
+                wall_to_the_top = True
+            if map_data[neighbours_down[i][1]][neighbours_down[i][0]] < 250:
+                wall_to_the_bottom = True
+
+            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i -1][1]][extended_neighbours_right[2 * i -1][0]] < 250:
+                wall_to_the_right = False
+            if map_data[extended_neighbours_right[2 * i][1]][extended_neighbours_right[2 * i][0]] < 250:
+                wall_to_the_right = False
+
+        # For each wall to close, move the point too_close pixels in the opposite direction
+        if wall_to_the_right and free_to_move_right:
+            point[0] -= too_close
+        if wall_to_the_left and free_to_move_left:
+            point[0] += too_close
+        if wall_to_the_bottom and free_to_move_down:
+            point[1] -= too_close
+        if wall_to_the_top and free_to_move_up:
+            point[1] += too_close
+
+        return point
     
     def generate_points(self):
         occupancy_grid = self.get_map().map
@@ -131,17 +217,13 @@ class MapMaker(object):
             if free_space[center_y, center_x] != 255:
                 continue
 
-            if self.too_close_to_the_wall(free_space, [center_x, center_y]):
+            if self.too_close_to_the_wall(free_space, [center_x, center_y], 1):
                 continue
             
             # The center point of the triangle is the point that our robot has to
             # visit. The free_space image has been cropped, so transform the
             # coordinate back to original map coordinate.
             points.append([left + center_x, top + center_y])
-
-        # for point in points:
-        #     if self.too_close_to_the_wall(map_data, point):
-        #         points.remove(point)
 
         # If the map is big enough (has enough corners), perform clustering
         if len(points) > 10:
@@ -170,6 +252,19 @@ class MapMaker(object):
                 new_points.append([avg_x, avg_y])
         else:
             new_points = points
+
+        # If any of the points is too close to the wall, move it away from it
+        # First check if the point is too close to the wall.
+        for point in new_points:
+            if self.too_close_to_the_wall(non_occupied, point, 3):
+                # if so, find out in which of the four basic directions do we have a wall 
+                # within 3px and move it in the opposite direction for 3px
+                point = self.move_away_from_the_wall(non_occupied, point, 4)
+
+        # for point in new_points:
+        #     point[0] += center_x
+        #     point[1] += center_y
+
 
         # Convert point from pixels to map coordinates
         for point in new_points:
