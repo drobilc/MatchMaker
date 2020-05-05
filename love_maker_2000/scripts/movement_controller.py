@@ -5,9 +5,13 @@ import rospy
 import actionlib
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from tf2_geometry_msgs import PointStamped
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String, ColorRGBA
 from object_detection_msgs.msg import ObjectDetection
+
+# Services
+from nav_msgs.srv import GetMap
 
 from visualization_msgs.msg import MarkerArray
 
@@ -52,6 +56,20 @@ class MovementController(object):
 
         # To visualize goals, we create a new goal publisher that publishes markers
         self.goals_publisher = rospy.Publisher('goals', MarkerArray, queue_size=1000)
+
+        # Create map data array that will store occupancy grid
+        self.get_map = rospy.ServiceProxy('static_map', GetMap)
+        rospy.wait_for_service('static_map')
+        self.occupancy_grid = self.get_map().map
+        width, height = self.occupancy_grid.info.width, self.occupancy_grid.info.height
+        self.map_resolution = self.occupancy_grid.info.resolution
+        self.map_origin = self.occupancy_grid.info.origin.position
+        self.map_data = numpy.asarray(self.occupancy_grid.data)
+        self.map_data = numpy.reshape(self.map_data, (height, width))
+        self.map_data[self.map_data == 100] = 255
+        self.map_data[self.map_data == -1] = 0
+        self.map_data = self.map_data.astype('uint8')
+
 
         # Save initial goals that we have received from map_maker
         self.initial_goals = [goal for goal in goals]
@@ -213,7 +231,42 @@ class MovementController(object):
     def active(self):
         # This is called when our goal is being processed on the server
         pass
-    
+
+    def calculate_cylinder_approaching_pose(self, detection):
+        # Get cylinder position in map coordinate system
+        cylinder_point = PointStamped()
+        cylinder_point.header.frame_id = detection.header.frame_id
+        cylinder_point.header.stamp = detection.header.stamp
+        cylinder_point.point.x = detection.object_pose.position.x
+        cylinder_point.point.y = detection.object_pose.position.y
+        cylinder_point.point.z = detection.object_pose.position.z
+
+        # Get robot position in map coordinate system
+        robot_point = PointStamped()
+        robot_point.header.frame_id = "camera_depth_optical_frame"
+        robot_point.header.stamp = detection.header.stamp
+        robot_point = self.tf_buffer.transform(robot_point, "map")
+
+        cylinder_pixel = utils.to_map_pixel(cylinder_point, self.map_origin, self.map_resolution)
+        rospy.loginfo("Cylinder pixel: " + str(cylinder_pixel))
+        # robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
+        robot_pixel = None
+        approaching_pixel = utils.bfs(cylinder_pixel, robot_pixel, self.map_data)
+        if approaching_pixel is None:
+            rospy.loginfo("No approaching point found!")
+        else:
+            rospy.loginfo("Approaching point found!")
+
+        # TODO: Calculate orientation
+
+        # Create approaching pose for the cylinder
+        approaching_pose = Pose()
+        approaching_pose.position.x = approaching_pixel[0] * self.map_resolution + self.map_origin.x
+        approaching_pose.position.y = approaching_pixel[1] * self.map_resolution + self.map_origin.y
+        approaching_pose.position.z = 0
+
+        return approaching_pose
+
     def move_to_goal(self, detection):
         rospy.loginfo('Moving to goal [type = {}] {}'.format(detection.type, detection.approaching_point_pose))
 
@@ -226,7 +279,11 @@ class MovementController(object):
         goal.target_pose.header.stamp = rospy.Time.now()
 
         # Set the goal pose as the detected object approaching point
-        goal.target_pose.pose = detection.approaching_point_pose
+        if detection.type == 'cylinder':
+            rospy.loginfo("\nStart moving towards cylinder!")
+            goal.target_pose.pose = self.calculate_cylinder_approaching_pose(detection)
+        else:
+            goal.target_pose.pose = detection.approaching_point_pose
 
         self.has_goals = True
 
@@ -290,6 +347,8 @@ class MovementController(object):
         self.start()
     
     def on_object_detection(self, object_detection):
+        if object_detection.type == 'face':
+            return
         # A new face / cylinder / torus has been detected. If current goal is
         # not a map point, then cancel current goal and visit this goal.
         # Otherwise add it to goals for later.
