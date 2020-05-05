@@ -3,11 +3,13 @@ Love maker is a precious space for development of the basis of the Match Maker, 
 
 ## TODO
 * detect ring color
-* make ring detection work
+* delay detectors untill robot is localized
+* fix locations of cylinders
 * fix detection of blue cylinder from the wrong side
-* add approaching point calculation for rings
+* add approaching for rings
 * fix approaching points for cylinders so they are not too close to the wall
-* fine tune exploration points algorithm once all components work
+* ~~fine tune exploration points algorithm once all components work~~  **DONE**
+* ~~make ring detection work~~  **DONE**
 * ~~add launching cylinder and ring detection to all.launch (when the arhitecture is changed)~~  **DONE**
 * ~~make sure all points are in map coordinates before adding them to `ObjectDetection`~~  **DONE**
 * ~~fix color detection on yellow cylinder~~  **DONE**
