@@ -635,7 +635,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
   pcl::PointIndices::Ptr inliers_cylinder(new pcl::PointIndices);
 
   // Create the segmentation object for cylinder segmentation and set all the parameters
-  std::cerr << "\n-- Cylinder Segmentation" << std::endl;
+  // std::cerr << "\n-- Cylinder Segmentation" << std::endl;
   seg.setOptimizeCoefficients(true);
   seg.setModelType(pcl::SACMODEL_CYLINDER);
   seg.setMethodType(pcl::SAC_RANSAC);
@@ -648,7 +648,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
 
   // Obtain the cylinder inliers and coefficients
   seg.segment(*inliers_cylinder, *coefficients_cylinder);
-  std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
+  // std::cerr << "Cylinder coefficients: " << *coefficients_cylinder << std::endl;
 
   // Write the cylinder inliers to disk
   extract.setInputCloud(cloud);
@@ -658,10 +658,10 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
   extract.filter(*cloud_cylinder);
   if (cloud_cylinder->points.size() >= cylinder_points_threshold)
   {
-    std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size() << " data points." << std::endl;
+    // std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size() << " data points." << std::endl;
 
     pcl::compute3DCentroid(*cloud_cylinder, centroid);
-    std::cerr << "centroid of the cylindrical component: " << centroid[0] << " " << centroid[1] << " " << centroid[2] << " " << centroid[3] << std::endl;
+    // std::cerr << "centroid of the cylindrical component: " << centroid[0] << " " << centroid[1] << " " << centroid[2] << " " << centroid[3] << std::endl;
 
     //Create a point in the "camera_rgb_optical_frame"
     geometry_msgs::PointStamped point_camera;
@@ -732,10 +732,10 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     geometry_msgs::Quaternion approachingPointOrientationMessage;
     approachingPointOrientationMessage = tf2::toMsg(approachingPointOrientation);
 
-    std::cerr << "VECTOR: " << dx << ", " << dy << ", " << dz << std::endl;
+    // std::cerr << "VECTOR: " << dx << ", " << dy << ", " << dz << std::endl;
 
-    std::cerr << "point_camera: " << point_camera.point.x << " " << point_camera.point.y << " " << point_camera.point.z << std::endl;
-    std::cerr << "point_map: " << point_map.point.x << " " << point_map.point.y << " " << point_map.point.z << std::endl;
+    // std::cerr << "point_camera: " << point_camera.point.x << " " << point_camera.point.y << " " << point_camera.point.z << std::endl;
+    // std::cerr << "point_map: " << point_map.point.x << " " << point_map.point.y << " " << point_map.point.z << std::endl;
 
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
@@ -807,7 +807,11 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
 
 void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 {
-  std::cerr << "\nEntered cloud callback" << std::endl;
+  if (cloud_blob->width == 0 || cloud_blob->height == 0) {
+    return;
+  }
+
+  // std::cerr << "\nEntered cloud callback" << std::endl;
   time_rec = ros::Time::now();
 
   // All the objects needed
@@ -827,25 +831,21 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
 
   // Read in the cloud data
   pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
-  std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
-  if (cloud->points.size() == 0) return;
+  // std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
+  if (cloud->points.empty()) return;
 
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(0, 2);
   pass.filter(*cloud_filtered);
-  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
+  // std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
   // Estimate point normals
   ne.setSearchMethod(tree);
   ne.setInputCloud(cloud_filtered);
   ne.setKSearch(50);
   ne.compute(*cloud_normals);
-
-  // Find rings
-  // find_rings(cloud_filtered);
-  // find_rings2(cloud_filtered, cloud_normals3); // Unusable
 
   // Remove all planes
   remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
@@ -854,8 +854,6 @@ void cloud_cb(const pcl::PCLPointCloud2ConstPtr &cloud_blob)
   find_cylinders(cloud_filtered2, cloud_normals2, cloud_filtered3, cloud_normals3);
 
   // log_pointcloud(cloud_filtered3);
-
-  // find_rings2(cloud_filtered3, cloud_normals3);
 }
 
 void get_parameters(ros::NodeHandle nh)
@@ -885,9 +883,6 @@ int main(int argc, char **argv)
   // For transforming between coordinate frames
   tf2_ros::TransformListener tf2_listener(tf2_buffer);
 
-  // Create a ROS subscriber for the input point cloud
-  ros::Subscriber sub = nh.subscribe("input", 1, cloud_cb);
-
   // Also create a ROS subscriber for camera image
   image_transport::ImageTransport imageTransport(nh);
   image_transport::Subscriber cameraSubscriber = imageTransport.subscribe("/camera/rgb/image_raw", 1, cameraCallback);
@@ -903,6 +898,9 @@ int main(int argc, char **argv)
   pub_markers = nh.advertise<visualization_msgs::MarkerArray>("torus_detections_marker_raw", 100);
 
   color_classifier = nh.serviceClient<color_classification::ColorClassification>("color_classifier");
+
+  // Create a ROS subscriber for the input point cloud
+  ros::Subscriber sub = nh.subscribe("input", 1, cloud_cb);
 
   // Spin
   ros::spin();
