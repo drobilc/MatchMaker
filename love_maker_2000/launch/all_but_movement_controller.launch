@@ -62,6 +62,8 @@
         <arg name="raw_ring_markers" value="$(arg raw_ring_markers)"/>
     </include>
 
+    <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
+
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
     </node>
