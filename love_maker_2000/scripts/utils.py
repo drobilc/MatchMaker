@@ -42,53 +42,6 @@ def to_map_pixel(position, map_origin, map_resolution):
     pixel_y = int((position.point.y - map_origin.y) / map_resolution)
     return numpy.asarray([pixel_x, pixel_y])
 
-def close_to_wall(pixel, map_data, max_distance=3):
-    # Use flood fill algorithm with breadth first search to find the
-    # closest wall pixel. Use neighboring pixels as defined below
-    neighborhood = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-
-    frontier = Queue.Queue()
-    map_region = map_data[pixel[1]-max_distance-1:pixel[1]+max_distance, pixel[0]-max_distance-1:pixel[0]+max_distance]
-    if max_distance % 2 == 0:
-        pixel = (max_distance / 2, max_distance / 2)
-    else:
-        pixel = ((max_distance + 1) / 2, (max_distance + 1) / 2)
-    frontier.put(pixel)
-    visited = numpy.zeros_like(map_region, dtype=bool)
-    visited[pixel[1], pixel[0]] = True
-
-    while not frontier.empty():
-        current = frontier.get()
-        if map_region[current[1], current[0]] == 0:
-            return True
-        for next in neighbors_all_limited(current, 2 * max_distance + 1, 2 * max_distance + 1):
-            if not visited[next[1], next[0]]:
-                frontier.put(next)
-                visited[next[1], next[0]] = True
-    
-    return False
-
-
-def neighbors_all_limited(pixel, width, height):
-    neighbors = []
-    if pixel[1] > 0:
-        neighbors.append(
-            (pixel[0], pixel[1] - 1)
-        )
-    if pixel[1] + 2 < height:
-        neighbors.append(
-            (pixel[0], pixel[1] + 1)
-        )
-    if pixel[0] + 2 < width:
-        neighbors.append(
-            (pixel[0] + 1, pixel[1])
-        )
-    if pixel[0] > 0:
-        neighbors.append(
-            (pixel[0] - 1, pixel[1])
-        )
-    return neighbors
-
 def neighbors_all(pixel):
     neighbors = []
     neighbors.append(
@@ -104,46 +57,6 @@ def neighbors_all(pixel):
         (pixel[0] + 1, pixel[1])
     )
     return neighbors
-
-def neighbors(pixel, map_data):
-    neighbors = []
-    if map_data[pixel[1] - 1, pixel[0]] != 0:
-        neighbors.append(
-            (pixel[0], pixel[1] - 1)
-        )
-    if map_data[pixel[1] + 1, pixel[0]] != 0:
-        neighbors.append(
-            (pixel[0], pixel[1] + 1)
-        )
-    if map_data[pixel[1], pixel[0] - 1] != 0:
-        neighbors.append(
-            (pixel[0] - 1, pixel[1])
-        )
-    if map_data[pixel[1], pixel[0] + 1] != 0:
-        neighbors.append(
-            (pixel[0] + 1, pixel[1])
-        )
-    return neighbors
-
-def bfs(start, goal, map_data):
-    rospy.loginfo("~~~~~Started calculating cylinder approaching point")
-    frontier = Queue.Queue()
-    frontier.put(start)
-    visited = numpy.zeros_like(map_data, dtype=bool)
-    visited[start[1], start[0]] = True
-
-    while not frontier.empty():
-        current = frontier.get()
-        if not close_to_wall(current, map_data, 3):
-            rospy.loginfo("Found no closest wall pixel")
-            return current
-        
-        for next in neighbors(current, map_data):
-            if not visited[next[1], next[0]]:
-                frontier.put(next)
-                visited[next[1], next[0]] = True
-    
-    return None
 
 def nearest_free_pixel(pixel, map_data):
     frontier = Queue.Queue()
@@ -253,9 +166,6 @@ def move_away_from_the_wall(map_data, point, too_close):
         point[1] += 2 * too_close
 
     return point
-
-def show_image(img, title):
-    cv2.imshow(title, img)
 
 def closest_wall_pixel(map_data, pixel, max_distance=5):
     # Use flood fill algorithm with breadth first search to find the
