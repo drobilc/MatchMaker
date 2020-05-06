@@ -148,7 +148,7 @@ class Robustifier(object):
         'face': {
             'marker_type': Marker.SPHERE,
             'scale': Vector3(0.2, 0.2, 0.2),
-            'color': ColorRGBA(1, 1, 1, 1)
+            'color': ColorRGBA(1, 0, 0.5, 1)
         },
         'ring': {
             'marker_type': Marker.SPHERE,
