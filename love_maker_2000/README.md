@@ -9,9 +9,11 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * izboljšaj komentiranje obstoječe kode
 * premakni pogosto uporabljane funkcije v utils in jih zelo dobro komentiraj
 * podaljšaj lifespan markerjev v utils
+* uredi loge
+* error handling za nepomembne errorje
 * detektorji naj počakajo, da je robot lokaliziran (preferrably ne z rospy.sleep)
-* uporabi sinhronizacijo namesto localizerja
 * costmap namesto static mapa (slike)
+* uporabi sinhronizacijo namesto localizerja
 * ko je sinhronizacija implementirana, izbriši localizer
 * ko pride nov svet, pazi na rotacijo mape
 
