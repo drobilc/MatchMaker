@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import rospy
 import actionlib
+import cv2
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf2_geometry_msgs import PointStamped
@@ -69,7 +70,6 @@ class MovementController(object):
         self.map_data[self.map_data == 100] = 255
         self.map_data[self.map_data == -1] = 0
         self.map_data = self.map_data.astype('uint8')
-
 
         # Save initial goals that we have received from map_maker
         self.initial_goals = [goal for goal in goals]
@@ -240,15 +240,23 @@ class MovementController(object):
         cylinder_point.point.x = detection.object_pose.position.x
         cylinder_point.point.y = detection.object_pose.position.y
         cylinder_point.point.z = detection.object_pose.position.z
+        rospy.loginfo("Cylinder point: " + str(cylinder_point.point.x) + " " + str(cylinder_point.point.y))
 
         # Get robot position in map coordinate system
-        robot_point = PointStamped()
-        robot_point.header.frame_id = "camera_depth_optical_frame"
-        robot_point.header.stamp = detection.header.stamp
-        robot_point = self.tf_buffer.transform(robot_point, "map")
+        # robot_point = PointStamped()
+        # robot_point.header.frame_id = "camera_depth_optical_frame"
+        # robot_point.header.stamp = detection.header.stamp
+        # robot_point = self.tf_buffer.transform(robot_point, "map")
 
         cylinder_pixel = utils.to_map_pixel(cylinder_point, self.map_origin, self.map_resolution)
         rospy.loginfo("Cylinder pixel: " + str(cylinder_pixel))
+        rospy.loginfo("Map_Data[Cylinder pixel]: " + str(self.map_data[cylinder_pixel[1], cylinder_pixel[0]]))
+        cylinder_pixel = utils.nearest_free_pixel(cylinder_pixel, self.map_data)
+        rospy.loginfo("Cylinder pixel: " + str(cylinder_pixel))
+
+        if not utils.close_to_wall((223, 233), self.map_data, 3):
+            rospy.logerr("(223, 233) is not close to wall! What seems to be the officer, problem?")
+
         # robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
         robot_pixel = None
         approaching_pixel = utils.bfs(cylinder_pixel, robot_pixel, self.map_data)
@@ -257,7 +265,9 @@ class MovementController(object):
         else:
             rospy.loginfo("Approaching point found!")
 
-        # TODO: Calculate orientation
+        # We override the value here, because the above function does not work
+        approaching_pixel = utils.move_away_from_the_wall(self.map_data, [cylinder_pixel[0], cylinder_pixel[1]], 4)
+        rospy.loginfo("Approaching pixel: " + str(approaching_pixel))
 
         # Create approaching pose for the cylinder
         approaching_pose = Pose()
@@ -279,8 +289,7 @@ class MovementController(object):
         goal.target_pose.header.stamp = rospy.Time.now()
 
         # Set the goal pose as the detected object approaching point
-        if detection.type == 'cylinder':
-            rospy.loginfo("\nStart moving towards cylinder!")
+        if detection.type == 'cylinder' or detection.type == 'ring':
             goal.target_pose.pose = self.calculate_cylinder_approaching_pose(detection)
         else:
             goal.target_pose.pose = detection.approaching_point_pose
