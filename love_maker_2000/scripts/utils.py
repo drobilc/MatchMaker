@@ -247,9 +247,9 @@ def move_away_from_the_wall(map_data, point, too_close):
         point[0] -= 2 * too_close
     if wall_to_the_left and free_to_move_left:
         point[0] += 2 * too_close
-    if wall_to_the_bottom and free_to_move_right:
+    if wall_to_the_bottom and free_to_move_up:
         point[1] -= 2 * too_close
-    if wall_to_the_top and free_to_move_right:
+    if wall_to_the_top and free_to_move_down:
         point[1] += 2 * too_close
 
     return point
