@@ -7,6 +7,7 @@
     <include file="$(find love_maker)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
         <arg name="world_file"  value="$(find love_maker)/worlds/rins2.world"/>
+        <arg name="gui"  value="false"/>
         <!-- another world -->
         <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
     </include>
@@ -33,17 +34,11 @@
     <!-- <include file="$(find turtlebot_rviz_launchers)/launch/view_navigation.launch"></include> -->
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find love_maker)/launch/includes/rviz_config.rviz"/>
 
-    <!-- Launch the localizer service -->
-    <include file="$(find localizer)/launch/localizer_node_simulation.launch"></include>
-
-    <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
-        <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
-        <param name="haar_cascade_data_file_path" type="string" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
-        <param name="downscale_factor" type="int" value="$(arg downscale)"/>
-    </node>
-
-    <node pkg="love_maker" type="face_mapper.py" name="face_mapper" output="screen">
-    </node>
+    <include file="$(find love_maker)/launch/face_detector.launch">
+        <arg name="display_camera_window" value="$(arg display_camera_window)" />
+        <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+        <arg name="downscale_factor" value="$(arg downscale)"/>
+    </include>
 
     <node pkg="love_maker" type="robustifier.py" name="robustifier" output="screen">
     </node>

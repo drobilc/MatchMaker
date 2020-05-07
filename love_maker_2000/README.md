@@ -12,8 +12,6 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * error handling za nepomembne errorje
 * detektorji naj počakajo, da je robot lokaliziran (preferrably ne z rospy.sleep)
 * costmap namesto static mapa (slike)
-* uporabi sinhronizacijo namesto localizerja
-* ko je sinhronizacija implementirana, izbriši localizer
 * ko pride nov svet, pazi na rotacijo mape
 
 ### Rings

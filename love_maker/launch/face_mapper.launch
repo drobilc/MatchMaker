@@ -1,6 +1,0 @@
-<launch>
-
-  <node pkg="love_maker" type="face_mapper.py" name="face_mapper" output="screen">
-  </node>
-
-</launch>

@@ -39,17 +39,12 @@
     <!-- <include file="$(find turtlebot_rviz_launchers)/launch/view_navigation.launch"></include> -->
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find love_maker_2000)/launch/includes/rviz_config.rviz"/>
 
-    <!-- Launch the localizer service -->
-    <include file="$(find localizer)/launch/localizer_node_simulation.launch"></include>
-
     <include file="$(find love_maker)/launch/face_detector.launch">
         <arg name="display_camera_window" value="$(arg display_camera_window)" />
         <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
         <arg name="downscale_factor" value="$(arg downscale)"/>
     </include>
     
-    <include file="$(find love_maker)/launch/face_mapper.launch"/>
-
     <include file="$(find love_maker)/launch/face_robustifier.launch">
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
