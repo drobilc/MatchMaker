@@ -16,7 +16,14 @@ void callback(const pcl::PCLPointCloud2ConstPtr& cloud_blob) {
   sor.setLeafSize (leaf_size_x, leaf_size_y, leaf_size_z);
   sor.filter (cloud_filtered);
 
-  pub.publish(cloud_filtered);
+  // Convert to ROS data type
+  sensor_msgs::PointCloud2 output;
+  pcl_conversions::moveFromPCL(cloud_filtered, output);
+
+  // Publish the data
+  pub.publish(output);
+
+  // pub.publish(cloud_filtered);
 }
 
 int main(int argc, char** argv) {
@@ -31,6 +38,7 @@ int main(int argc, char** argv) {
 
   // Publisher and subscriber
   ros::Subscriber sub = nh.subscribe ("input", 1, callback);
-  pub = nh.advertise<pcl::PCLPointCloud2>("output", 1);
+  // pub = nh.advertise<pcl::PCLPointCloud2>("output", 1);
+  pub = nh.advertise<sensor_msgs::PointCloud2>("output", 1);
   ros::spin ();
 }

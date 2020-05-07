@@ -5,7 +5,7 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 
 ### General
 
-* brisanje neuporabljane kode (~~Robustifier~~)
+* brisanje neuporabljane kode (~~Robustifier~~, ~~Cylinder detector~~)
 * izboljšaj komentiranje obstoječe kode (~~Robustifier~~)
 * premakni pogosto uporabljane funkcije v utils in jih zelo dobro komentiraj
 * uredi loge (~~Robustifier~~)
@@ -20,8 +20,6 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * za approaching uporabi fine movement mode v `movement_controllerju`
 
 ### Cylinders
-
-* sinhroniziraj point cloud
 * fine tune filtriranje point clouda, da bo večkrat zaznal cilinder
 
 ### Movement controller
