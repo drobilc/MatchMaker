@@ -8,7 +8,6 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * brisanje neuporabljane kode (~~Robustifier~~)
 * izboljšaj komentiranje obstoječe kode (~~Robustifier~~)
 * premakni pogosto uporabljane funkcije v utils in jih zelo dobro komentiraj
-* podaljšaj lifespan markerjev v utils
 * uredi loge (~~Robustifier~~)
 * error handling za nepomembne errorje
 * detektorji naj počakajo, da je robot lokaliziran (preferrably ne z rospy.sleep)

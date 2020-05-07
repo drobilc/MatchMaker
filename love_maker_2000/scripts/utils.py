@@ -10,14 +10,16 @@ from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion, Vector3
 from std_msgs.msg import String, ColorRGBA
 
-def stamped_poses_to_marker_array(poses, marker_type=Marker.CUBE, lifetime=120, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1)):
+def stamped_poses_to_marker_array(poses, marker_type=Marker.CUBE, lifetime=900, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1)):
+    """Constructs a MarkerArray of Marker objects from poses in poses list"""
     markers = MarkerArray()
     for index, pose in enumerate(poses):
         marker = stamped_pose_to_marker(pose, index=index, marker_type=marker_type, lifetime=lifetime, scale=scale, color=color)
         markers.markers.append(marker)
     return markers
 
-def stamped_pose_to_marker(pose_stamped, marker_type=Marker.CUBE, lifetime=120, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1), index=1):
+def stamped_pose_to_marker(pose_stamped, marker_type=Marker.CUBE, lifetime=900, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1), index=1):
+    """Constructs a marker from PoseStamped object"""
     marker = Marker()
     marker.action = Marker.ADD
     marker.frame_locked = False
@@ -31,13 +33,13 @@ def stamped_pose_to_marker(pose_stamped, marker_type=Marker.CUBE, lifetime=120, 
     return marker
 
 def pose_to_map_pixel(pose, map_origin, map_resolution):
-    # Convert position from map coordinates in m to pixel position (u, v) 
+    """Convert Pose from map coordinates in m to pixel position (u, v)"""
     pixel_x = int((pose.position.x - map_origin.x) / map_resolution)
     pixel_y = int((pose.position.y - map_origin.y) / map_resolution)
     return numpy.asarray([pixel_x, pixel_y])
 
 def to_map_pixel(position, map_origin, map_resolution):
-    # Convert position from map coordinates in m to pixel position (u, v) 
+    """Convert Point from map coordinates in m to pixel position (u, v) """
     pixel_x = int((position.point.x - map_origin.x) / map_resolution)
     pixel_y = int((position.point.y - map_origin.y) / map_resolution)
     return numpy.asarray([pixel_x, pixel_y])
