@@ -3,16 +3,10 @@ from __future__ import print_function
 
 import rospy
 import math
-from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from object_detection_msgs.msg import ObjectDetection
-
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
-import tf2_ros
-from tf2_geometry_msgs import PointStamped
-
-import numpy as np
 
 import utils
 
@@ -38,6 +32,7 @@ class Detection(object):
             self.color_classifications.append(detection.classified_color)
     
     def get_object_pose(self):
+        """Get object PoseStamped with detection header and robustified pose"""
         pose = PoseStamped()
         pose.header.frame_id = self.detection.header.frame_id
         pose.header.stamp = self.detection.header.stamp
@@ -45,6 +40,7 @@ class Detection(object):
         return pose
     
     def get_approaching_point_pose(self, on_floor=True):
+        """Get approaching point PoseStamped with detection header and robustified pose"""
         pose = PoseStamped()
         pose.header.frame_id = self.detection.header.frame_id
         pose.header.stamp = self.detection.header.stamp
@@ -54,6 +50,7 @@ class Detection(object):
         return pose
     
     def get_real_color(self):
+        """Get ColorRGBA from detection color, where each component is a value in range [0, 1]"""
         color = ColorRGBA()
         color.r = self.detection.color.r / 255.0
         color.g = self.detection.color.g / 255.0
@@ -62,9 +59,16 @@ class Detection(object):
         return color
     
     def get_color(self):
+        """Get ColorRGBA using the color classification color (or real color if it is not set)"""
+        # If color has not been classified, return the object real color (the
+        # received color from face / cylinder / ring detector)
         if len(self.color_classifications) <= 0:
             return self.get_real_color()
         
+        # Otherwise use possible color_classifications to determine the most
+        # frequent classification color. White should only be returned if the
+        # color classifier only returned white in all detections. Otherwise,
+        # white color should be ignored when finding the most frequent color.
         ignore = set(['white'])
         colors = set(self.color_classifications).difference(ignore)
         if len(colors) <= 0:
@@ -72,9 +76,9 @@ class Detection(object):
         
         most_frequent = max(colors, key=self.color_classifications.count)
         return self.COLOR_MAP[most_frequent]
-        
     
     def update_object_position(self, other_detection, blending=0.5):
+        """Update object pose by averaging it using the blending parameter"""
         self_pose = self.detection.object_pose
         other_pose = Detection(other_detection).get_object_pose().pose
 
@@ -87,6 +91,7 @@ class Detection(object):
         self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
     
     def update_approaching_point_position(self, other_detection, blending=0.5):
+        """Update approaching point pose by averaging it using the blending parameter"""
         self_pose = self.detection.approaching_point_pose
         other_pose = Detection(other_detection).get_approaching_point_pose().pose
         alpha, beta = 1 - blending, blending
@@ -95,16 +100,20 @@ class Detection(object):
         self_pose.position.z = self_pose.position.z * alpha + other_pose.position.z * beta
 
     def update(self, other_detection):
+        """Update object pose, approaching point and detection color"""
         # Update detected object position, then update approacing point
         # position.
         self.update_object_position(other_detection, self.blending)
         self.update_approaching_point_position(other_detection, self.blending)
 
-        # Add color classification to list of color classifications
+        # Add color classification to list of color classifications. The
+        # color_classifications list is then used to get the most frequent color
+        # classification. For example, ['red', 'blue', 'red'] should return 'red'
         if other_detection.classified_color:
             self.color_classifications.append(other_detection.classified_color)
     
     def distance_to(self, other_detection):
+        """Compute Euclidean distance between two detections"""
         self_pose = self.get_object_pose().pose
         other_pose = Detection(other_detection).get_object_pose().pose
         # Return simple Euclidean distance between this and other pose
@@ -114,6 +123,9 @@ class Detection(object):
         return math.sqrt(dx*dx + dy*dy + dz*dz)
     
     def get_detection(self):        
+        """Get robustified detection with robustified object pose, approaching point and color"""
+        # Compute color from classifications and update detection classification
+        # color
         ignore = set(['white'])
         colors = set(self.color_classifications).difference(ignore)
         if len(colors) <= 0:
@@ -192,10 +204,6 @@ class Robustifier(object):
         # A list of Detection objects used for finding the closest pose
         self.object_detections = []
 
-        # Object we use for transforming between coordinate frames
-        self.tf_buf = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
-
     def publish_marker(self, detection, marker_style={}, approaching_point=False):
         # Construct a marker from detected object, add it to markers array
         # and publish it to marker_topic
@@ -250,24 +258,20 @@ class Robustifier(object):
         saved_pose = self.already_detected(detection)
 
         if saved_pose is not None:
-            rospy.loginfo('Object was already detected, it has been detected {} times'.format(saved_pose.number_of_detections))
             saved_pose.number_of_detections += 1
 
             # If object was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent:
-                    rospy.loginfo('Sending object location to movement controller')
                     self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
                     self.object_publisher.publish(saved_pose.get_detection())
                     saved_pose.already_sent = True
             else:
-                rospy.loginfo('Detection has not yet surpassed the minimum number of detections needed')
                 # The detected object pose and previously saved pose are very similar,
                 # calculate mean position of both poses and save data to saved_pose
                 saved_pose.update(detection)
         else:
-            rospy.loginfo('Object has not yet been detected')
             # Construct a new detection object, add it to detections
             saved_pose = Detection(detection)
             self.object_detections.append(saved_pose)
