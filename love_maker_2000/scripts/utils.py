@@ -9,6 +9,11 @@ import Queue
 from visualization_msgs.msg import MarkerArray, Marker
 from geometry_msgs.msg import Pose, PoseStamped, Twist, Quaternion, Vector3
 from std_msgs.msg import String, ColorRGBA
+from object_detection_msgs.msg import ObjectDetection
+
+import tf2_ros
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import tf2_geometry_msgs
 
 def stamped_poses_to_marker_array(poses, marker_type=Marker.CUBE, lifetime=900, scale=Vector3(0.1, 0.1, 0.1), color=ColorRGBA(1, 0, 0, 1)):
     """Constructs a MarkerArray of Marker objects from poses in poses list"""
@@ -196,3 +201,26 @@ def closest_wall_pixel(map_data, pixel, max_distance=5):
             if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x]:
                 continue
             frontier.append((new_x, new_y))
+
+def detection_from_point_on_map(point, angle_z_axis = None):
+    """Create new ObjectDetection from point and z orientation"""
+    pose = Pose()
+    pose.position.x = point[0]
+    pose.position.y = point[1]
+    pose.position.z = point[2]
+
+    # set correct orientation of the point
+    if angle_z_axis is not None:
+        rotation = quaternion_from_euler(0, 0, angle_z_axis)
+        pose.orientation = Quaternion(*rotation)
+    else:
+        pose.orientation.w = 1
+
+    detection = ObjectDetection()
+    detection.header.frame_id = 'map'
+    detection.header.stamp = rospy.Time.now()
+    detection.object_pose = pose
+    detection.approaching_point_pose = pose
+    detection.type = 'map_point'
+
+    return detection
