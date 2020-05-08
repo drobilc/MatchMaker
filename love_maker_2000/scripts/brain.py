@@ -5,6 +5,7 @@ import rospy
 from object_detection_msgs.msg import ObjectDetection
 
 from movement.controller import MovementController
+from greeter import Greeter
 
 class Brain(object):
     
@@ -24,6 +25,9 @@ class Brain(object):
         # component is created, the robot should localize itself
         self.movement_controller = MovementController()
 
+        # Greeter object can be used to greet objects once we approach them
+        self.greeter = Greeter()
+
         def on_localization_finished():
             rospy.loginfo('Localization finished!')
             self.set_detectors_enabled(should_be_enabled=True)
@@ -31,13 +35,17 @@ class Brain(object):
         # Before the robot is localized, disable all detectors. The
         # on_localization_finished is a callback function that will be called
         # after the localization task will be completed.
-        self.set_detectors_enabled(should_be_enabled=False)
-        self.movement_controller.localize(callback=on_localization_finished)
+        #self.set_detectors_enabled(should_be_enabled=False)
+        localization_task = self.movement_controller.localize(callback=on_localization_finished)
+        self.movement_controller.add_to_queue(localization_task)
         
         # After the localization has been done, add a wandering task to our
         # robot. Wandering task first creates exploration points and then moves
         # to each point.
-        self.movement_controller.wander()
+        self.wandering_task = self.movement_controller.wander()
+        self.movement_controller.add_to_queue(self.wandering_task)
+
+        self.object_detections = []
     
     def set_detectors_enabled(self, should_be_enabled=True):
         """Enables or disables all object detectors"""
@@ -46,8 +54,18 @@ class Brain(object):
     def on_object_detection(self, object_detection):
         rospy.loginfo('New object detected: {}'.format(object_detection.type))
 
+        def object_greet(detection, goal_status, goal_result):
+            rospy.loginfo('Goal finished with status: {}'.format(goal_status))
+            self.greeter.say('Hello {} {}!'.format(object_detection.classified_color, object_detection.type))
+            self.object_detections.remove(detection)
+            if len(self.object_detections) <= 0:
+                self.movement_controller.add_to_queue(self.wandering_task)
+        
+        self.object_detections.append(object_detection)
+
         # If new object has been detected, approach it
-        self.movement_controller.approach(object_detection)
+        task = self.movement_controller.approach(object_detection, callback=object_greet)
+        self.movement_controller.run_immediately(task)
 
 if __name__ == '__main__':
     controller = Brain([])

@@ -14,27 +14,6 @@ class MovementController(object):
         self.tasks = []
         self.is_running = False
 
-        # TODO: Save current task to a self.current_task, so we can access it if
-        # needed.
-        
-        # TODO: Rewrite tasks to be cancellable, so we can actually reorder
-        # them. When calling task.cancel(), the task should be canceled if it
-        # currently running, otherwise we can just remove it from queue. The
-        # self.cancel_all() method should return previous queue (THE FIRST
-        # ELEMENT BEING self.current_task).
-
-        # TODO: Rewrite tasks so that they can be paused an resumed (this will
-        # come in handy when WanderingTask is running)
-
-        # TODO: Add method self.run_now(task), that cancels current running task
-        # and runs the received task. The self.current_task should be put to the
-        # beginning of the self.tasks queue.
-
-        # TODO: Make self.localize, self.approach and self.wander return
-        # MovementTask objects so programmer can add them to queue themself:
-        #   * self.add_to_queue(self.localize())
-        #   * self.run_now(self.localize())
-
         # Create a new simple action client that will connect to move_base topic
         # The action server will listen on /move_base/goal and will notify
         # us about status and provide feedback at /move_base/status
@@ -42,15 +21,44 @@ class MovementController(object):
         self.action_client.wait_for_server()
         rospy.loginfo('Connected to movement server')
     
+    def run_immediately(self, task):
+        """Cancel all goals and run this task immediately"""
+        other_tasks = self.cancel_all()
+        self.tasks.insert(0, task)
+        self.tasks.extend(other_tasks)
+
+        self.start()
+
+    def add_to_queue(self, task):
+        """Add task to queue to be executed when tasks before are finished"""
+        self.tasks.append(task)
+        if not self.is_running:
+            self.start()
+    
     def cancel_all(self):
         """Cancel all tasks and return them"""
+        # Get current queue of tasks and insert the current running task to the
+        # beggining of the list to be run later
         old_tasks = self.tasks
+        old_tasks.insert(0, self.current_task)
+
+        # Cancel the current running task
+        self.current_task.cancel()
+
+        # Clear task queue
         self.tasks = []
         return old_tasks
     
     def cancel(self, task):
-        """Cancel task and run the next task in queue"""
-        rospy.loginfo('Cancelling task {}'.format(task))
+        # This function is only meant to be called from tasks, not on its own
+        # because it will not cancel the function
+
+        # There are two options - the task is currently running or the task is
+        # waiting in queue
+        if task == self.current_task:
+            self.current_task = None
+            self.is_running = False
+
         if task in self.tasks:
             self.tasks.remove(task)
         
@@ -58,50 +66,32 @@ class MovementController(object):
         
         # Run next task in queue
         self.start()
+
+        return task
     
     def on_finish(self, task):
         """Callback function that is called after task is finished"""
-        rospy.loginfo('Task {} finished'.format(task))
-        
         self.is_running = False
-
-        # Call the task callback if it is set
-        if task.callback is not None:
-            task.callback()
-        
         # Execute next task in queue
         self.start()
     
     def start(self):
         """Get the first task from queue and run it"""
-        if len(self.tasks) <= 0:
+        if len(self.tasks) <= 0 or self.is_running:
             return
-
-        current_task = self.tasks.pop(0)
-        rospy.loginfo('Running task: {}'.format(current_task))
+        
+        self.current_task = self.tasks.pop(0)
         self.is_running = True
-        current_task.run()
-    
-    def add_to_queue(self, task):
-        """Add task to queue to be executed when tasks before are finished"""
-        self.tasks.append(task)
-        if not self.is_running:
-            self.start()
+        self.current_task.run()
     
     def localize(self, callback=None):
         """Create a new localization task and add it to queue"""
-        localization_task = LocalizationTask(self, callback)
-        self.add_to_queue(localization_task)
-        return localization_task
+        return LocalizationTask(self, callback)
     
     def approach(self, object_detection, callback=None):
         """Create a new rough approaching task to approach object"""
-        approaching_task = ApproachingTask(self, callback, self.action_client, object_detection)
-        self.add_to_queue(approaching_task)
-        return approaching_task
+        return ApproachingTask(self, callback, self.action_client, object_detection)
     
     def wander(self, callback=None):
         """Create a new wandering task to explore the space"""
-        wandering_task = WanderingTask(self, callback, self.action_client)
-        self.add_to_queue(wandering_task)
-        return wandering_task
+        return WanderingTask(self, callback, self.action_client)

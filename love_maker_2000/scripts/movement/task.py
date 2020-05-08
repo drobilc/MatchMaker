@@ -24,16 +24,24 @@ class MovementTask(object):
         self.callback = callback
         self.is_finished = False
         self.has_started = False
+        self.is_cancelled = False
     
     def run(self):
         self.has_started = True
+        self.is_cancelled = False
         self.finish()
     
     def finish(self):
         self.is_finished = True
+
+        # Call the callback function
+        if self.callback is not None:
+            self.callback()
+
         self.movement_controller.on_finish(self)
     
     def cancel(self):
+        self.is_cancelled = True
         self.movement_controller.cancel(self)
 
 class ApproachingTask(MovementTask):
@@ -52,11 +60,9 @@ class ApproachingTask(MovementTask):
     def done(self, status, result):
         # This is called when the robot has reached our current goal
         # or something has gone wrong
-        rospy.loginfo('Goal has finished with status: {}'.format(status))
-        self.finish()
+        self.finish(status, result)
     
     def run(self):
-        # rospy.loginfo('Moving to goal [type = {}] {}'.format(detection.type, detection.approaching_point_pose))
         # Create a new MoveBaseGoal object and set its position and rotation
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = self.object_detection.header.frame_id
@@ -69,6 +75,20 @@ class ApproachingTask(MovementTask):
         #   * self.active is called when server is processing our current goal
         #   * self.feedback is called to notify us about our robot position
         self.action_client.send_goal(goal, done_cb=self.done, active_cb=self.active, feedback_cb=self.feedback)
+    
+    def finish(self, goal_status, goal_result):
+        self.is_finished = True
+
+        # Call the callback function
+        if self.callback is not None:
+            self.callback(self.object_detection, goal_status, goal_result)
+
+        self.movement_controller.on_finish(self)
+
+    def cancel(self):
+        self.action_client.stop_tracking_goal()
+        self.action_client.cancel_all_goals()
+        super(ApproachingTask, self).cancel()
 
 class WanderingTask(MovementTask):
     
@@ -93,7 +113,6 @@ class WanderingTask(MovementTask):
     def done(self, status, result):
         # This is called when the robot has reached our current goal
         # or something has gone wrong
-        rospy.loginfo('Goal has finished with status: {}'.format(status))
         self.run()
     
     def run(self):
@@ -101,14 +120,14 @@ class WanderingTask(MovementTask):
             self.finish()
             return
         
-        current_goal = self.goals.pop(0)
+        self.current_goal = self.goals.pop(0)
 
         # rospy.loginfo('Moving to goal [type = {}] {}'.format(detection.type, detection.approaching_point_pose))
         # Create a new MoveBaseGoal object and set its position and rotation
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = current_goal.header.frame_id
+        goal.target_pose.header.frame_id = self.current_goal.header.frame_id
         goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose = current_goal.approaching_point_pose
+        goal.target_pose.pose = self.current_goal.approaching_point_pose
 
         # Send the MoveBaseGoal to our client and wait for server response
         # Also setup three different callbacks:
@@ -116,7 +135,12 @@ class WanderingTask(MovementTask):
         #   * self.active is called when server is processing our current goal
         #   * self.feedback is called to notify us about our robot position
         self.action_client.send_goal(goal, done_cb=self.done, active_cb=self.active, feedback_cb=self.feedback)
-
+    
+    def cancel(self):
+        self.goals.insert(0, self.current_goal)
+        self.action_client.stop_tracking_goal()
+        self.action_client.cancel_all_goals()
+        super(WanderingTask, self).cancel()
 
 class LocalizationTask(MovementTask):
     
@@ -126,9 +150,10 @@ class LocalizationTask(MovementTask):
     def run(self):
         self.localization_publisher = rospy.Publisher('/navigation_velocity_smoother/raw_cmd_vel', Twist, queue_size = 1000)
         self.odometry_subscriber = rospy.Subscriber('/odom', Odometry, self.on_odometry_received, queue_size=10)
+        self.is_cancelled = False
 
     def on_odometry_received(self, odometry):
-        if self.is_finished:
+        if self.is_finished or self.is_cancelled:
             return
         
         # If the object has no last_message_sent attribute, then this is the
@@ -167,3 +192,7 @@ class LocalizationTask(MovementTask):
     def localization_finished(self):
         rospy.loginfo('Localization protocol finished')
         self.finish()
+    
+    def cancel(self):
+        self.odometry_subscriber.unregister()
+        super(LocalizationTask, self).cancel()
