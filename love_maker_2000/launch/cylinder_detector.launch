@@ -5,16 +5,21 @@
 
         <remap from="input" to="/love_maker_2000/voxelgrid"/>
 
-        <param name="normal_distance_weight" value="0.1" />  <!-- 0.1 -->
-        <param name="max_iterations" value="10000" />   <!-- 10000 -->
-        <param name="distance_threshold" value="0.05" />   <!-- 0.05 -->
-        <param name="radius_min" value="0.11" />    <!-- 0.06 -->
-        <param name="radius_max" value="0.13" />    <!-- 0.2 -->
-        <param name="cylinder_points_threshold" value="1000"/>
+        <param name="cylinder_normal_distance_weight" value="0.1" />    <!-- 0.1 -->
+        <param name="cylinder_max_iterations" value="10000" />          <!-- 10000 -->
+        <param name="cylinder_distance_threshold" value="0.05" />       <!-- 0.05 -->
+        <param name="cylinder_radius_min" value="0.11" />               <!-- 0.06 -->
+        <param name="cylinder_radius_max" value="0.13" />               <!-- 0.2 -->
+        <param name="cylinder_inliers_threshold" value="1000"/>
 
-        <param name="plane_points_threshold" value="500" />
+        <param name="plane_normal_distance_weight" value="0.1" />   <!-- 0.1 -->
+        <param name="plane_max_iterations" value="100" />           <!-- 100 -->
+        <param name="plane_distance_threshold" value="0.03" />      <!-- 0.03 -->
+        <param name="plane_inliers_threshold" value="500" />        <!-- 500 -->
 
-        <param name="torus_ransac_max_iterations" value="1000" />
+        <!-- How far can we see the points in the point cloud -->
+        <param name="max_point_cloud_depth" value="2.5" />
+
     </node>
 
     <!-- Node that makes the cloud point sparser -->
