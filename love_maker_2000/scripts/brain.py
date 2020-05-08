@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import rospy
+from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
 from movement.controller import MovementController
@@ -29,13 +30,12 @@ class Brain(object):
         self.greeter = Greeter()
 
         def on_localization_finished():
-            rospy.loginfo('Localization finished!')
-            self.set_detectors_enabled(should_be_enabled=True)
+            self.set_detectors_enabled(True)
         
         # Before the robot is localized, disable all detectors. The
         # on_localization_finished is a callback function that will be called
         # after the localization task will be completed.
-        #self.set_detectors_enabled(should_be_enabled=False)
+        self.set_detectors_enabled(False)
         localization_task = self.movement_controller.localize(callback=on_localization_finished)
         self.movement_controller.add_to_queue(localization_task)
         
@@ -49,7 +49,17 @@ class Brain(object):
     
     def set_detectors_enabled(self, should_be_enabled=True):
         """Enables or disables all object detectors"""
-        rospy.loginfo('Detectors enabled: {}'.format(should_be_enabled))
+        if not hasattr(self, 'face_detector_toggle'):
+            self.face_detector_toggle = rospy.Publisher('/face_detector_toggle', Bool, queue_size=10)
+            self.ring_detector_toggle = rospy.Publisher('/ring_detector_toggle', Bool, queue_size=10)
+            self.cylinder_detector_toggle = rospy.Publisher('/cylinder_detector_toggle', Bool, queue_size=10)
+        
+        message = Bool()
+        message.data = should_be_enabled
+
+        self.face_detector_toggle.publish(message)
+        self.ring_detector_toggle.publish(message)
+        self.cylinder_detector_toggle.publish(message)
 
     def on_object_detection(self, object_detection):
         rospy.loginfo('New object detected: {}'.format(object_detection.type))

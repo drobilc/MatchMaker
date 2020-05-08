@@ -11,7 +11,7 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_geometry_msgs import PointStamped
 
-from std_msgs.msg import Header, ColorRGBA
+from std_msgs.msg import Header, ColorRGBA, Bool
 from detection_msgs.msg import Detection
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped, Pose, Quaternion, Point, PointStamped
@@ -30,8 +30,6 @@ class RingDetector(object):
 
         self.bridge = CvBridge()
 
-        rospy.sleep(8)
-
         # Create a new time synchronizer to synchronize depth and rgb image callbacks.
         # Also subscribe to camera info so we can get camera calibration matrix.
         self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
@@ -43,6 +41,10 @@ class RingDetector(object):
         # Color classification service
         rospy.wait_for_service('color_classifier')
         self.classify_color = rospy.ServiceProxy('color_classifier', ColorClassification)
+
+        # Subscriber to enable or disable face detector
+        self.enabled = False
+        self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Publisher for ring ObjectDetections
         self.detections_publisher = rospy.Publisher('/ring_detections_raw', ObjectDetection, queue_size=10)
@@ -64,8 +66,16 @@ class RingDetector(object):
         self.map_data[self.map_data == -1] = 0
         self.map_data = self.map_data.astype('uint8')
     
+    def toggle(self, enable):
+        """Callback to enable or disable ring detector"""
+        self.enabled = enable.data
+        rospy.loginfo('Ring detector enabled: {}'.format(self.enabled))
+    
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
+        if not self.enabled:
+            return
+        
         # Because of the TimeSynchronizer, depth image, rgb image and camera
         # information have the same timestamps.
         timestamp = depth_image_message.header.stamp

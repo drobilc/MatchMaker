@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <visualization_msgs/MarkerArray.h>
 #include "std_msgs/String.h"
+#include <std_msgs/Bool.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -62,6 +63,8 @@ double plane_points_threshold;
 
 // Parameters for ring segmentation
 int torus_ransac_max_iterations;
+
+bool isEnabled = false;
 
 /**
  * Logs the point cloud to /point_cloud/log topic.
@@ -343,6 +346,8 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
 }
 
 void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointCloud2ConstPtr& cloud_msg) {
+  if (!isEnabled)
+    return;
 
   // GET THE ACTUAL IMAGE FROM RECEIVED IMAGE MESSAGE
   cv_bridge::CvImagePtr rgbImage;
@@ -404,6 +409,11 @@ void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointC
   find_cylinders(cloud_filtered2, cloud_normals2, cloud_filtered3, cloud_normals3, rgbImage, timestamp);
 }
 
+void toggleCallback(const std_msgs::Bool::ConstPtr& enabled) {
+  isEnabled = enabled->data;
+  std::cerr << "Cylinder detector enabled: " << isEnabled << std::endl;
+}
+
 void get_parameters(ros::NodeHandle nh)
 {
   // Get parameters for cylinder segmentation from the launch file
@@ -435,6 +445,9 @@ int main(int argc, char **argv)
   message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloudSubscriber(nh, "input", 1);
   message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::PointCloud2> synchronizer(imageSubscriber, pointcloudSubscriber, 10);
   synchronizer.registerCallback(boost::bind(&callback, _1, _2));
+
+  // Subscriber to enable and disable cylinder detections
+  ros::Subscriber toggleSubscriber = nh.subscribe("/cylinder_detector_toggle", 10, toggleCallback);
 
   // Create a ROS publisher for the output point cloud
   pubx = nh.advertise<pcl::PCLPointCloud2>("point_cloud/planes", 1);

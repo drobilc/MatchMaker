@@ -190,7 +190,6 @@ class LocalizationTask(MovementTask):
                 self.previous_rotation = current_rotation
     
     def localization_finished(self):
-        rospy.loginfo('Localization protocol finished')
         self.finish()
     
     def cancel(self):

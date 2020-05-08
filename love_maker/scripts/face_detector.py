@@ -5,7 +5,7 @@ import rospy
 import cv2
 import numpy
 
-from std_msgs.msg import Header
+from std_msgs.msg import Header, Bool
 from detection_msgs.msg import Detection
 from geometry_msgs.msg import PoseStamped, Pose, Quaternion
 from object_detection_msgs.msg import ObjectDetection
@@ -54,6 +54,10 @@ class FaceFinder(object):
         self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
         self.image_synchronizer.registerCallback(self.on_data_received)
 
+        # Subscriber to enable or disable face detector
+        self.enabled = False
+        self.toggle_subscriber = rospy.Subscriber('/face_detector_toggle', Bool, self.toggle, queue_size=10)
+
         # The publisher where face detections will be published once detected
         self.detections_publisher = rospy.Publisher('/face_detections_raw', ObjectDetection, queue_size=10)
 
@@ -62,10 +66,18 @@ class FaceFinder(object):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Get static map information from map service
-        self.map_data, self.map_resolution, self.map_origin = utils.get_map_data()        
+        self.map_data, self.map_resolution, self.map_origin = utils.get_map_data()
+    
+    def toggle(self, enable):
+        """Callback to enable or disable face detector"""
+        self.enabled = enable.data
+        rospy.loginfo('Face detector enabled: {}'.format(self.enabled))
     
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
+        if not self.enabled:
+            return
+
         # Because of the TimeSynchronizer, depth image, rgb image and camera
         # information have the same timestamps.
         timestamp = depth_image_message.header.stamp
