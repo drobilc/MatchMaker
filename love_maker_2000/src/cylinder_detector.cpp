@@ -36,8 +36,8 @@
 
 using namespace Eigen;
 
-ros::Publisher pubx;
-ros::Publisher puby;
+ros::Publisher pub_pointcloud_planes;
+ros::Publisher pub_pointcloud_cylinder;
 ros::Publisher pub_cylinder;
 ros::Publisher pub_testing;
 ros::Publisher pub_markers;
@@ -55,13 +55,15 @@ double cylinder_max_iterations;
 double cylinder_distance_threshold;
 double cylinder_radius_max;
 double cylinder_radius_min;
-int cylinder_points_threshold;
+int cylinder_inliers_threshold;
 
 // Parameters for planar segmentation
-double plane_points_threshold;
+double plane_normal_distance_weight;
+double plane_max_iterations;
+double plane_distance_threshold;
+double plane_inliers_threshold;
 
-// Parameters for ring segmentation
-int torus_ransac_max_iterations;
+double max_point_cloud_depth;
 
 /**
  * Logs the point cloud to /point_cloud/log topic.
@@ -78,7 +80,7 @@ void log_pointcloud(pcl::PointCloud<PointT>::Ptr &cloud)
 /**
  * Remove all planes from the point cloud.
  * 
- * In find_torus_and_cylinder you can specifiy a threshold. All detected planes
+ * In cylinder_detector.launch you can specifiy a threshold. All detected planes
  * that have more points than the threshold will be removed.
  * 
  * @param cloud_filtered Input point cloud.
@@ -86,7 +88,7 @@ void log_pointcloud(pcl::PointCloud<PointT>::Ptr &cloud)
  * @param cloud_filtered2 Output point cloud, all planes that have more points than the threshold have been removed from it.
  * @param cloud_normals2 Output normals of the cloud_filtered2 point cloud.
  */
-void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered2, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2)
+void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<PointT>::Ptr cloud_filtered2, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals2, std::string frame_id)
 {
   // Objects needed
   pcl::ExtractIndices<PointT> extract;
@@ -98,21 +100,25 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
   pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
 
   // Contains cloud of points that form a plane
-  pcl::PointCloud<PointT>::Ptr cloud_plane(new pcl::PointCloud<PointT>());
+  pcl::PointCloud<PointT>::Ptr cloud_single_plane(new pcl::PointCloud<PointT>());
+  // Collect all planes in this point cloud and publish for visualization
+  pcl::PointCloud<PointT>::Ptr cloud_all_planes(new pcl::PointCloud<PointT>());
 
   do
   {
+    // Create the segmentation model to fit a plane on the points
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-    seg.setNormalDistanceWeight(0.1);
+    seg.setNormalDistanceWeight(plane_normal_distance_weight);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setMaxIterations(100);
-    seg.setDistanceThreshold(0.03);
+    seg.setMaxIterations(plane_max_iterations);
+    seg.setDistanceThreshold(plane_distance_threshold);
     seg.setInputCloud(cloud_filtered);
     seg.setInputNormals(cloud_normals);
 
     // Obtain the plane inliers and coefficients
     seg.segment(*inliers_plane, *coefficients_plane);
+    std::cerr << "Plane inliers: " << inliers_plane->indices.size() << std::endl;
 
     // Extract the planar inliers from the input cloud
     extract.setInputCloud(cloud_filtered);
@@ -120,9 +126,10 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
     extract.setNegative(false);
 
     // Write the planar inliers to disk
-    extract.filter(*cloud_plane);
+    extract.filter(*cloud_single_plane);
 
-    if (!cloud_plane->points.empty()) {
+    if (!cloud_single_plane->points.empty())
+    {
       // Remove the planar inliers, extract the rest
       extract.setNegative(true);
       extract.filter(*cloud_filtered2);
@@ -132,11 +139,21 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
       extract_normals.filter(*cloud_normals2);
       cloud_filtered = cloud_filtered2;
       cloud_normals = cloud_normals2;
+
+      // Add found plane to the cloud_all_planes
+      *cloud_all_planes = *cloud_all_planes + *cloud_single_plane;
     }
-  } while (cloud_plane->points.size() >= plane_points_threshold);
+  } while (cloud_single_plane->points.size() >= plane_inliers_threshold);
+
+  // Publish all found planes
+  pcl::PCLPointCloud2 outcloud_planes;
+  pcl::toPCLPointCloud2(*cloud_all_planes, outcloud_planes);
+  outcloud_planes.header.frame_id = frame_id;
+  pub_pointcloud_planes.publish(outcloud_planes);
 }
 
-cv::Point pointToPixel(Eigen::Vector4f point) {
+cv::Point pointToPixel(Eigen::Vector4f point)
+{
   // This data is available from the projection matrix in camera info topic
   // rostopic echo /camera/rgb/camera_info.
   float fx = 554.254691191187;
@@ -148,10 +165,11 @@ cv::Point pointToPixel(Eigen::Vector4f point) {
   float y = (point[1] / point[2]) * fy + cy;
   float x = (point[0] / point[2]) * fx + cx;
 
-  return cv::Point((int) x, (int) y);
+  return cv::Point((int)x, (int)y);
 }
 
-std_msgs::ColorRGBA averageColorAround(cv::Mat image, cv::Point center, int regionSize) {
+std_msgs::ColorRGBA averageColorAround(cv::Mat image, cv::Point center, int regionSize)
+{
   // Compute average color of a window of size regionSize around the
   // cylinder centroid on image
   int numberOfSamples = (regionSize * 2 + 1) * (regionSize * 2 + 1);
@@ -159,8 +177,10 @@ std_msgs::ColorRGBA averageColorAround(cv::Mat image, cv::Point center, int regi
   int red = 0;
   int green = 0;
   int blue = 0;
-  for (int i = -regionSize; i <= regionSize; i++) {
-    for (int j = -regionSize; j <= regionSize; j++) {
+  for (int i = -regionSize; i <= regionSize; i++)
+  {
+    for (int j = -regionSize; j <= regionSize; j++)
+    {
       cv::Point point = cv::Point(center.x + j, center.y + i);
       cv::Vec3b color = image.at<cv::Vec3b>(point);
       red += color[0];
@@ -217,7 +237,9 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
   extract.setNegative(false);
   pcl::PointCloud<PointT>::Ptr cloud_cylinder(new pcl::PointCloud<PointT>());
   extract.filter(*cloud_cylinder);
-  if (cloud_cylinder->points.size() >= cylinder_points_threshold) {
+  std::cerr << "Cylinder inliers: " << inliers_cylinder->indices.size() << std::endl;
+  if (cloud_cylinder->points.size() >= cylinder_inliers_threshold)
+  {
     pcl::compute3DCentroid(*cloud_cylinder, centroid);
 
     //Create a point in the "camera_rgb_optical_frame"
@@ -246,9 +268,12 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     pointRobotMap.header.frame_id = "map";
     pointRobotMap.header.stamp = pointRobot.header.stamp;
 
-    try {
+    try
+    {
       tss = tf2_buffer.lookupTransform("map", "camera_rgb_optical_frame", timestamp);
-    } catch (tf2::TransformException &ex) {
+    }
+    catch (tf2::TransformException &ex)
+    {
       ROS_WARN("Transform warning: %s\n", ex.what());
     }
 
@@ -264,7 +289,9 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     double dy = pointRobotMap.point.y - point_map.point.y;
     double dz = pointRobotMap.point.z - point_map.point.z;
     double norm = sqrt(dx * dx + dy * dy + dz * dz);
-    dx /= norm; dy /= norm; dz /= norm;
+    dx /= norm;
+    dy /= norm;
+    dz /= norm;
 
     // Now that vector components have been initialized, we can multiply them by
     // 0.5 to get a point 0.5m away from the cylinder centroid. The approaching
@@ -281,9 +308,10 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     geometry_msgs::Quaternion approachingPointOrientationMessage;
     approachingPointOrientationMessage = tf2::toMsg(approachingPointOrientation);
 
+    // Publish cylinder pointcloud
     pcl::PCLPointCloud2 outcloud_cylinder;
     pcl::toPCLPointCloud2(*cloud_cylinder, outcloud_cylinder);
-    puby.publish(outcloud_cylinder);
+    pub_pointcloud_cylinder.publish(outcloud_cylinder);
 
     // If the last image message is available, get color of the centroid from the received image
     color_classification::ColorClassification colorClassificator;
@@ -297,17 +325,21 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     colorClassificator.request.color = color;
 
     // Classify the selected color using color_classification service
-    if (color_classifier.call(colorClassificator)) {
+    if (color_classifier.call(colorClassificator))
+    {
       // std::cerr << "CLASSIFIED COLOR: " << colorClassificator.response.classified_color << std::endl;
       classifiedColor.data = colorClassificator.response.classified_color;
       // Color has beem successfully classified
-    } else {
+    }
+    else
+    {
       ROS_ERROR("Failed to call color_classifier service");
       return;
     }
 
     // Publish the message only if point is not nan
-    if (point_map.point.x == point_map.point.x && point_map.point.z == point_map.point.z && point_map.point.y == point_map.point.y) {
+    if (point_map.point.x == point_map.point.x && point_map.point.z == point_map.point.z && point_map.point.y == point_map.point.y)
+    {
       // Correctly configure the header
       cylinder_detection_message.header.stamp = timestamp;
       cylinder_detection_message.header.frame_id = "map";
@@ -336,24 +368,31 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     extract_normals.setInputCloud(cloud_normals);
     extract_normals.setIndices(inliers_cylinder);
     extract_normals.filter(*cloud_filtered_normals);
-  } else {
+  }
+  else
+  {
     *cloud_filtered = *cloud;
     *cloud_filtered_normals = *cloud_normals;
   }
 }
 
-void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointCloud2ConstPtr& cloud_msg) {
+void callback(const sensor_msgs::ImageConstPtr &image, const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
+{
+  
 
   // GET THE ACTUAL IMAGE FROM RECEIVED IMAGE MESSAGE
   cv_bridge::CvImagePtr rgbImage;
-  try {
+  try
+  {
     rgbImage = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::RGB8);
-  } catch (cv_bridge::Exception& e) {
+  }
+  catch (cv_bridge::Exception &e)
+  {
     ROS_ERROR("Could not convert from '%s' to 'rgb8'.", image->encoding.c_str());
   }
 
   // CONVERT THE POINT CLOUD FROM sensor_msgs::PointCloud2ConstPtr TO pcl::PCLPointCloud2
-  pcl::PCLPointCloud2* cloud_blob = new pcl::PCLPointCloud2;
+  pcl::PCLPointCloud2 *cloud_blob = new pcl::PCLPointCloud2;
   pcl::PCLPointCloud2ConstPtr cloudPtr(cloud_blob);
   pcl_conversions::toPCL(*cloud_msg, *cloud_blob);
 
@@ -381,15 +420,14 @@ void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointC
 
   // Read in the cloud data
   pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
-  // std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
-  if (cloud->points.empty()) return;
+  std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
 
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("z");
-  pass.setFilterLimits(0, 2);
+  pass.setFilterLimits(0, max_point_cloud_depth);
   pass.filter(*cloud_filtered);
-  // std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
+  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
   // Estimate point normals
   ne.setSearchMethod(tree);
@@ -398,7 +436,9 @@ void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointC
   ne.compute(*cloud_normals);
 
   // Remove all planes
-  remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2);
+  remove_all_planes(cloud_filtered, cloud_normals, cloud_filtered2, cloud_normals2, cloud_msg->header.frame_id);
+
+  log_pointcloud(cloud_filtered2);
 
   // Find cylinders and remove them from the point cloud
   find_cylinders(cloud_filtered2, cloud_normals2, cloud_filtered3, cloud_normals3, rgbImage, timestamp);
@@ -407,16 +447,19 @@ void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointC
 void get_parameters(ros::NodeHandle nh)
 {
   // Get parameters for cylinder segmentation from the launch file
-  nh.getParam("/cylinder_detector/normal_distance_weight", cylinder_normal_distance_weight);
-  nh.getParam("/cylinder_detector/max_iterations", cylinder_max_iterations);
-  nh.getParam("/cylinder_detector/distance_threshold", cylinder_distance_threshold);
-  nh.getParam("/cylinder_detector/radius_max", cylinder_radius_max);
-  nh.getParam("/cylinder_detector/radius_min", cylinder_radius_min);
-  nh.getParam("/cylinder_detector/cylinder_points_threshold", cylinder_points_threshold);
+  nh.getParam("/cylinder_detector/cylinder_normal_distance_weight", cylinder_normal_distance_weight);
+  nh.getParam("/cylinder_detector/cylinder_max_iterations", cylinder_max_iterations);
+  nh.getParam("/cylinder_detector/cylinder_distance_threshold", cylinder_distance_threshold);
+  nh.getParam("/cylinder_detector/cylinder_radius_max", cylinder_radius_max);
+  nh.getParam("/cylinder_detector/cylinder_radius_min", cylinder_radius_min);
+  nh.getParam("/cylinder_detector/cylinder_inliers_threshold", cylinder_inliers_threshold);
   // Get parameters for plane segmentation from the launch file
-  nh.getParam("/cylinder_detector/plane_points_threshold", plane_points_threshold);
-
-  nh.getParam("/cylinder_detector/torus_ransac_max_iterations", torus_ransac_max_iterations);
+  nh.getParam("/cylinder_detector/plane_normal_distance_weight", plane_normal_distance_weight);
+  nh.getParam("/cylinder_detector/plane_max_iterations", plane_max_iterations);
+  nh.getParam("/cylinder_detector/plane_distance_threshold", plane_distance_threshold);
+  nh.getParam("/cylinder_detector/plane_inliers_threshold", plane_inliers_threshold);
+  // Parameter for depth filtering
+  nh.getParam("/cylinder_detector/max_point_cloud_depth", max_point_cloud_depth);
 }
 
 int main(int argc, char **argv)
@@ -437,8 +480,8 @@ int main(int argc, char **argv)
   synchronizer.registerCallback(boost::bind(&callback, _1, _2));
 
   // Create a ROS publisher for the output point cloud
-  pubx = nh.advertise<pcl::PCLPointCloud2>("point_cloud/planes", 1);
-  puby = nh.advertise<pcl::PCLPointCloud2>("point_cloud/cylinder", 1);
+  pub_pointcloud_planes = nh.advertise<pcl::PCLPointCloud2>("point_cloud/planes", 1);
+  pub_pointcloud_cylinder = nh.advertise<pcl::PCLPointCloud2>("point_cloud/cylinder", 1);
   pub_testing = nh.advertise<pcl::PCLPointCloud2>("point_cloud/log", 1);
 
   pub_cylinder = nh.advertise<object_detection_msgs::ObjectDetection>("cylinder_detections_raw", 1);
