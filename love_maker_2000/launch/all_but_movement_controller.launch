@@ -2,19 +2,17 @@
 
     <arg name="display_camera_window" default="false"/>
     <arg name="downscale" default="2"/>
-    <arg name="gazebo_gui" default="true"/>
+    <arg name="gazebo_gui" default="false"/>
 
-    <arg name="raw_face_markers" default="true"/>
-    <arg name="raw_cylinder_markers" default="true"/>
-    <arg name="raw_ring_markers" default="true"/>
+    <arg name="raw_face_markers" default="false"/>
+    <arg name="raw_cylinder_markers" default="false"/>
+    <arg name="raw_ring_markers" default="false"/>
 
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
-        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2_new.world"/>
+        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_eval2.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
-        <!-- another world -->
-        <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
     </include>
 
     <!-- Include the amcl simulator -->
@@ -23,13 +21,6 @@
         <arg name="map_file" value="$(find love_maker_2000)/maps/task2_map.yaml"/>
         
         <!-- Set the robot initial pose -->
-
-	    <!-- For my_map set this coordinates -->
-        <!--<arg name="initial_pose_x" value="-0.163281708956"/>-->
-        <!--<arg name="initial_pose_y" value="-3.25395488739"/>-->
-        <!--<arg name="initial_pose_a" value="0.679"/>-->
-	
-	    <!-- for my_map1 set this coordinates -->
 	    <arg name="initial_pose_x" value="0.00000"/>
         <arg name="initial_pose_y" value="0.00000"/>
         <arg name="initial_pose_a" value="0.000"/>

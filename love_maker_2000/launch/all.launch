@@ -2,7 +2,7 @@
 
     <arg name="display_camera_window" default="false"/>
     <arg name="downscale" default="2"/>
-    <arg name="gazebo_gui" default="true"/>
+    <arg name="gazebo_gui" default="false"/>
 
     <arg name="raw_face_markers" default="false"/>
     <arg name="raw_cylinder_markers" default="false"/>
@@ -13,8 +13,6 @@
         <!-- Set the world file for the gazebo simulator -->
         <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_eval2.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
-        <!-- another world -->
-        <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
     </include>
 
     <!-- Include the amcl simulator -->
@@ -23,13 +21,6 @@
         <arg name="map_file" value="$(find love_maker_2000)/maps/task2_map.yaml"/>
         
         <!-- Set the robot initial pose -->
-
-	    <!-- For my_map set this coordinates -->
-        <!--<arg name="initial_pose_x" value="-0.163281708956"/>-->
-        <!--<arg name="initial_pose_y" value="-3.25395488739"/>-->
-        <!--<arg name="initial_pose_a" value="0.679"/>-->
-	
-	    <!-- for my_map1 set this coordinates -->
 	    <arg name="initial_pose_x" value="0.00000"/>
         <arg name="initial_pose_y" value="0.00000"/>
         <arg name="initial_pose_a" value="0.000"/>
@@ -63,13 +54,13 @@
 
     <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
 
-    <include file="$(find love_maker_2000)/launch/movement_controller.launch"/>
-
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">
     </node>
 
     <!-- Run the color classification service -->
     <include file="$(find color_classification)/launch/color_classifier.launch"/>
+
+    <include file="$(find love_maker_2000)/launch/brain.launch"/>
 
 </launch>

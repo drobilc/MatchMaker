@@ -1,0 +1,6 @@
+<launch>
+
+  <node pkg="love_maker_2000" type="brain.py" name="movement_controller" output="screen">
+  </node>
+
+</launch>

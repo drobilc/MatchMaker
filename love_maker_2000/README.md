@@ -10,12 +10,10 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * premakni pogosto uporabljane funkcije v utils in jih zelo dobro komentiraj
 * uredi loge (~~Robustifier~~)
 * error handling za nepomembne errorje
-* detektorji naj počakajo, da je robot lokaliziran (preferrably ne z rospy.sleep)
 * costmap namesto static mapa (slike)
 * ko pride nov svet, pazi na rotacijo mape
 
 ### Rings
-
 * postavi approaching point za ring v njegovo bližino
 * za approaching uporabi fine movement mode v `movement_controllerju`
 
@@ -23,7 +21,6 @@ Love maker 2000 is a precious space for development of the extremly intelligent 
 * fine tune filtriranje point clouda, da bo večkrat zaznal cilinder
 
 ### Movement controller
-
 * izboljšaj računanje razdalj z upoštevanjem ovir (greš po vektorju od trenutne točke do cilja in če naletiš na zid, dodaš penalty k razdalji)
 * definiraj vrstni red pobiranja approaching pointov
 * briši cilje, ki jih dosežeš spotoma na poti na drug cilj, če niso approaching point in so orientirani podobno kot robot
