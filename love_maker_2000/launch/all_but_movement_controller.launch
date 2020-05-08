@@ -4,14 +4,14 @@
     <arg name="downscale" default="2"/>
     <arg name="gazebo_gui" default="true"/>
 
-    <arg name="raw_face_markers" default="true"/>
-    <arg name="raw_cylinder_markers" default="true"/>
-    <arg name="raw_ring_markers" default="true"/>
+    <arg name="raw_face_markers" default="false"/>
+    <arg name="raw_cylinder_markers" default="false"/>
+    <arg name="raw_ring_markers" default="false"/>
 
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
-        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_task2_new.world"/>
+        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_eval2.world"/>
         <arg name="gui" value="$(arg gazebo_gui)"/>
         <!-- another world -->
         <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
@@ -44,7 +44,7 @@
         <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
         <arg name="downscale_factor" value="$(arg downscale)"/>
     </include>
-    
+
     <include file="$(find love_maker)/launch/face_robustifier.launch">
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
