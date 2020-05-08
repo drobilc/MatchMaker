@@ -35,7 +35,7 @@
         <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
         <arg name="downscale_factor" value="$(arg downscale)"/>
     </include>
-    
+
     <include file="$(find love_maker)/launch/face_robustifier.launch">
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
