@@ -10,6 +10,8 @@ from geometry_msgs.msg import PoseStamped
 from movement.controller import MovementController
 from greeter import Greeter
 
+from actionlib_msgs.msg import GoalStatus
+
 class Brain(object):
     
     def __init__(self, goals):
@@ -67,19 +69,26 @@ class Brain(object):
         rospy.loginfo('New object detected: {}'.format(object_detection.type))
 
         def object_greet(detection, goal_status, goal_result):
-            rospy.loginfo('Goal finished with status: {}'.format(goal_status))
-            self.greeter.say('Hello {} {}!'.format(object_detection.classified_color, object_detection.type))
-            self.object_detections.remove(detection)
-            if len(self.object_detections) <= 0:
-                self.movement_controller.add_to_queue(self.wandering_task)
+            if goal_status == GoalStatus.SUCCEEDED:
+                rospy.loginfo('Goal finished with status: {}'.format(goal_status))
+                self.greeter.say('Hello {} {}!'.format(object_detection.classified_color, object_detection.type))
+                self.object_detections.remove(detection)
+                if len(self.object_detections) <= 0:
+                    self.movement_controller.add_to_queue(self.wandering_task)
+            else:
+                fine = detection.type == 'ring'
+                task = self.movement_controller.approach(detection, callback=object_greet, fine=fine)
+                self.movement_controller.add_to_queue(task)
         
         self.object_detections.append(object_detection)
+
+        self.wandering_task.cancel()
 
         # If new object has been detected, approach it. If its type is ring,
         # approach it using the fine approaching task
         fine = object_detection.type == 'ring'
         task = self.movement_controller.approach(object_detection, callback=object_greet, fine=fine)
-        self.movement_controller.run_immediately(task)
+        self.movement_controller.add_to_queue(task)
 
 if __name__ == '__main__':
     controller = Brain([])

@@ -61,7 +61,15 @@ class WanderingTask(MovementTask):
         self.action_client.send_goal(goal, done_cb=self.done, active_cb=self.active, feedback_cb=self.feedback)
     
     def cancel(self):
-        self.goals.insert(0, self.current_goal)
+        if hasattr(self, 'current_goal'):
+            self.goals.insert(0, self.current_goal)
+            self.current_goal = None
         self.action_client.stop_tracking_goal()
         self.action_client.cancel_all_goals()
         super(WanderingTask, self).cancel()
+    
+    def finish(self):
+        super(WanderingTask, self).finish()
+    
+    def __str__(self):
+        return '<WanderingTask, goals={}>'.format(len(self.goals))

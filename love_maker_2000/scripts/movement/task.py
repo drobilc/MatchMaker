@@ -12,7 +12,6 @@ class MovementTask(object):
     def run(self):
         self.has_started = True
         self.is_cancelled = False
-        self.finish()
     
     def finish(self):
         self.is_finished = True
@@ -26,3 +25,9 @@ class MovementTask(object):
     def cancel(self):
         self.is_cancelled = True
         self.movement_controller.cancel(self)
+    
+    def __str__(self):
+        return '<MovementTask>'
+
+    def __repr__(self):
+        return self.__str__()

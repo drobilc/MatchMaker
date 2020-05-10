@@ -20,7 +20,6 @@ class LocalizationTask(MovementTask):
         self.localization_publisher = rospy.Publisher('/navigation_velocity_smoother/raw_cmd_vel', Twist, queue_size = 1000)
         self.odometry_subscriber = rospy.Subscriber('/odom', Odometry, self.on_odometry_received, queue_size=10)
         self.is_cancelled = False
-
     def on_odometry_received(self, odometry):
         if self.is_finished or self.is_cancelled:
             return
@@ -61,6 +60,12 @@ class LocalizationTask(MovementTask):
     def localization_finished(self):
         self.finish()
     
+    def finish(self):
+        super(LocalizationTask, self).finish()
+    
     def cancel(self):
         self.odometry_subscriber.unregister()
         super(LocalizationTask, self).cancel()
+    
+    def __str__(self):
+        return '<LocalizationTask>'

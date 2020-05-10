@@ -58,6 +58,8 @@ class FineApproachingTask(MovementTask):
         # self.map_resolution = self.map_resolution * 2
         # self.map_data = cv2.resize(self.map_data, (width / 2, height / 2), cv2.INTER_NEAREST)
 
+        self.path_publisher = rospy.Publisher('/fine_path', Path, queue_size = 10)
+
     def compute_path(self, start_pose, angle_resolution=8):
         # First, calculate the start and end robot position. The position is a
         # vector (x, y, angle) that expresses robot position in 2d space and its
@@ -208,10 +210,15 @@ class FineApproachingTask(MovementTask):
                 pose_stamped.pose.position.y = test[1]
                 pose_stamped.pose.orientation = Quaternion(*quaternion_from_euler(0, 0, orientation))
                 self.checkpoints.append(pose_stamped)
-        
+
         if not hasattr(self, 'current_goal'):
             self.current_goal = self.checkpoints.pop(0)
         
+        path = Path()
+        path.header = map_position.header
+        path.poses = [self.current_goal] + self.checkpoints
+        self.path_publisher.publish(path)
+
         def orientation_to_angle(pose):
             # Get the end orientation (only the z orientation)
             quaternion = pose.orientation
@@ -265,3 +272,10 @@ class FineApproachingTask(MovementTask):
             self.callback(self.object_detection, 3, None)
 
         self.movement_controller.on_finish(self)
+    
+    def cancel(self):
+        self.odometry_subscriber.unregister()
+        super(ApproachingTask, self).cancel()
+    
+    def __str__(self):
+        return '<FineApproachingTask, color={}, type={}>'.format(self.object_detection.classified_color, self.object_detection.type)
