@@ -121,7 +121,7 @@ void remove_all_planes(pcl::PointCloud<PointT>::Ptr cloud_filtered, pcl::PointCl
 
     // Obtain the plane inliers and coefficients
     seg.segment(*inliers_plane, *coefficients_plane);
-    std::cerr << "Plane inliers: " << inliers_plane->indices.size() << std::endl;
+    // std::cerr << "Plane inliers: " << inliers_plane->indices.size() << std::endl;
 
     // Extract the planar inliers from the input cloud
     extract.setInputCloud(cloud_filtered);
@@ -240,7 +240,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
   extract.setNegative(false);
   pcl::PointCloud<PointT>::Ptr cloud_cylinder(new pcl::PointCloud<PointT>());
   extract.filter(*cloud_cylinder);
-  std::cerr << "Cylinder inliers: " << inliers_cylinder->indices.size() << std::endl;
+  // std::cerr << "Cylinder inliers: " << inliers_cylinder->indices.size() << std::endl;
   if (cloud_cylinder->points.size() >= cylinder_inliers_threshold)
   {
     pcl::compute3DCentroid(*cloud_cylinder, centroid);
@@ -423,14 +423,14 @@ void callback(const sensor_msgs::ImageConstPtr& image, const sensor_msgs::PointC
 
   // Read in the cloud data
   pcl::fromPCLPointCloud2(*cloud_blob, *cloud);
-  std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
+  // std::cerr << "PointCloud has: " << cloud->points.size() << " data points." << std::endl;
 
   // Build a passthrough filter to remove spurious NaNs
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(0, max_point_cloud_depth);
   pass.filter(*cloud_filtered);
-  std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
+  // std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size() << " data points." << std::endl;
 
   // Estimate point normals
   ne.setSearchMethod(tree);
