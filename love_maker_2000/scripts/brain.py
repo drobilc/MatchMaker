@@ -5,6 +5,8 @@ import rospy
 from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
+from geometry_msgs.msg import PoseStamped
+
 from movement.controller import MovementController
 from greeter import Greeter
 
@@ -73,8 +75,10 @@ class Brain(object):
         
         self.object_detections.append(object_detection)
 
-        # If new object has been detected, approach it
-        task = self.movement_controller.approach(object_detection, callback=object_greet)
+        # If new object has been detected, approach it. If its type is ring,
+        # approach it using the fine approaching task
+        fine = object_detection.type == 'ring'
+        task = self.movement_controller.approach(object_detection, callback=object_greet, fine=fine)
         self.movement_controller.run_immediately(task)
 
 if __name__ == '__main__':

@@ -4,7 +4,12 @@ from __future__ import print_function
 import rospy
 import actionlib
 
-from task import *
+from move_base_msgs.msg import MoveBaseAction
+
+from approaching_task import ApproachingTask
+from localization_task import LocalizationTask
+from wandering_task import WanderingTask
+from fine_approaching_task import FineApproachingTask
 
 class MovementController(object):
     
@@ -40,10 +45,10 @@ class MovementController(object):
         # Get current queue of tasks and insert the current running task to the
         # beggining of the list to be run later
         old_tasks = self.tasks
-        old_tasks.insert(0, self.current_task)
-
-        # Cancel the current running task
-        self.current_task.cancel()
+        if hasattr(self, 'current_task') and self.current_task is not None:
+            old_tasks.insert(0, self.current_task)
+            # Cancel the current running task
+            self.current_task.cancel()
 
         # Clear task queue
         self.tasks = []
@@ -88,8 +93,10 @@ class MovementController(object):
         """Create a new localization task and add it to queue"""
         return LocalizationTask(self, callback)
     
-    def approach(self, object_detection, callback=None):
+    def approach(self, object_detection, callback=None, fine=False):
         """Create a new rough approaching task to approach object"""
+        if fine:
+            return FineApproachingTask(self, callback, self.action_client, object_detection)
         return ApproachingTask(self, callback, self.action_client, object_detection)
     
     def wander(self, callback=None):
