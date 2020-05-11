@@ -49,6 +49,17 @@ def to_map_pixel(position, map_origin, map_resolution):
     pixel_y = int((position.point.y - map_origin.y) / map_resolution)
     return numpy.asarray([pixel_x, pixel_y])
 
+def pixel_to_map(pixel, map_origin, map_resolution):
+    """Convert pixel coordinates (u, v) to map position (x, y)"""
+    return numpy.asarray([map_origin.x, map_origin.y]) + (numpy.asarray([pixel[0], pixel[1]]) * map_resolution)
+
+def orientation_to_angle(pose):
+    """Converts the pose orientation to euler rotation and return rotation around the z axis"""
+    quaternion = pose.orientation
+    quaternion_as_list = (quaternion.x, quaternion.y, quaternion.z, quaternion.w)
+    euler_rotation = euler_from_quaternion(quaternion_as_list)
+    return euler_rotation[2]
+
 def neighbors_all(pixel):
     neighbors = []
     neighbors.append(
