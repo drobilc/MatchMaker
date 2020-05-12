@@ -88,7 +88,6 @@ class ApproachingTask(MovementTask):
         rospy.loginfo('CLOSEST WALL: {}'.format(closest_wall))
 
         if closest_wall is None:
-            rospy.logwarn("Approaching point already OK")
             return detection.approaching_point_pose
         
         # If there was a wall detected, move in the opposite direction from it
@@ -121,7 +120,7 @@ class ApproachingTask(MovementTask):
             except Exception as e:
                 rospy.logwarn('The approaching point could not be moved away from the wall.')
         
-        # self.send_marker_goals(self.object_detection)
+        # Publish marker for moved approaching point
         goal_markers = utils.stamped_poses_to_marker_array([goal.target_pose], color=ColorRGBA(1, 0.5, 0.5, 0.5))
         self.goals_publisher.publish(goal_markers)
 
@@ -150,11 +149,3 @@ class ApproachingTask(MovementTask):
     
     def __str__(self):
         return '<ApproachingTask, color={}, type={}>'.format(self.object_detection.classified_color, self.object_detection.type)
-
-    def send_marker_goals(self, detection):
-        pose_stamped = PoseStamped()
-        pose_stamped.header = detection.header
-        pose_stamped.pose = detection.approaching_point_pose
-        
-        goal_markers = utils.stamped_poses_to_marker_array([pose_stamped], color=ColorRGBA(1, 0.5, 0, 0.5))
-        self.goals_publisher.publish(goal_markers)
