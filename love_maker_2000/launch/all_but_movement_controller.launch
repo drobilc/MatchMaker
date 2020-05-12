@@ -8,6 +8,8 @@
     <arg name="raw_cylinder_markers" default="false"/>
     <arg name="raw_ring_markers" default="false"/>
 
+    <arg name="wait_for_movement_controller" value="false"/>
+
     <!-- Include the gazebo simulator -->
     <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
@@ -34,6 +36,7 @@
         <arg name="display_camera_window" value="$(arg display_camera_window)" />
         <arg name="haar_cascade_data_file_path" value="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
         <arg name="downscale_factor" value="$(arg downscale)"/>
+        <arg name="wait_for_movement_controller" value="$(arg wait_for_movement_controller)"/>
     </include>
 
     <include file="$(find love_maker)/launch/face_robustifier.launch">
@@ -41,7 +44,9 @@
     </include>
 
     <!-- Cylinders -->
-    <include file="$(find love_maker_2000)/launch/cylinder_detector.launch"/>
+    <include file="$(find love_maker_2000)/launch/cylinder_detector.launch">
+        <arg name="wait_for_movement_controller" value="$(arg wait_for_movement_controller)"/>
+    </include>
 
     <include file="$(find love_maker_2000)/launch/cylinder_robustifier.launch">
         <arg name="raw_cylinder_markers" value="$(arg raw_cylinder_markers)"/>
@@ -52,7 +57,9 @@
         <arg name="raw_ring_markers" value="$(arg raw_ring_markers)"/>
     </include>
 
-    <include file="$(find love_maker_2000)/launch/ring_detector.launch"/>
+    <include file="$(find love_maker_2000)/launch/ring_detector.launch">
+        <arg name="wait_for_movement_controller" value="$(arg wait_for_movement_controller)"/>
+    </include>
 
     <!-- We need to run the sound_play node in order to be able to synthesise text -->
     <node pkg="sound_play" type="soundplay_node.py" name="sound_play" output="screen">

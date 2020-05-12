@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
+    <arg name="wait_for_movement_controller" default="true"/>
+
     <node pkg="love_maker_2000" type="cylinder_detector" name="cylinder_detector">
 
         <remap from="input" to="/love_maker_2000/voxelgrid"/>
@@ -19,6 +21,11 @@
 
         <!-- How far can we see the points in the point cloud -->
         <param name="max_point_cloud_depth" value="2.5" />
+
+        <!--Whether detector should wait for brain for signal to start-->
+        <!--If we use all_but_movement_controller.launch and still want-->
+        <!--the sensors to work, this parameter has to be set to false-->
+        <param name="wait_for_movement_controller" type="bool" value="$(arg wait_for_movement_controller)"/>
 
     </node>
 

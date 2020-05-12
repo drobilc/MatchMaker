@@ -3,6 +3,7 @@
   <arg name="display_camera_window" default="false"/>
   <arg name="downscale_factor" default="2"/>
   <arg name="haar_cascade_data_file_path" default="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
+  <arg name="wait_for_movement_controller" default="true"/>
 
   <node pkg="love_maker" type="face_detector.py" name="face_detector" output="screen">
     <param name="display_camera_window" type="bool" value="$(arg display_camera_window)" />
@@ -16,6 +17,11 @@
     <!-- 3 = image will be third the original size -->
     <!-- etc -->
     <param name="downscale_factor" type="int" value="$(arg downscale_factor)"/>
+
+    <!--Whether detector should wait for brain for signal to start-->
+    <!--If we use all_but_movement_controller.launch and still want-->
+    <!--the sensors to work, this parameter has to be set to false-->
+    <param name="wait_for_movement_controller" type="bool" value="$(arg wait_for_movement_controller)"/>
   </node>
 
 </launch>

@@ -1,5 +1,12 @@
 <launch>
 
-  <node pkg="love_maker_2000" type="ring_detector.py" name="ring_detector" />
+  <arg name="wait_for_movement_controller" default="true"/>
+
+  <node pkg="love_maker_2000" type="ring_detector.py" name="ring_detector"> 
+    <!--Whether detector should wait for brain for signal to start-->
+    <!--If we use all_but_movement_controller.launch and still want-->
+    <!--the sensors to work, this parameter has to be set to false-->
+    <param name="wait_for_movement_controller" type="bool" value="$(arg wait_for_movement_controller)"/>
+  </node>
 
 </launch>
