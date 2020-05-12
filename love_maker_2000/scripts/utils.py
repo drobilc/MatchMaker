@@ -61,6 +61,7 @@ def orientation_to_angle(pose):
     return euler_rotation[2]
 
 def neighbors_all(pixel):
+    """Finds pixel's direct neighbours to the left, right, top, bottom"""
     neighbors = []
     neighbors.append(
         (pixel[0], pixel[1] + 1)
@@ -77,6 +78,7 @@ def neighbors_all(pixel):
     return neighbors
 
 def nearest_free_pixel(pixel, map_data):
+    """Finds closest pixel to given pixel that does not contain wall"""
     frontier = Queue.Queue()
     frontier.put(pixel)
     visited = numpy.zeros_like(map_data, dtype=bool)
@@ -96,6 +98,11 @@ def nearest_free_pixel(pixel, map_data):
     return None
 
 def move_away_from_the_wall(map_data, point, too_close):
+    """Checks if the point has wall in neighborhood of range too_close around given 
+    pixel in 4 basic directions. Checks if we would have hit the wall trying to move 
+    the point 3*too_close in any of 4 basic directions. Then move point 2*too_close 
+    in the opposite direction of that in which the wall is too_close if that means 
+    we won't hit the wall."""
     # Create neighbourhoods
     neighbours_base = [0]
     for i in range(1, too_close + 1):
@@ -111,11 +118,13 @@ def move_away_from_the_wall(map_data, point, too_close):
     extended_neighbours_down = []
 
     for neighbour in neighbours_base:
+        # Neighbors in too_close range
         neighbours_right.append([point[0] + neighbour, point[1]])
         neighbours_left.append([point[0] + (-1) * neighbour, point[1]])
         neighbours_down.append([point[0], point[1] + neighbour])
         neighbours_up.append([point[0], point[1] + (-1) * neighbour])
 
+        # Neighbors in 3 * too_close range
         extended_neighbours_right.append([point[0] + 3 * neighbour, point[1]])
         extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour, point[1]])
         extended_neighbours_down.append([point[0], point[1] + 3 * neighbour])
@@ -139,6 +148,7 @@ def move_away_from_the_wall(map_data, point, too_close):
     free_to_move_down = True
     free_to_move_up = True
     for i in range(1, too_close + 1):
+        # Check if there is wall inside too_close range neighborhood
         if map_data[neighbours_right[i][1]][neighbours_right[i][0]] < 250:
             wall_to_the_right = True
         if map_data[neighbours_left[i][1]][neighbours_left[i][0]] < 250:
@@ -148,6 +158,8 @@ def move_away_from_the_wall(map_data, point, too_close):
         if map_data[neighbours_down[i][1]][neighbours_down[i][0]] < 250:
             wall_to_the_bottom = True
 
+        # Check if there is wall in extended neighbourhood that would prevent us from moving 
+        # the point in that direction
         if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
             wall_to_the_right = False
         if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
@@ -186,6 +198,7 @@ def move_away_from_the_wall(map_data, point, too_close):
     return point
 
 def closest_wall_pixel(map_data, pixel, max_distance=5):
+    """Finds closest pixel to given pixel that contains wall"""
     # Use flood fill algorithm with breadth first search to find the
     # closest wall pixel. Use neighboring pixels as defined below
     neighborhood = [(-1, 0), (0, 1), (1, 0), (0, -1)]
