@@ -1,4 +1,5 @@
 std_msgs/Header header
+sensor_msgs/Image image
 geometry_msgs/Pose object_pose
 geometry_msgs/Pose approaching_point_pose
 std_msgs/ColorRGBA color
