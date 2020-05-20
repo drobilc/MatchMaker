@@ -124,10 +124,8 @@ class FaceFinder(object):
             if face_position is not None:
                 approaching_point = self.compute_approaching_point(face_position)
                 if approaching_point is not None:
-                    rospy.loginfo("Calculating detection message")
                     detection = self.construct_detection_message(face_position, approaching_point, face, rgb_image, timestamp)
                     self.detections_publisher.publish(detection)
-                    rospy.loginfo("Published detection message")
                 else:
                     rospy.logwarn('Face detected, but the face approaching point could not be determined')
             else:
