@@ -4,6 +4,7 @@ from __future__ import print_function
 import rospy
 import cv2
 import numpy
+import math
 
 from std_msgs.msg import Header, Bool
 from detection_msgs.msg import Detection
@@ -76,6 +77,7 @@ class FaceFinder(object):
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
         if not self.enabled:
+            self.enabled = True
             return
 
         # Because of the TimeSynchronizer, depth image, rgb image and camera
@@ -122,8 +124,10 @@ class FaceFinder(object):
             if face_position is not None:
                 approaching_point = self.compute_approaching_point(face_position)
                 if approaching_point is not None:
-                    detection = self.construct_detection_message(face_position, approaching_point, timestamp)
+                    rospy.loginfo("Calculating detection message")
+                    detection = self.construct_detection_message(face_position, approaching_point, face, rgb_image, timestamp)
                     self.detections_publisher.publish(detection)
+                    rospy.loginfo("Published detection message")
                 else:
                     rospy.logwarn('Face detected, but the face approaching point could not be determined')
             else:
@@ -220,7 +224,18 @@ class FaceFinder(object):
 
         return approaching_pose
     
-    def construct_detection_message(self, face_pose, approaching_point_position, timestamp):
+    def extract_face_image(self, face, rgb_image):
+        left, right = face.left() * self.downscale_factor, face.right() * self.downscale_factor
+        top, bottom = face.top() * self.downscale_factor, face.bottom() * self.downscale_factor
+        left, bottom, right, top = int(left), int(bottom), int(right), int(top)
+        
+        # Extract face from image and convert it to Image message
+        face_image = rgb_image[top:bottom, left:right]
+        face_image_message = self.bridge.cv2_to_imgmsg(face_image, encoding='8UC3')
+
+        return face_image_message
+
+    def construct_detection_message(self, face_pose, approaching_point_position, face, rgb_image, timestamp):
         """Constructs ObjectDetection message for detected face data"""
         detection = ObjectDetection()
         detection.header.frame_id = 'map'
@@ -228,6 +243,7 @@ class FaceFinder(object):
         detection.object_pose = face_pose.pose
         detection.approaching_point_pose = approaching_point_position.pose
         detection.type = 'face'
+        detection.image = self.extract_face_image(face, rgb_image)
         return detection
 
 if __name__ == '__main__':
