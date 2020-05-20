@@ -144,3 +144,8 @@ static
 
 # Videos folder containing videos
 videos/
+
+# Homework3 images
+homework3/data/
+
+love_maker_2000/scripts/face_recognition.py
