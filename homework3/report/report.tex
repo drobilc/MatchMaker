@@ -55,25 +55,25 @@
 
     \subsection{Preprocessing images}
 
-    This step was relatively easy. We first detected the faces with our face detector, that we created for homework1. Then we cropped the images to obtain faces. \\
+    This step was relatively easy. We first detected the faces with our face detector, that we created for homework 1. Then we cropped the images to obtain faces. \\
 
     Note: This first step of detecting and cropping the faces was not necessary for the second set of our images, i.e. the ones taken in the gazebo simulator. That is because our pipeline for detecting faces in ros already includes cropping the faces out of the image. All we had to do in this case was to just save the photos and label them. \\
 
-    We then fed the images to a python module named \texttt{face\_recognition} to obtain embedding, these are actually 128 dimensional vectors, that represent our faces. We saved these embeddings into csv files along with labels of the faces for each embedding. \\
+    We then fed the images to a python module named \texttt{face\_recognition} to obtain encodings, these are actually 128 dimensional vectors, that represent our faces. We saved these encodings into csv files along with labels of the faces for each encoding. \\
 
-    The main reason for using this model over others is, that it is very straightforward and easy to use. It enables us to load the images and create embeddings in just a few lines. The second reason being, that the model is very powerful and accurate, since in the background it actually uses \texttt{dlib}s state-of-the-art face recognition built with deep learning. \\
+    The main reason for using this model over others is, that it is very straightforward and easy to use. It enables us to load the images and create encodings in just a few lines. The second reason being, that the model is very powerful and accurate, since in the background it actually uses \texttt{dlib}s state-of-the-art face recognition built with deep learning. \\
 
-    Before using the embeddings for training, we normalized them to increase classification accuracy mainly on knn classifiers. Normalization of features didn't have an impact on other classifiers we tested. \\
+    Before using the encodings for training, we normalized them to increase classification accuracy mainly on knn and svm classifiers. Normalization of features had the biggest impact on svm models. \\
 
     \section{Face recognition}
 
     With our datasets ready, we then trained different classifiers to recognize faces and computed their accuracy. We envisioned three different approaches. \\
 
-    First, we trained and tested our models only on embeddings of faces that were captured in the simulation. This way we can best adjust the models to the conditions in the simulation and achieve the best classification accuracy for our task of recognizing faces. As we will see later on, this approach was very effective. \\
+    First, we trained and tested our models only on encodings of faces that were captured in the simulation. This way we can best adjust the models to the conditions in the simulation and achieve the best classification accuracy for our task of recognizing faces. \\
 
-    Second, we trained and tested our models only on embeddings of faces that were captured with the camera in a physical world. This approach ensured that our models could also be trained to work in rougher conditions, for example under more complex lighting setting and blur that is usually present in photographs, that is not simulated in the gazebo simulator. This approach was also very effective. \\
+    Second, we trained and tested our models only on encodings of faces that were captured with the camera in a physical world. This approach ensured that our models could also be trained to work in rougher conditions, for example under more complex lighting setting and blur that is usually present in photographs, that is not simulated in the gazebo simulator. \\
 
-    Third, we wanted to see how the models will behave if we trained them with both datasets at once. This approach ensured, that our models could accurately classify faces in the simulation, but could also perform well in more diverse conditions. Although a bit less accurate than the previous two, we can say that this approach was effective as well. \\
+    Third, we wanted to see how the models will behave if we trained them with both datasets at once. This approach ensured, that our models could accurately classify faces in the simulation, but could also perform well in more diverse conditions. \\
 
     \subsection{Model selection}
 
