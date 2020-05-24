@@ -1,0 +1,7 @@
+<launch>
+
+    <node pkg="face_classification" type="face_classifier.py" name="face_classification" output="screen">
+        <param name="training_data" type="string" value="$(find face_classification)/data/faces_all_simulation.txt" />
+    </node>
+
+</launch>
