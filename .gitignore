@@ -146,6 +146,7 @@ static
 videos/
 
 # Homework3 images
-homework3/data/
+homework3/pictures/
 
 love_maker_2000/scripts/face_recognition.py
+homework3/.vscode
