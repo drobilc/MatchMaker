@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/mrtn/catking_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/mrtn/catking_ws/src/vicos_ros/navigation/costmap_layers/include/**",
+                "/home/mrtn/catking_ws/src/face_classification/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
