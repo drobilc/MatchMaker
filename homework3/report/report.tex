@@ -23,7 +23,7 @@
       \item Evaluating the performance of the trained classifiers
     \end{enumerate}
 
-    \section{Preparing training and data}
+    \section{Preparing training data}
 
     This was the most time consuming part in this task. We had to capture images of faces, crop them and then convert them into embeddings for training our classifiers.
 
@@ -98,7 +98,7 @@
             \hline
 			 & \multicolumn{3}{c|}{\textbf{Partition into training and testing set}} \\
 			\hline 
-			\textbf{Classifier} & \texttt{Approach 1} & \texttt{Approach 1} & \texttt{Approach 1} \\
+			\textbf{Classifier} & \texttt{Approach 1} & \texttt{Approach 2} & \texttt{Approach 3} \\
             \hline \hline
             
 			\textbf{knn}, \small k = 1 & 0.995 & 1.000 & 0.987 \\
@@ -125,12 +125,12 @@
     There are a few reasons why the classifiers are so accurate.
 
     \begin{enumerate}
-      \item The \texttt{face\_recognition} library does a very good job at encoding the faces into encodings. Seemingly it divides the images in the embedding space very well, as even the knn classifier performs good on this high dimensional data.
+      \item The \texttt{face\_recognition} library does a very good job at encoding the faces. Seemingly it divides the images in the embedding space very well, as even the knn classifier performs good on this high dimensional data.
       \item Classification task requires us to recognize only twenty-one faces.
       \item The conditions in the simulation that we previously noted, i.e. lighting and absence of blur, make this task easier.
     \end{enumerate}
 
-    Contrary to our prediction, the knn models perform incredibly well. We speculate that one reason for this is good seperation of face encodings in the embedding. And the other reason might be, that even though encodings have 128 features, that is still a relatively small feature space, as for some machine learning tasks we can have datasets with 10.000 features or more. \\
+    Contrary to our prediction, the knn models perform incredibly well. We speculate that one reason for this is good separation of face encodings in the embedding. And the other reason might be, that even though encodings have 128 features, that is still a relatively small feature space, as for some machine learning tasks we can have datasets with 10.000 features or more. \\
 
     We also tried all knn versions with added weights (distance) but there was no noticeable difference in results, hence we omitted them. \\
 
