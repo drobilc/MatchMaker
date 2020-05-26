@@ -147,16 +147,36 @@
 	
 	Where $\alpha$ is the step size (to move 1 pixel forward, $\alpha = 1.5$). Each state is only possible if the map does not contain a wall at pixel $(x_{i+1}, y_{i+1})$. Because the orientations are cyclical, if the robot orientation is less than $0$ or more than $2\pi$, the orientation is wrapped around to be inside $[0, 2\pi]$ range. \\
 	
-	The heuristic function can be defined as an Euclidean distance between two states. $h(s_i, s_{i+1}) = \sqrt{(x_{i + 1} - x_i)^2 + (y_{i + 1} - y_i)^2 + (\varphi_{i + 1} - \varphi_i)^2}$. To avoid getting too close to the walls, we can add penalty to the pixels that are too close to the wall. \\
+	The heuristic function can be defined as an Euclidean distance between current state and the end state. $$h(s_i) = \sqrt{(x_{end} - x_i)^2 + (y_{end} - y_i)^2 + (\varphi_{end} - \varphi_i)^2}$$. To avoid getting too close to the walls, a penalty is added to the pixels that are too close to the wall. \\
 	
 	The \texttt{A*} algorithm can now be run using states as defined above. We start with initial robot state $(x_0, y_0, \varphi_0)$ and set the goal to the ring position $(x_m, y_m, \varphi_m)$. The closest path between those two states is the path that the robot should follow to get from its current position to the goal position including its orientations. \\
 	
 	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
 	
 	\section{Implementation and integration}
+
 	% Image of our final arhitecture
 	
-	\section{Results}	
+	\subsection{Object detectors}
+	There are three different nodes responsible for object detections. Face and ring detectors are using \texttt{rgb} and depth images and the cylinder detector is using point cloud and \texttt{rgb} image to detect object in our world. \\
+	
+	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. 
+	
+	\subsubsection{ObjectDetection message}
+	
+	\subsubsection{Face detector node}
+	\subsubsection{Ring detector node}
+	\subsubsection{Cylinder detector node}
+
+	\subsection{Robustifier}
+	
+	\subsection{Brain}
+	
+	\subsection{Movement controller}
+	
+	\subsection{Greeter}
+	
+	\section{Results}
 	\section{Division of work}
 	% We should only write what each of us did here and add that the professor should compute percentages himself.
 	
