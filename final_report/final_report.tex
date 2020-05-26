@@ -113,7 +113,45 @@
 	If two detections are close enough (the distance is less than \texttt{minimum distance}), they are considered the same object. The world position and approaching point position of those two detections are averaged. So the object position is closer to its actual position in space.
 	
 	\subsection{Smart exploration of space}
+	\pagebreak
+	
 	\subsection{Fine movement}
+	The \texttt{move\_base} package can be used with \texttt{ROS} to move the mobile base around the map. It uses local and global planner information to avoid obstacles and try to reach the given goal. If it fails to reach the goal, it tries to clear its local map. If that fails, the robot stops trying to reach the goal and notifies us that it has failed to move to the goal. \\
+	
+	The most common reason for failure is that the goal is too close to any wall in our world. In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the package is unable to reach the goal. To do that, odometry data must be used combined with \texttt{Twist} messages to move the robot manually. \\
+	
+	Because the robot must be able to visit the ring from specific direction (ring orientation), we used a modified version of \texttt{A*} algorithm, that not only finds the shortest path between two points, but also uses the starting and ending robot orientation. \\
+	
+	Because the world is flat and the robot can only rotate along one axis, any robot pose can be represented using a tuple $(x, y, \varphi)$, where $\varphi$ is the orientation along the vertical axis. In theory, the $\varphi$ can be any real number, but in our case, the robot will only have a finite number of possible orientations (the first one being $[0, \frac{2\pi}{n}]$, where $n$ is the number of all orientations). In our final task, we found that $n = 8$ or $n = 16$ works best. \\
+	The algorithm will use map to access environment information, so the $x$ and $y$ represent pixel coordinate in map coordinate system.
+	
+	% Image of the robot and the next three possible states
+	\begin{figure}[h]
+		\centering
+		\vspace{6cm}
+		% \includegraphics[width=4cm]{images/orientation_computation}
+		\caption{Next possible robot states}
+		\label{fig:next_robot_states}
+	\end{figure}
+	
+	If the robot is currently in state $\vec{s_i} = (x_i, y_i, \varphi_i)$, we can define the next states to be:
+	
+	\begin{enumerate}
+		\item Move forward
+		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i)$$
+		\item Rotate left by $\frac{2\pi}{n}$ and move forward
+		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i - \frac{2\pi}{n})$$
+		\item Rotate right by $\frac{2\pi}{n}$ and move forward
+		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i + \frac{2\pi}{n})$$
+	\end{enumerate}
+	
+	Where $\alpha$ is the step size (to move 1 pixel forward, $\alpha = 1.5$). Each state is only possible if the map does not contain a wall at pixel $(x_{i+1}, y_{i+1})$. Because the orientations are cyclical, if the robot orientation is less than $0$ or more than $2\pi$, the orientation is wrapped around to be inside $[0, 2\pi]$ range. \\
+	
+	The heuristic function can be defined as an Euclidean distance between two states. $h(s_i, s_{i+1}) = \sqrt{(x_{i + 1} - x_i)^2 + (y_{i + 1} - y_i)^2 + (\varphi_{i + 1} - \varphi_i)^2}$. To avoid getting too close to the walls, we can add penalty to the pixels that are too close to the wall. \\
+	
+	The \texttt{A*} algorithm can now be run using states as defined above. We start with initial robot state $(x_0, y_0, \varphi_0)$ and set the goal to the ring position $(x_m, y_m, \varphi_m)$. The closest path between those two states is the path that the robot should follow to get from its current position to the goal position including its orientations. \\
+	
+	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
 	
 	\section{Implementation and integration}
 	% Image of our final arhitecture
