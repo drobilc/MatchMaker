@@ -9,7 +9,7 @@ from speech_transcription.srv import InquirePreferences, InquirePreferencesRespo
 class SpeechTranscriptionServer(object):
 
     def __init__(self):
-        rospy.init_node('face_classification_server')
+        rospy.init_node('speech_transcription')
 
         self.colors = ['red', 'green', 'blue', 'yellow', 'white', 'black']
 
