@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseStamped
 
 from movement.controller import MovementController
 from greeter import Greeter
+from utils import FACE_DETAILS
 
 from actionlib_msgs.msg import GoalStatus
 

@@ -248,3 +248,33 @@ def detection_from_point_on_map(point, angle_z_axis = None):
     detection.type = 'map_point'
 
     return detection
+
+class FaceDetails(object):
+    def __init__(self, hair_length, hair_color):
+        self.hair_length = hair_length
+        self.hair_color = hair_color
+    def __str__():
+        return "{}, {}".format(self.hair_length, self.hair_color)
+
+FACE_DETAILS = {
+    'face02': FaceDetails('long'    , 'bright'  ),
+    'face03': FaceDetails('long'    , 'dark'    ),
+    'face04': FaceDetails('short'   , 'dark'    ),
+    'face05': FaceDetails('short'   , 'bright'  ),  # TODO: check with prof to be sure
+    'face06': FaceDetails('long'    , 'dark'    ),
+    'face07': FaceDetails('long'    , 'dark'    ),  # TODO: -||-
+    'face08': FaceDetails('long'    , 'dark'    ),
+    'face09': FaceDetails('short'   , 'dark'    ),
+    'face10': FaceDetails('long'    , 'bright'  ),
+    'face11': FaceDetails('short'   , 'bright'  ),  # TODO: -||-
+    'face12': FaceDetails('short'   , 'dark'    ),
+    'face13': FaceDetails('long'    , 'bright'  ),
+    'face14': FaceDetails('long'    , 'bright'  ),
+    'face15': FaceDetails('long'    , 'bright'  ),
+    'face16': FaceDetails('short'   , 'dark'    ),
+    'face17': FaceDetails('long'    , 'dark'    ),
+    'face18': FaceDetails('short'   , 'dark'    ),
+    'face19': FaceDetails('short'   , 'bright'  ),
+    'face20': FaceDetails('short'   , 'dark'    ),
+    'face21': FaceDetails('short'   , 'bright'  ),
+}
