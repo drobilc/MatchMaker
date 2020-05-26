@@ -86,5 +86,4 @@ class FaceClassifier(object):
 if __name__ == '__main__':
     face_classifier = FaceClassifier()
     rospy.loginfo('Face recognition node started')
-    print(face_recognition.__file__)
     rospy.spin()
