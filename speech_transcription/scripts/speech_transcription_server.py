@@ -20,7 +20,7 @@ class SpeechTranscriptionServer(object):
         # Service for processing affirmations from Gargamel and women
         affirmation_service = rospy.Service('inquire_affirmation', InquireAffirmation, self.handle_affirmation_inquiry_request)
 
-    def listen():
+    def listen(self):
         # Create a Recognizer() object that is used for transcribing speech
         recognizer = sr.Recognizer()
         # Create Microphone object, that uses the device's default microphone
