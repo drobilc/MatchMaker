@@ -106,6 +106,9 @@ class Detection(object):
         self.update_object_position(other_detection, self.blending)
         self.update_approaching_point_position(other_detection, self.blending)
 
+        if len(self.detection.additional_information) <= 0 and len(other_detection.additional_information) > 0:
+            self.detection.additional_information = other_detection.additional_information
+
         # Add color classification to list of color classifications. The
         # color_classifications list is then used to get the most frequent color
         # classification. For example, ['red', 'blue', 'red'] should return 'red'

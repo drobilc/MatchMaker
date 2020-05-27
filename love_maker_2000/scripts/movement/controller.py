@@ -61,17 +61,16 @@ class MovementController(object):
         # This function is only meant to be called from tasks, not on its own
         # because it will not cancel the function
         rospy.logwarn('MovementController.cancel called, task = {}'.format(task))
-
         # There are two options - the task is currently running or the task is
         # waiting in queue
+        if task in self.tasks:
+            self.tasks.remove(task)
+
         if task == self.current_task:
             self.current_task = None
             self.is_running = False
             self.start()
-
-        if task in self.tasks:
-            self.tasks.remove(task)
-
+        
         return task
     
     def on_finish(self, task):

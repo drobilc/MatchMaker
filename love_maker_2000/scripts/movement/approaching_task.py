@@ -45,12 +45,6 @@ class ApproachingTask(MovementTask):
         self.map_data[self.map_data == -1] = 255
         self.map_data = self.map_data.astype('uint8')
 
-        # Create costmap from map by dilating it with a square kernel. This
-        # costmap is then used to choose points that are further from the wall
-        # when finding the shortest path
-        kernel = numpy.ones((6, 6), numpy.uint8) 
-        self.costmap = cv2.dilate(self.map_data, kernel, iterations=1)
-
     def feedback(self, data):
         pass
     
@@ -75,17 +69,14 @@ class ApproachingTask(MovementTask):
                 rospy.logerr('Goal not reached, status: {}. Cancelling.'.format(status))
                 self.finish(status, result)
 
-    def move_approaching_pose_away_from_the_wall(self, detection, minimum_distance=10, maximum_iterations=4):
+    def move_approaching_pose_away_from_the_wall(self, detection, minimum_distance=5, maximum_iterations=4):
         # To compute approaching point do the following. Calculate where the
         # closest wall from the cylinder approaching point. If there is no wall,
         # the approaching point is ok. Otherwise, move in the opposite direction
         # of the wall. If the approaching point pixel is INSIDE the wall, this
         # function will crash perfoming division of zero...
         map_position = utils.pose_to_map_pixel(detection.approaching_point_pose, self.map_origin, self.map_resolution)
-        rospy.loginfo('MAP POSITION: {}'.format(map_position))
-
-        closest_wall = utils.closest_wall_pixel(self.map_data, map_position, max_distance=minimum_distance)
-        rospy.loginfo('CLOSEST WALL: {}'.format(closest_wall))
+        closest_wall = utils.closest_wall_pixel(numpy.transpose(self.map_data), map_position, max_distance=minimum_distance)
 
         if closest_wall is None:
             return detection.approaching_point_pose
@@ -96,7 +87,6 @@ class ApproachingTask(MovementTask):
         move_direction = move_direction / distance_to_wall
 
         new_map_position = map_position + move_direction * (minimum_distance - distance_to_wall + 1)
-        rospy.loginfo('NEW PIXEL POSITION: {}'.format(new_map_position))
         
         approaching_pose = Pose()
         approaching_pose.position.x = new_map_position[0] * self.map_resolution + self.map_origin.x
@@ -106,6 +96,9 @@ class ApproachingTask(MovementTask):
         return approaching_pose
     
     def run(self):
+        self.action_client.stop_tracking_goal()
+        self.action_client.cancel_all_goals()
+        
         # Create a new MoveBaseGoal object and set its position and rotation
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = self.object_detection.header.frame_id
@@ -114,7 +107,7 @@ class ApproachingTask(MovementTask):
 
         # Check if approaching point is too close for the wall for cylinders
         # and rings. If so, move it away from the wall so the robot can approach it
-        if self.object_detection.type == 'cylinder' or self.object_detection.type == 'ring':
+        if self.object_detection.type in ['cylinder']:
             try:
                 goal.target_pose.pose = self.move_approaching_pose_away_from_the_wall(self.object_detection)
             except Exception as e:

@@ -11,7 +11,10 @@ from movement.controller import MovementController
 from greeter import Greeter
 from utils import FACE_DETAILS
 
+from zbar_detector.msg import Marker
+
 from actionlib_msgs.msg import GoalStatus
+import utils
 
 class Brain(object):
     
@@ -65,22 +68,36 @@ class Brain(object):
         self.face_detector_toggle.publish(message)
         self.ring_detector_toggle.publish(message)
         self.cylinder_detector_toggle.publish(message)
+    
+    def on_object_approach(self, detection, goal_status, goal_result):
+        """Callback function that is called when robot approaches or fails to approach object"""
+        if goal_status == GoalStatus.SUCCEEDED:
+            self.on_successful_object_approach(detection)
+        else:
+            self.on_unsuccessful_object_approach(detection)
+    
+    def on_successful_object_approach(self, detection):
+        """Callback function that is called when the object was successfully approached"""
+        self.greeter.say('Hello {} {}!'.format(detection.classified_color, detection.type))
+        if detection.type == 'face':
+            if detection.additional_information is not None and len(detection.additional_information) > 0:
+                face_data = utils.get_request(detection.additional_information)
+                rospy.loginfo("Data received: {}".format(face_data))                
+
+        self.object_detections.remove(detection)
+        if len(self.object_detections) <= 0:
+            self.movement_controller.add_to_queue(self.wandering_task)
+    
+    def on_unsuccessful_object_approach(self, detection):
+        """Callback function that is called if the robot could not successfully approach the object"""
+        # Create a new movement task and add it to the end of the movement
+        # controller queue. Basically visit this object at latter time.
+        fine = detection.type == 'ring'
+        task = self.movement_controller.approach(detection, callback=object_greet, fine=fine)
+        self.movement_controller.add_to_queue(task)
 
     def on_object_detection(self, object_detection):
-        rospy.loginfo('New object detected: {}'.format(object_detection.type))
-
-        def object_greet(detection, goal_status, goal_result):
-            if goal_status == GoalStatus.SUCCEEDED:
-                rospy.loginfo('Goal finished with status: {}'.format(goal_status))
-                self.greeter.say('Hello {} {}!'.format(object_detection.classified_color, object_detection.type))
-                self.object_detections.remove(detection)
-                if len(self.object_detections) <= 0:
-                    self.movement_controller.add_to_queue(self.wandering_task)
-            else:
-                fine = detection.type == 'ring'
-                task = self.movement_controller.approach(detection, callback=object_greet, fine=fine)
-                self.movement_controller.add_to_queue(task)
-        
+        rospy.loginfo('New object detected: {}'.format(object_detection.type))        
         self.object_detections.append(object_detection)
 
         self.wandering_task.cancel()
@@ -88,7 +105,7 @@ class Brain(object):
         # If new object has been detected, approach it. If its type is ring,
         # approach it using the fine approaching task
         fine = object_detection.type == 'ring'
-        task = self.movement_controller.approach(object_detection, callback=object_greet, fine=fine)
+        task = self.movement_controller.approach(object_detection, callback=self.on_object_approach, fine=fine)
         self.movement_controller.add_to_queue(task)
 
 if __name__ == '__main__':

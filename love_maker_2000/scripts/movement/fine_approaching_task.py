@@ -294,11 +294,11 @@ class FineApproachingTask(MovementTask):
         # more goals, we have successfully reached our destination.
         if abs(rotation) > rotation_threshold:
             twist = Twist()
-            twist.angular.z = rotation * 0.5
+            twist.angular.z = rotation * 0.5 * 2
             self.localization_publisher.publish(twist)
         elif distance_to_goal > distance_threshold:
             twist = Twist()
-            twist.linear.x = 0.1
+            twist.linear.x = 0.2
             self.localization_publisher.publish(twist)
         else:
             twist = Twist()

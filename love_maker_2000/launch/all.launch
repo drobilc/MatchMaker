@@ -11,9 +11,9 @@
     <arg name="wait_for_movement_controller" default="true"/>
 
     <!-- Include the gazebo simulator -->
-    <include file="$(find love_maker_2000)/launch/includes/rins_world.launch">
+    <include file="$(find task3)/launch/rins_world.launch">
         <!-- Set the world file for the gazebo simulator -->
-        <arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_eval2.world"/>
+        <!--<arg name="world_file"  value="$(find love_maker_2000)/worlds/rins_eval2.world"/>-->
         <arg name="gui" value="$(arg gazebo_gui)"/>
     </include>
 

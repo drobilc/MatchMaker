@@ -1,0 +1,60 @@
+# Template from: https://github.com/corot/thorp/blob/master/thorp_simulation/param/arm_control.yaml
+# if you rename controllers here, you also have to do it in the launch file of the control package/directory
+turtlebot_arm:
+
+  # Publish all joint states
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 40  
+
+  # Arm Position Controller
+  arm_controller:
+    type: position_controllers/JointTrajectoryController
+    joints: [arm_shoulder_pan_joint, arm_shoulder_lift_joint, arm_elbow_flex_joint, arm_wrist_flex_joint]
+  #   constraints:
+  #     goal_time: 10.0
+  #     stopped_velocity_tolerance: 0.05   # I used to need a very large number because the shoulder lift joint still has a
+  # #    stopped_velocity_tolerance: 0.3   # velocity even if stopped, aborting the execution as it never reaches the goal
+  #     arm_shoulder_pan_joint: {trajectory: 0.1, goal: 0.1}
+  #     arm_shoulder_lift_joint: {trajectory: 0.1, goal: 0.1}
+  #     arm_elbow_flex_joint: {trajectory: 0.1, goal: 0.1}
+  #     arm_wrist_flex_joint: {trajectory: 0.1, goal: 0.1}
+  #   stop_trajectory_duration: 0.5
+  #   state_publish_rate:  25
+  #   action_monitor_rate: 10
+
+  arm_shoulder_pan_joint:
+    type: position_controllers/JointPositionController
+    joint: arm_shoulder_pan_joint
+  #  pid: {p: 100.0, i: 0.01, d: 10.0}
+
+  arm_shoulder_lift_joint:
+    type: position_controllers/JointPositionController
+    joint: arm_shoulder_lift_joint
+  #  pid: {p: 100.0, i: 0.01, d: 10.0}
+
+  arm_elbow_flex_joint:
+    type: position_controllers/JointPositionController
+    joint: arm_elbow_flex_joint
+  #  pid: {p: 100.0, i: 0.01, d: 10.0}
+
+  arm_wrist_flex_joint:
+    type: position_controllers/JointPositionController
+    joint: arm_wrist_flex_joint
+  #  pid: {p: 100.0, i: 0.01, d: 10.0}
+
+  # Gripper Position Controller
+  #gripper_joint:
+  # gripper_controller:
+  #   type: position_controllers/GripperActionController # used to be: position_controllers/JointPositionController, but MoveIt somehow can't handle this
+  #   joint: gripper_joint  
+  #  pid: {p: 100.0, i: 0.01, d: 10.0}
+
+gazebo_ros_control:
+    pid_gains:
+        arm_shoulder_pan_joint: {p: 100.0, i: 0.00, d: 0.0}
+        arm_shoulder_lift_joint: {p: 100.0, i: 0.0, d: 0.0}
+        arm_elbow_flex_joint: {p: 100.0, i: 0.0, d: 0.0}
+        arm_wrist_flex_joint: {p: 100.0, i: 0.0, d: 0.0}
+        # gripper_joint: {p: 100.0, i: 0.0, d: 0.0}
+

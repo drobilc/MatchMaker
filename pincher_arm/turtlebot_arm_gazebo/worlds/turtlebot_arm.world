@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- see http://gazebosim.org/tutorials?tut=modifying_world -->
+    <physics type="ode">
+      <gravity>0.000000 0.000000 -9.810000</gravity>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>50</iters>
+          <precon_iters>0</precon_iters>
+          <sor>1.300000</sor>
+        </solver>
+        <constraints>
+          <cfm>0.000000</cfm>
+          <erp>0.200000</erp>
+          <contact_max_correcting_vel>100.000000</contact_max_correcting_vel>
+          <contact_surface_layer>0.001000</contact_surface_layer>
+        </constraints>
+      </ode>
+      <real_time_update_rate>0.000000</real_time_update_rate>
+      <!-- real_time_update_rate = 0 means as fast as possible -->
+      <max_step_size>0.001000</max_step_size>
+    </physics>
+    <!-- gazebo world plugin for kinect camera, random placement of the object to pick up etc.
+    the plugin is currently defined in in ~/Documents/pluginTest/smartBot_plugin/smartbot_plugin.cpp
+    only use this when not working with the OpenAI Gym Gazebo (currently defined in
+    /home/joel/Documents/gym-gazebo/examples/pincher_arm/smartbot_pincher_kinect_qlearn.py) -->
+    <!-- <plugin name="smartbot_plugin" filename="libsmartbot_plugin.so"/> -->
+  </world>
+</sdf>
