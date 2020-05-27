@@ -49,8 +49,9 @@
 		\label{fig:non_synchronized_raw_detection}
 	\end{figure}
 	
-	Object detections are performed on images. Object detectors output pixels on \texttt{rgb} image (or in case of ring detector on depth image) where the object is detected. Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. \\
-	
+	Object detections are performed on images. Object detectors output pixels from \texttt{rgb} image (or in case of ring detector from depth image) where the object is detected. Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. \\
+	% Object detections are performed on WHAT KIND OF images?
+
 	\begin{figure}[h]
 		\centering
 		\caption{Pinhole camera model}
@@ -212,9 +213,9 @@
 	\subsubsection{Cylinder detection}
 	
 	\subsubsection{Approaching point computation}
-	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on line between robot and the cylinder. \\
+	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on the line connecting the robot and the cylinder. \\
 	
-	A point that lies 0.5 metres from the centroid of the cylinder is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is any wall too close to the point. \\
+	A point that lies 0.5 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
 	
 	\subsection{Robustification} \label{robustification}
 	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might comput the distance inaccurately, or the robot may not have been localized. Detectors might return a false positives and so on. \\
@@ -248,7 +249,7 @@
 	
 	The most common reason for failure is that the goal is too close to any wall in our world. The robot builds a costmap of its environment, where the closer the position is to the wall, the highest cost it has. This way a robot can avoid obstacles and plan the path from point A to point B. The robot builds a costmap in a way that it makes sure not to bump into anything, which means it also takes into account all possible errors in data from its detectors. This means that some of the points that the robot can reach in reality unfortunately fall into the high-cost area and so the normal movement cannot get us there because the risk of bumping into something is too high. \\
 
-	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the default movement component is unable to reach the goal. To do that, odometry data must be used combined with \texttt{Twist} messages to move the robot manually. \\
+	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot manually. \\
 	
 	Because the robot must be able to visit the ring from specific direction (ring orientation), we used a modified version of \texttt{A*} algorithm, that not only finds the shortest path between two points, but also uses the starting and ending robot orientation. \\
 	
@@ -299,9 +300,9 @@
 	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
 	
 	\section{Implementation and integration}
-	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. The we tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system philosophy, but because three different people needed to work on the same project at the same time. \\
+	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at the same time. \\ % tale zadnji stavek bi se dalo še mal boljš ubesedit
 	
-	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the system had to be changed in order to solve them. \\ 
+	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the arhitecture had to be changed in order to solve them. \\ 
 	
 	\begin{figure}[h]
 		\centering
@@ -335,17 +336,18 @@
 	After face is localized, \texttt{Approaching point} is computed. \texttt{Approaching point} is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_orientation_computation}. The \texttt{Approaching point} is positioned 0.5 metres from the face position in the direction of the face orientation. \\
 
 	\subsubsection{Ring detector node}
-	Ring detector is a node that is responsible for ring detection and localization. It works similarly to the face detector node. First, it synchronizes depth and \texttt{rgb} images. Then it uses the ring detection algorithm as explained in section \ref{ring_detection}. Ring localization is done using the using the algorithm explained in section \ref{pixel_to_world}. \\
+	Ring detector is a node that is responsible for ring detection and localization. It works similarly to the face detector node. First, it synchronizes depth and \texttt{rgb} images. Then it uses the ring detection algorithm as explained in section \ref{ring_detection}. Ring localization is done using the algorithm explained in section \ref{pixel_to_world}. \\
 	
-	Ring orientation is determined using similar algorithm as explained in section \ref{face_orientation_computation}, but instead of finding the normal of the wall, its direction is chosen as ring orientation. \\
+	Ring orientation is determined using similar algorithm as explained in section \ref{face_orientation_computation}, but instead of finding the normal of the wall, its direction is chosen as ring orientation. \\ % tu bi blo mogoč boljše vseen še enkrat povzet, kk deluje, ker če ne more bralec it pogledat nazaj gor, kje zamenjamo to normalo
 	
 	\subsubsection{Cylinder detector node}
 
 	\subsection{Robustifier}
-	For each object detector, a new \texttt{Robustifier} node is created. So each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds \texttt{threshold} value, the detection is considered true positive and is sent to the \texttt{Brain} node. \\
+	For each object detector, a new \texttt{Robustifier} node is created. So each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the \texttt{threshold} value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
 	
 	\subsection{Brain}
 	\texttt{Brain} is a node that is responsible for solving the main part of the task. It subscribes to robustified object detections and uses them to solve the task. \\
+	% Main part of the task?
 	
 	% Manjka, ker se ne vemo kako bo delalo
 	
