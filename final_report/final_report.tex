@@ -39,7 +39,7 @@
 
 
 	
-	\subsection{Camera pixel to world position}
+	\subsection{Camera pixel to world position} \label{camera_to_world}
 	Object detectors must be able to compute the positions of the detected objects in the world. To do that, \texttt{rgb} camera and depth images are used. Because the robot is moving, and the environment is changing very fast, we must make sure that the received colour and depth image are synchronized with one another. Even a small delay between images can cause computed world positions to be inaccurate. \\ 
 	% To se lahka odraža s tem, da zaznave niso na mestih, kjer dejansko so, ampak zraven in dobimo napačno pozicijo, sploh če se robot rotira (Primer so cilindri - raw detections) 
 	%Dopiši, kaj smo uporabli za sinhronizacijo
@@ -75,7 +75,7 @@
 	\subsection{Faces}
 	In this section, we present algorithms that our robot uses to detect faces, compute their orientation in space and classify them.
 	
-	\subsubsection{Face detection}
+	\subsubsection{Face detection} \label{face_detection_algorithm}
 	
 	Face detection was done using Viola-Jones face detection algorithm. We chose this algorithm because it can be run in real-time and it has a high detection rate. \\
 	
@@ -88,7 +88,7 @@
 	
 	% The Viola-Jones algorithm is performed with sliding window, explain that that takes time, so the image must be resized to get 30fps performance. And what was the size and resolution that we shrinked the images to.
 	
-	\subsubsection{Computing the orientation of the faces}
+	\subsubsection{Computing the orientation of the faces} \label{face_orientation_computation}
 	After the face has been detected in an image, it's position in the world coordinate system is computed. The approaching point is then calculated using static map information. \texttt{Approaching point} is a point close to the face and directly in front it that the robot must visit to approach the face. \\
 	% Evo, tu je en primer definicije novega izraza (approaching point)
 	% Dodaj slikico approaching pointa, lahko tudi na spodnjo slikico, ki ralaga orientacijo
@@ -239,8 +239,25 @@
 	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. 
 	
 	\subsubsection{ObjectDetection message}
+	The object detection message contains the following information
+	\begin{enumerate}
+		\item \texttt{Header header}, which contains the timestamp of the detection and other metadata
+		\item \texttt{string type}, which represents the type of the detected object (it can be either \texttt{"face"}, \texttt{"ring"} or \texttt{"cylinder"}, )
+		\item \texttt{Pose object_pose}, which represents the object position in world coordinate frame
+		\item \texttt{Pose approaching_point_pose}, which is a point that the robot has to visit in order to complete the task
+		\item \texttt{Image image}, which is an image of the object
+		\item \texttt{ColorRGBA color} color and \texttt{string classified_color} which represent the object average colour in \texttt{RGBA} format and the colour label that the colour classifier computed
+	\end{enumerate}
+
+	% Why have we decided that we needed object detection message. Because of our robustification process.
 	
 	\subsubsection{Face detector node}
+	The face detector is responsible for detecting and localizing faces. To do that, it fist synchronizes received \texttt{rgb} and depth images using the \texttt{Time Synchronizer} class in \texttt{message_filters} package. \\
+
+	After both, the \texttt{rgb} and depth images are received, it uses the Haar cascade algorithm explained in section \ref{face_detection_algorithm} to detect faces. If face has been found, it tries to compute its world position. This is done using raycasting from camera center, through the face center pixel in the image plane as explained in section \texttt{camera_to_world}. \\
+
+	After face is localized, \texttt{Approaching point} is computed. \texttt{Approaching point} is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_orientation_computation}. The \texttt{Approaching point} is positioned 0.5 metres from the face position in the direction of the face orientation. \\
+
 	\subsubsection{Ring detector node}
 	\subsubsection{Cylinder detector node}
 
