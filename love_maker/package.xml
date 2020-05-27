@@ -15,6 +15,7 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>object_detection_msgs</build_depend>
   <build_depend>color_classification</build_depend>
+  <build_depend>face_classification</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>cv_bridge</run_depend>
@@ -25,6 +26,7 @@
   <run_depend>geometry_msgs</run_depend>
   <run_depend>object_detection_msgs</run_depend>
   <run_depend>color_classification</run_depend>
+  <run_depend>face_classification</run_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 
