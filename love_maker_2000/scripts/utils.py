@@ -3,6 +3,7 @@
 import rospy
 import numpy
 import cv2
+import urllib2
 
 import Queue
 
@@ -278,3 +279,15 @@ FACE_DETAILS = {
     'face20': FaceDetails('short'   , 'dark'    ),
     'face21': FaceDetails('short'   , 'bright'  ),
 }
+
+def get_request(url):
+    """Performs a web request to the specified url"""
+    response = urllib2.urlopen(url)
+    text = response.read()
+
+    data = {}
+    for line in text.split('\n'):
+        key, value = line.strip().split(':')
+        data[key] = value
+    
+    return data
