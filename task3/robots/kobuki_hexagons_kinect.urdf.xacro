@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+    - Base      : kobuki
+    - Stacks    : hexagons
+    - 3d Sensor : kinect
+-->    
+<robot name="turtlebot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find turtlebot_description)/urdf/turtlebot_common_library.urdf.xacro" />
+  <xacro:include filename="$(find kobuki_description)/urdf/kobuki.urdf.xacro" />
+  <xacro:include filename="$(find turtlebot_description)/urdf/stacks/hexagons.urdf.xacro"/>
+  <xacro:include filename="$(find turtlebot_description)/urdf/sensors/kinect.urdf.xacro"/>
+  
+  <kobuki/>
+  <stack_hexagons parent="base_link"/>
+  <sensor_kinect  parent="base_link"/>
+
+    <!-- Added the arm here 
+  <xacro:include filename="$(find poke_description)/urdf/poke.xacro" />
+  <poke_arm parent="base_link" color="white" joints_vlimit="1.571">
+    <origin xyz="-0.05 0 0.55"/>
+  </poke_arm> -->
+
+   <xacro:include filename="$(find turtlebot_arm_description)/urdf_4gazebo/turtlebot_arm.urdf.xacro" />
+   <turtlebot_arm parent="base_link" color="white" gripper_color="green" pincher_gripper="false" turtlebot_gripper="true">
+      <origin xyz="0 -0.1 0.425"/>
+   </turtlebot_arm>
+
+</robot>
