@@ -9,6 +9,7 @@
 \usepackage{multirow}
 \usepackage{rotating}
 \usepackage{tikz}
+\usepackage{pgfplots}
 \usepackage[bottom]{footmisc}
 
 \author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
@@ -39,7 +40,7 @@
 
 
 	
-	\subsection{Camera pixel to world position}
+	\subsection{Camera pixel to world position} \label{pixel_to_world}
 	Object detectors must be able to compute the positions of the detected objects in the world. To do that, \texttt{rgb} camera and depth images are used. Because the robot is moving, and the environment is changing very fast, we must make sure that the received colour and depth image are synchronized with one another. Even a small delay between images can cause computed world positions to be inaccurate. \\ 
 	% To se lahka odraža s tem, da zaznave niso na mestih, kjer dejansko so, ampak zraven in dobimo napačno pozicijo, sploh če se robot rotira (Primer so cilindri - raw detections) 
 	%Dopiši, kaj smo uporabli za sinhronizacijo
@@ -125,7 +126,7 @@
 	\subsubsection{Face classification}
 	After faces are detected and localized in the world, they have to be identified.
 	
-	\subsection{Colour classification}
+	\subsection{Colour classification} \label{colour_classification}
 	The robot must be able to detect the colour of the rings and cylinders. There are six possible classes: black, white, red, green, blue and yellow. \\
 	
 	In homework 2, we tested different colour spaces and classification models and concluded that the k-nearest neighbours algorithm worked best. The colour space with the highest accuracy in homework was \texttt{HSV} colour model, but in the Gazebo simulator, \texttt{RGB} space worked better. \\
@@ -137,9 +138,72 @@
 	\subsection{Rings}
 	In this section, the algorithm for ring detection is presented.
 	
-	\subsubsection{Ring detection}	
-	\subsubsection{Ring color detection}
+	\subsubsection{Ring detection} \label{ring_detection}
+	When robot finds the woman that is willing to marry Gargamel, it must help him find a ring that she will like. Luckily, she is kind enough to tell us her favourite colour. The robot must then find the ring in that colour, give it to her and ask her to marry him. \\
 	
+	But before the ring can be picked up, it must first be detected by the robot. The ring detection is performed on the depth image and the ring colour detection is performed on the \texttt{rgb} image. Again, both images must be synchronized, so it can be accurately localized. \\
+	
+	% I am not sure that the information below is correct
+	Depth image is computed from disparity image, which is calculated from Kinect stereo camera system. The further away an object is, the smaller its disparity will be. Using calibration matrix, depth of each pixel can be approximated from disparity image. Object that appear further away from the camera have a smaller disparity, which reduces the accuracy of depth computation. To combat this, our algorithm first removes all objects that are over a certain distance away from the camera. \\
+	
+	After inaccurate depths are removed, a blob detection algorithm is applied to our depth image. The algorithm finds regions in our image that differ in colour. It actually searches for dark areas (areas that are further away from the camera) in the depth image. Because the inside of the ring is darker than the ring itself, the inner part is considered a blob. But not all blobs are considered rings. We can then apply some domain knowledge to the problem. We know that all the rings are positioned 12 cm above the cubes, so we can filter all blobs that lie below that height. If we look at the ring from any angle, they look elliptical, so the blobs are filtered by their roundness too. \\
+	
+	\begin{figure}[h]
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\includegraphics[width=.8\linewidth]{images/ring_detection}
+			\caption{Ring detection}
+			\label{fig:detected_ring}
+		\end{subfigure}%
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\includegraphics[width=.8\linewidth]{images/ring_detection_cropped}
+			\caption{Cropped ring detection}
+			\label{fig:detected_ring_cropped}
+		\end{subfigure}
+		\caption{Ring detection using blob detector}
+		\label{fig:ring_detection}
+	\end{figure}
+
+	In figure \ref{fig:detected_ring}, we can see an example of detected ring. Even though the corner of the cube is overlapping with the circle, the ring is still detected. This also presents another problem. To localize the ring, we must know the distance to the ring, but which distance should we use? \\
+	
+	To compute the distance from camera to the ring, a histogram of distances is created. In figure \ref{fig:distance_histogram}, we can see an example histogram for the figure \ref{fig:detected_ring_cropped} with 24 bins. As we can see, there are two bars that stand out. One of them is the edge of the cube and the other is the ring. A mask is constructed so that only distances that lie in the highest bucket are retained, everything else is removed. \\
+	
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}
+			\begin{axis}[
+			ybar,
+			xlabel={Distance}, ylabel={Number of pixels},
+			xmin=0, xmax=23, ymin=0, ymax=1400,
+			xtick={0,4,8,12,16,20,24},
+			ytick={0,200,400,600,800,1000,1200,1400,1600},
+			width=12cm, height=5cm
+			]
+			\addplot[fill=gray]
+			coordinates {
+				(0, 0) (1, 0) (2, 0) (3, 0) (4, 0) (5, 0) (6, 0) (7, 0) (8, 306) (9, 0) (10, 1261) (11, 0) (12, 0) (13, 0) (14, 0) (15, 0) (16, 0) (17, 0) (18, 0) (19, 0) (20, 0) (21, 0) (22, 0) (23, 0) 
+			};
+			\end{axis}
+		\end{tikzpicture}
+		\caption{Distance histogram}
+		\label{fig:distance_histogram}
+	\end{figure}
+
+	The mask is then applied to both, the distance image and the colour image. In figure \ref{fig:masked_colour_ring}, we can see the result of filtering of the \texttt{rgb} colour image using the mask obtained in the previous step. \\
+
+	The distance to the ring is computed as the average of distances to each pixel in the masked distance image. The ring position in world frame is computed using as explained in section \ref{pixel_to_world}. \\
+
+	\subsubsection{Ring colour detection}
+	The ring colour is computed using the mask that we have computed in section \ref{ring_detection}. The \texttt{rgb} image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[height=5cm]{images/ring_detection_colour}
+		\caption{Masked colour ring}
+		\label{fig:masked_colour_ring}
+	\end{figure}
+		
 	\subsection{Cylinder detection}
 	\subsubsection{Removal of planes}
 	\subsubsection{Cylinder detection}
