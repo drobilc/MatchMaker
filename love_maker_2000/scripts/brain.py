@@ -97,11 +97,11 @@ class Brain(object):
         self.movement_controller.add_to_queue(task)
 
     def on_object_detection(self, object_detection):
-        rospy.loginfo('New object detected: {}'.format(object_detection.type))        
+        rospy.loginfo('New object detected: {}'.format(object_detection.type))
         self.object_detections.append(object_detection)
 
         if object_detection.type == 'face':
-            rospy.loginfo('Face has label {}'.format(object_detection.classified_color))
+            rospy.loginfo('Brain has received {}'.format(object_detection.face_label))
 
         self.wandering_task.cancel()
 

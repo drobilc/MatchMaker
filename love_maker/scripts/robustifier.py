@@ -22,8 +22,9 @@ class Detection(object):
         "black": ColorRGBA(0, 0, 0, 1)
     }
     
-    def __init__(self, detection, number_of_detections = 0):
+    def __init__(self, detection, number_of_detections = 1, dummy=False):
         self.detection = detection
+
         self.number_of_detections = number_of_detections
         self.already_sent = False
         self.blending = 0.5
@@ -32,10 +33,14 @@ class Detection(object):
         if detection.classified_color:
             self.color_classifications.append(detection.classified_color)
         
+        if dummy:
+            return
+
         # If object is a face, try to recognize it
         if detection.type == 'face':
             face_label = self.get_face_label(detection.image)
-            detection.classified_color = face_label
+            self.detection.face_label = face_label
+            rospy.loginfo('Adding new face detection with label {}'.format(self.detection.face_label))
     
     def get_face_label(self, image_message):
         rospy.wait_for_service('face_classification')
@@ -96,7 +101,7 @@ class Detection(object):
     def update_object_position(self, other_detection, blending=0.5):
         """Update object pose by averaging it using the blending parameter"""
         self_pose = self.detection.object_pose
-        other_pose = Detection(other_detection).get_object_pose().pose
+        other_pose = Detection(other_detection, dummy=True).get_object_pose().pose
 
         # Calculate new position on line between current position and received position.
         # Use the blending parameter to blend current and next position (simple linear interpolation)
@@ -109,7 +114,7 @@ class Detection(object):
     def update_approaching_point_position(self, other_detection, blending=0.5):
         """Update approaching point pose by averaging it using the blending parameter"""
         self_pose = self.detection.approaching_point_pose
-        other_pose = Detection(other_detection).get_approaching_point_pose().pose
+        other_pose = Detection(other_detection, dummy=True).get_approaching_point_pose().pose
         alpha, beta = 1 - blending, blending
         self_pose.position.x = self_pose.position.x * alpha + other_pose.position.x * beta
         self_pose.position.y = self_pose.position.y * alpha + other_pose.position.y * beta
@@ -134,7 +139,7 @@ class Detection(object):
     def distance_to(self, other_detection):
         """Compute Euclidean distance between two detections"""
         self_pose = self.get_object_pose().pose
-        other_pose = Detection(other_detection).get_object_pose().pose
+        other_pose = Detection(other_detection, dummy=True).get_object_pose().pose
         # Return simple Euclidean distance between this and other pose
         dx = self_pose.position.x - other_pose.position.x
         dy = self_pose.position.y - other_pose.position.y
@@ -269,7 +274,7 @@ class Robustifier(object):
             return
         
         if self.publish_raw_markers:
-            self.publish_marker(Detection(detection), Robustifier.RAW_MARKER_STYLE[detection.type])
+            self.publish_marker(Detection(detection, dummy=True), Robustifier.RAW_MARKER_STYLE[detection.type])
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not

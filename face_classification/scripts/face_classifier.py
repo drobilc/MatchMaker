@@ -74,7 +74,6 @@ class FaceClassifier(object):
             return 'none'
         
         label = self.classifier.predict([encoding])[0]
-        rospy.loginfo(label)
 
         return label
 
