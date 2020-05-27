@@ -4,11 +4,11 @@
     <arg name="downscale" default="2"/>
     <arg name="gazebo_gui" default="false"/>
 
-    <arg name="raw_face_markers" default="false"/>
-    <arg name="raw_cylinder_markers" default="false"/>
-    <arg name="raw_ring_markers" default="false"/>
+    <arg name="raw_face_markers" default="true"/>
+    <arg name="raw_cylinder_markers" default="true"/>
+    <arg name="raw_ring_markers" default="true"/>
 
-    <arg name="wait_for_movement_controller" value="false"/>
+    <arg name="wait_for_movement_controller" default="true"/>
 
     <!-- Include the gazebo simulator -->
     <include file="$(find task3)/launch/rins_world.launch">
@@ -43,6 +43,8 @@
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
 
+    <include file="$(find face_classification)/launch/face_classification.launch" />
+
     <!-- Cylinders -->
     <include file="$(find love_maker_2000)/launch/cylinder_detector.launch">
         <arg name="wait_for_movement_controller" value="$(arg wait_for_movement_controller)"/>
@@ -68,4 +70,5 @@
     <!-- Run the color classification service -->
     <include file="$(find color_classification)/launch/color_classifier.launch"/>
 
+    <!-- <include file="$(find love_maker_2000)/launch/brain.launch"/> -->
 </launch>

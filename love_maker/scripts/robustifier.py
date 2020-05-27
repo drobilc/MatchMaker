@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Vector3, Point
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from object_detection_msgs.msg import ObjectDetection
+from face_classification.srv import FaceClassification
 
 import utils
 
@@ -30,6 +31,21 @@ class Detection(object):
         self.color_classifications = []
         if detection.classified_color:
             self.color_classifications.append(detection.classified_color)
+        
+        # If object is a face, try to recognize it
+        if detection.type == 'face':
+            face_label = self.get_face_label(detection.image)
+            detection.classified_color = face_label
+    
+    def get_face_label(self, image_message):
+        rospy.wait_for_service('face_classification')
+        try:
+            recognize_face = rospy.ServiceProxy('face_classification', FaceClassification)
+            label = recognize_face(image_message)
+            return label
+        except rospy.ServiceException as e:
+            rospy.loginfo("Face classification service call failed: {}".format(e))
+        return None
     
     def get_object_pose(self):
         """Get object PoseStamped with detection header and robustified pose"""

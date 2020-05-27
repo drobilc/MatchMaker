@@ -100,6 +100,9 @@ class Brain(object):
         rospy.loginfo('New object detected: {}'.format(object_detection.type))        
         self.object_detections.append(object_detection)
 
+        if object_detection.type == 'face':
+            rospy.loginfo('Face has label {}'.format(object_detection.classified_color))
+
         self.wandering_task.cancel()
 
         # If new object has been detected, approach it. If its type is ring,
