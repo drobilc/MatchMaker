@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	object_detection_msgs
 	color_classification
+	face_classification
 )
 
 find_package( OpenCV REQUIRED )
