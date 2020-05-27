@@ -26,6 +26,8 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_geometry_msgs import PointStamped
 
+import pyzbar.pyzbar as pyzbar
+
 class FaceFinder(object):
 
     def __init__(self):
@@ -117,19 +119,42 @@ class FaceFinder(object):
 
         if len(face_rectangles) <= 0:
             return
+        
+        barcodes = self.detect_qr_codes(rgb_image)
+
+        def get_closest_barcode(barcodes, face):
+            if barcodes is None:
+                return None, -1
+
+            closest_barcode = None
+            minimum_distance = 9999999
+            face_center = face.center_point()
+            face_center = (face_center[0] * self.downscale_factor, face_center[1] * self.downscale_factor)
+            for barcode in barcodes:
+                barcode_center = (barcode.rect.left + barcode.rect.width / 2.0, barcode.rect.top + barcode.rect.height / 2.0)
+                distance = (barcode_center[0] - face_center[0])**2 + (barcode_center[1] - face_center[1])**2
+                if distance < minimum_distance:
+                    closest_barcode = barcode
+                    minimum_distance = distance
+            return closest_barcode, math.sqrt(minimum_distance)
 
         # Iterate over faces and publish all of them to the mapper
         for face in face_rectangles:
+            closest_barcode, distance = get_closest_barcode(barcodes, face)
+
             face_position = self.to_world_position(face, depth_image, camera_model, timestamp)
             if face_position is not None:
                 approaching_point = self.compute_approaching_point(face_position)
                 if approaching_point is not None:
-                    detection = self.construct_detection_message(face_position, approaching_point, face, rgb_image, timestamp)
+                    detection = self.construct_detection_message(face_position, approaching_point, face, rgb_image, closest_barcode, timestamp)
                     self.detections_publisher.publish(detection)
                 else:
                     rospy.logwarn('Face detected, but the face approaching point could not be determined')
             else:
                 rospy.logwarn('Face detected, but the face position could not be determined')
+    
+    def detect_qr_codes(self, rgb_image):
+        return pyzbar.decode(rgb_image)
     
     def to_world_position(self, face, depth_image, camera_model, timestamp, average=1):
         """Compute the 3d map coordinates of detected face"""
@@ -205,7 +230,7 @@ class FaceFinder(object):
         # Now that we have a wall vector and face position, we can calculate the
         # approaching point
         face_orientation = orientation / numpy.linalg.norm(orientation)
-        approaching_point = numpy.asarray([self.map_origin.x, self.map_origin.y]) + (face_pixel * self.map_resolution) + face_orientation * 0.5
+        approaching_point = numpy.asarray([self.map_origin.x, self.map_origin.y]) + (face_pixel * self.map_resolution) + face_orientation * 0.6
 
         orientation = -orientation
         orientation = numpy.arctan2(orientation[1], orientation[0])
@@ -233,7 +258,7 @@ class FaceFinder(object):
 
         return face_image_message
 
-    def construct_detection_message(self, face_pose, approaching_point_position, face, rgb_image, timestamp):
+    def construct_detection_message(self, face_pose, approaching_point_position, face, rgb_image, barcode, timestamp):
         """Constructs ObjectDetection message for detected face data"""
         detection = ObjectDetection()
         detection.header.frame_id = 'map'
@@ -242,6 +267,8 @@ class FaceFinder(object):
         detection.approaching_point_pose = approaching_point_position.pose
         detection.type = 'face'
         detection.image = self.extract_face_image(face, rgb_image)
+        if barcode is not None:
+            detection.additional_information = barcode.data
         return detection
 
 if __name__ == '__main__':
