@@ -33,10 +33,12 @@ class Detection(object):
         if detection.classified_color:
             self.color_classifications.append(detection.classified_color)
         
+        # Create object as a dummy object when it is temporary and only used
+        # to make certain computations/tasks easier. In this don't execute the code below.
         if dummy:
             return
 
-        # If object is a face, try to recognize it
+        # If object is a face, try to recognize it, computationaly expensive
         if detection.type == 'face':
             face_label = self.get_face_label(detection.image)
             self.detection.face_label = face_label
