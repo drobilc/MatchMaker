@@ -34,7 +34,7 @@ class Detection(object):
             self.color_classifications.append(detection.classified_color)
         
         # Create object as a dummy object when it is temporary and only used
-        # to make certain computations/tasks easier. In this don't execute the code below.
+        # to make certain computations/tasks easier. In this case don't execute the code below.
         if dummy:
             return
 
