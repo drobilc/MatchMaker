@@ -38,9 +38,9 @@ class FaceClassifier(object):
         self.train_x = self.scaler.transform(self.train_x)
         
         # Create a classifier and train it
-        self.classifier = KNeighborsClassifier(n_neighbors=5, weights='distance')
+        # self.classifier = KNeighborsClassifier(n_neighbors=5, weights='distance')
         # self.classifier = GaussianNB()
-        # self.classifier = SVC(kernel="linear", C=0.1)
+        self.classifier = SVC(kernel="linear", C=0.05)
         self.classifier.fit(self.train_x, self.train_y)
 
         self.bridge = CvBridge()
