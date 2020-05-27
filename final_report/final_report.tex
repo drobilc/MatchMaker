@@ -22,9 +22,8 @@
 	\section{Introduction}
 	% kaj je bil task
 	% shema stanj robota
-	% shema arhitekture
 	
-	\section{Methods}
+	\section{Methods} \label{methods}
 	In this section, the algorithms and methods we have used in our system are presented.
 
 	% Dodaj nek dictionary pojmov
@@ -37,8 +36,6 @@
 	% to se mogoče še najlepše razloži kr s slikico
 	% world coordinates
 	% map coordinates
-
-
 	
 	\subsection{Camera pixel to world position} \label{pixel_to_world}
 	Object detectors must be able to compute the positions of the detected objects in the world. To do that, \texttt{rgb} camera and depth images are used. Because the robot is moving, and the environment is changing very fast, we must make sure that the received colour and depth image are synchronized with one another. Even a small delay between images can cause computed world positions to be inaccurate. \\ 
@@ -51,19 +48,20 @@
 		\caption{Inacurate detection of the object's position due to lack of time synchronization among depth and colour image}
 		\label{fig:non_synchronized_raw_detection}
 	\end{figure}
-
-	% Am zakaj mamo to slikico tuki, če nikjer ne omenimo tega pinhole camera modela? Al omenimo, al damo drug title slikici.
+	
+	Object detections are performed on images. Object detectors output pixels on \texttt{rgb} image (or in case of ring detector on depth image) where the object is detected. Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. \\
+	
 	\begin{figure}[h]
 		\centering
 		\caption{Pinhole camera model}
 		\label{fig:pinhole_camera_model}
 	\end{figure}
 	
-	When object is detected on \texttt{rgb} colour image, the pixel position on image plane is known. 
-	% Kaj je mišljeno tuki s "pixel position"? Da je znana pozicija objekta na rgb sliki (do pixla natančno)?
-	Using camera calibration matrix, we can obtain information about focal length and image format. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. \\
+	% Uporabimo kaksen drug izraz kot marked
+	% Damo neko podobno sliko kot na naslednji povezavi
+	% https://alicevision.readthedocs.io/en/latest/_images/pinholeCamera.png
 	
-	With this information the robot can "shoot" the ray from the centre of the camera coordinate system to the pixel on image plane, where the object was detected. Using depth image information, we can obtain the distance from the centre of the camera to the detected object in space. Using the computed ray and the distance to the object, we can compute object's position in a three-dimensional space in camera frame. \\ 
+	Assuming that the camera is using pinhole camera model (and the camera calibration matrix is known), a ray can be "cast" from the centre of the camera coordinate system to the pixel on image plane, where the object was detected. This can be seen in the figure \ref{fig:pinhole_camera_model}. Using depth image information, we can obtain the distance from the centre of the camera to the detected object in space. Using the computed ray and the distance to the object, we can compute object's position in a three-dimensional space in camera frame. \\
 	% razloži, kaj je tu camera frame
 	% js bi tu dodala mogoče slikico, da si bo lažje predstavljat
 	
@@ -78,16 +76,19 @@
 	
 	\subsubsection{Face detection} \label{face_detection_algorithm}
 	
-	Face detection was done using Viola-Jones face detection algorithm. We chose this algorithm because it can be run in real-time and it has a high detection rate. \\
+	Face detection was done using Haar cascade face detection algorithm. We chose this algorithm because it can be run in real-time and it has a high detection rate. \\
 	
-	% Add more information about the Viola-Jones algorithm
-	%   * explain haar cascade
-	%   * explain why it works well
-	%   * explain that it does not work well with images that are under different viewing angle and explaing that space exploration algorithm is used to compute points where each point of the map can be seen.
+	\begin{figure}[h]
+		\centering
+		\caption{A few examples of haar features}
+		\label{fig:haar_features}
+	\end{figure}
 	
-	% Add example images of Haar features
+	The face images are first cropped to the same size and aligned so that the eyes approximately match. Then, a set of Haar features is generated. Each feature is defined at certain position in the face rectangle and consists of black and white regions (see figure \ref{fig:haar_features}). The value of the feature is computed as as difference between the sum of pixel intensities in the dark regions and the sum of pixel intensities in the light regions. \\
 	
-	% The Viola-Jones algorithm is performed with sliding window, explain that that takes time, so the image must be resized to get 30fps performance. And what was the size and resolution that we shrinked the images to.
+	Then, for each feature, a simple and fast binary classifier is trained on the training data that can recognize if it is looking at a face or not. Not all features prove to be very good at this task, so the features are ranked by their classification accuracy. With a boosting machine learning algorithm, many weak classifiers (as described above) are used to improve face detection accuracy. A cascade of weak detectors is created such that we start with the most accurate classifier and continue with less accurate ones. This gives the haar cascade algorithm its real-time ability. For some regions, the first few classifiers detect that there is definitely not a face and the detection can stop. This way, the most processing power is given to the areas that most likely contain a face. \\
+	
+	The detection is then done with a sliding window method. This simply means that we are evaluating every possible rectangle area in the image. If we want to detect faces of different scales, the image must be resized and the entire algorithm is repeated. So the cascade is crucial for speed here. \\
 	
 	\subsubsection{Computing the orientation of the faces} \label{face_orientation_computation}
 	After the face has been detected in an image, it's position in the world coordinate system is computed. The approaching point is then calculated using static map information. \texttt{Approaching point} is a point close to the face and directly in front it that the robot must visit to approach the face. \\
@@ -205,9 +206,15 @@
 	\end{figure}
 		
 	\subsection{Cylinder detection}
+	Cylinder detection runs on a point cloud data that is computed from depth information. \\
+	
 	\subsubsection{Removal of planes}
 	\subsubsection{Cylinder detection}
+	
 	\subsubsection{Approaching point computation}
+	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on line between robot and the cylinder. \\
+	
+	A point that lies 0.5 metres from the centroid of the cylinder is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is any wall too close to the point. \\
 	
 	\subsection{Robustification} \label{robustification}
 	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might comput the distance inaccurately, or the robot may not have been localized. Detectors might return a false positives and so on. \\
@@ -232,7 +239,6 @@
 	% delaunayeva triangulacija
 	% hierarhical clustering
 	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
-	\pagebreak
 	
 	\subsection{Fine movement}
 	Fine movement is a special way in which our robot can move. It is used when the normal movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
@@ -242,8 +248,7 @@
 	
 	The most common reason for failure is that the goal is too close to any wall in our world. The robot builds a costmap of its environment, where the closer the position is to the wall, the highest cost it has. This way a robot can avoid obstacles and plan the path from point A to point B. The robot builds a costmap in a way that it makes sure not to bump into anything, which means it also takes into account all possible errors in data from its detectors. This means that some of the points that the robot can reach in reality unfortunately fall into the high-cost area and so the normal movement cannot get us there because the risk of bumping into something is too high. \\
 
-	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the package is unable to reach the goal. To do that, odometry data must be used combined with \texttt{Twist} messages to move the robot manually. \\
-	% zamenjaj "package" s čim drugim
+	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the default movement component is unable to reach the goal. To do that, odometry data must be used combined with \texttt{Twist} messages to move the robot manually. \\
 	
 	Because the robot must be able to visit the ring from specific direction (ring orientation), we used a modified version of \texttt{A*} algorithm, that not only finds the shortest path between two points, but also uses the starting and ending robot orientation. \\
 	
@@ -294,8 +299,15 @@
 	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
 	
 	\section{Implementation and integration}
-
-	% Image of our final arhitecture
+	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. The we tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system philosophy, but because three different people needed to work on the same project at the same time. \\
+	
+	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the system had to be changed in order to solve them. \\ 
+	
+	\begin{figure}[h]
+		\centering
+		\caption{Final architecture}
+		\label{fig:final_architecture}
+	\end{figure}
 	
 	\subsection{Object detectors}
 	There are three different nodes responsible for object detections. Face and ring detectors are using \texttt{rgb} and depth images and the cylinder detector is using point cloud and \texttt{rgb} image to detect object in our world. \\
@@ -323,11 +335,19 @@
 	After face is localized, \texttt{Approaching point} is computed. \texttt{Approaching point} is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_orientation_computation}. The \texttt{Approaching point} is positioned 0.5 metres from the face position in the direction of the face orientation. \\
 
 	\subsubsection{Ring detector node}
+	Ring detector is a node that is responsible for ring detection and localization. It works similarly to the face detector node. First, it synchronizes depth and \texttt{rgb} images. Then it uses the ring detection algorithm as explained in section \ref{ring_detection}. Ring localization is done using the using the algorithm explained in section \ref{pixel_to_world}. \\
+	
+	Ring orientation is determined using similar algorithm as explained in section \ref{face_orientation_computation}, but instead of finding the normal of the wall, its direction is chosen as ring orientation. \\
+	
 	\subsubsection{Cylinder detector node}
 
 	\subsection{Robustifier}
+	For each object detector, a new \texttt{Robustifier} node is created. So each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds \texttt{threshold} value, the detection is considered true positive and is sent to the \texttt{Brain} node. \\
 	
 	\subsection{Brain}
+	\texttt{Brain} is a node that is responsible for solving the main part of the task. It subscribes to robustified object detections and uses them to solve the task. \\
+	
+	% Manjka, ker se ne vemo kako bo delalo
 	
 	\subsection{Movement controller}
 	
