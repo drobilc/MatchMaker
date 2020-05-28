@@ -6,4 +6,5 @@ Before using this package install following modules:
 pip install cmake
 pip install pandas
 pip install face_recognition
+pip install pyzbar
 ```
