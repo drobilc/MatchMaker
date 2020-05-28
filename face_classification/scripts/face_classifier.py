@@ -80,7 +80,7 @@ class FaceClassifier(object):
     def handle_face_classification_request(self, request):
         #self.image_publisher.publish(request.face_image)
         label = self.predict(request.face_image)
-        return label
+        return FaceClassificationResponse(label)
 
 if __name__ == '__main__':
     face_classifier = FaceClassifier()
