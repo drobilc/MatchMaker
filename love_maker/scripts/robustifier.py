@@ -132,6 +132,9 @@ class Detection(object):
 
         self.detection.face_label = most_frequent_label
     
+    def face_recognition_necessary(self):
+        return self.detection.type == 'face' and sum(self.labels.values()) <= 3
+    
     def update_barcode_data(self, other_detection):
         # If barcode data has been updated, the detection must be sent to the brain again
         if len(self.detection.barcode_data) <= 0 and len(other_detection.barcode_data) > 0:
@@ -264,9 +267,13 @@ class Robustifier(object):
         self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
         self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
 
+        # Face classification service that is used to recognize face
+        rospy.wait_for_service('face_classification')
+        self.face_recognition = rospy.ServiceProxy('face_classification', FaceClassification)
+
         # Publisher for publishing raw object detections
-        self.markers_publisher = rospy.Publisher(self.marker_topic, MarkerArray, queue_size=1000)
         self.markers = MarkerArray()
+        self.markers_publisher = rospy.Publisher(self.marker_topic, MarkerArray, queue_size=1000)
 
         # TODO: Instead of using a list use a quadtree or a grid
         # A list of Detection objects used for finding the closest pose
@@ -310,6 +317,17 @@ class Robustifier(object):
                 detection.update_timestamp(new_detection.header.stamp)
                 return detection
     
+    def recognize_face(self, detection):
+        if detection.type != 'face':
+            return None
+        
+        try:
+            label = self.face_recognition(detection.image)
+            return label
+        except rospy.ServiceException as e:
+            rospy.loginfo("Face classification service call failed: {}".format(e))
+            return None
+    
     def on_object_detection(self, detection):
         # Here we assume that detection.object_pose and
         # detection.approaching_point_pose are in map coordinate frame.
@@ -326,6 +344,11 @@ class Robustifier(object):
 
         if saved_pose is not None:
             saved_pose.number_of_detections += 1
+
+            if saved_pose.face_recognition_necessary():
+                recognized_face = self.recognize_face(detection)
+                if recognized_face is not None:
+                    detection.face_label = recognized_face
 
             # If object was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
