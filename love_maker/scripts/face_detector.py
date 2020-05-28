@@ -268,7 +268,7 @@ class FaceFinder(object):
         detection.type = 'face'
         detection.image = self.extract_face_image(face, rgb_image)
         if barcode is not None:
-            detection.additional_information = barcode.data
+            detection.barcode_data = barcode.data
         return detection
 
 if __name__ == '__main__':

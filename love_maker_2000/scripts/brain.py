@@ -78,10 +78,10 @@ class Brain(object):
     
     def on_successful_object_approach(self, detection):
         """Callback function that is called when the object was successfully approached"""
-        self.greeter.say('Hello {} {}!'.format(detection.classified_color, detection.type))
+        self.greeter.say('Hello {} {}!'.format(detection.color, detection.type))
         if detection.type == 'face':
-            if detection.additional_information is not None and len(detection.additional_information) > 0:
-                face_data = utils.get_request(detection.additional_information)
+            if detection.barcode_data is not None and len(detection.barcode_data) > 0:
+                face_data = utils.get_request(detection.barcode_data)
                 rospy.loginfo("Data received: {}".format(face_data))                
 
         self.object_detections.remove(detection)
@@ -93,11 +93,11 @@ class Brain(object):
         # Create a new movement task and add it to the end of the movement
         # controller queue. Basically visit this object at latter time.
         fine = detection.type == 'ring'
-        task = self.movement_controller.approach(detection, callback=object_greet, fine=fine)
+        task = self.movement_controller.approach(detection, callback=self.on_object_approach, fine=fine)
         self.movement_controller.add_to_queue(task)
 
     def on_object_detection(self, object_detection):
-        rospy.loginfo('New object detected: {}'.format(object_detection.type))
+        rospy.loginfo('New object detected: {}, id = {}'.format(object_detection.type, object_detection.id))
         self.object_detections.append(object_detection)
 
         if object_detection.type == 'face':

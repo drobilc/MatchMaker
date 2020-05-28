@@ -355,8 +355,7 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
       cylinder_detection_message.object_pose.position.y = point_map.point.y;
       cylinder_detection_message.object_pose.position.z = point_map.point.z;
       // Set color classification to message
-      cylinder_detection_message.color = color;
-      cylinder_detection_message.classified_color = classifiedColor.data;
+      cylinder_detection_message.color = classifiedColor.data;
       // Set type of object message
       cylinder_detection_message.type = "cylinder";
       pub_cylinder.publish(cylinder_detection_message);

@@ -172,7 +172,7 @@ class RingDetector(object):
             if ring_position is not None:
                 _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
                 if approaching_point is not None:
-                    detection = self.construct_detection_message(ring_position, approaching_point, ring_color, classified_color, timestamp)
+                    detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
                     self.detections_publisher.publish(detection)
                 else:
                     rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
@@ -207,15 +207,14 @@ class RingDetector(object):
             rospy.logwarn(e)
             return None
 
-    def construct_detection_message(self, ring_pose, approaching_point, ring_color, classified_color, timestamp):
+    def construct_detection_message(self, ring_pose, approaching_point, classified_color, timestamp):
         """Construct ObjectDetection from ring detection"""
         detection = ObjectDetection()
         detection.header.frame_id = 'map'
         detection.header.stamp = timestamp
         detection.object_pose = ring_pose.pose
         detection.approaching_point_pose = approaching_point.pose
-        detection.color = ring_color
-        detection.classified_color = classified_color
+        detection.color = classified_color
         detection.type = 'ring'
         return detection
 

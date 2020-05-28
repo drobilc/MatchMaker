@@ -332,4 +332,4 @@ class FineApproachingTask(MovementTask):
         super(ApproachingTask, self).cancel()
     
     def __str__(self):
-        return '<FineApproachingTask, color={}, type={}>'.format(self.object_detection.classified_color, self.object_detection.type)
+        return '<FineApproachingTask, color={}, type={}>'.format(self.object_detection.color, self.object_detection.type)
