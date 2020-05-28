@@ -322,7 +322,7 @@ class Robustifier(object):
         
         try:
             label = self.face_recognition(detection.image)
-            return label
+            return label.face_label
         except rospy.ServiceException as e:
             rospy.loginfo("Face classification service call failed: {}".format(e))
             return None
