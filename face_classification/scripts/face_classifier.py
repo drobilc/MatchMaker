@@ -58,14 +58,14 @@ class FaceClassifier(object):
         # Calculate encodings of all faces in the image
         encodings = face_recognition.face_encodings(face_image)
 
+        if len(encodings) == 0:
+            return None
+
         # Normalize the freaking encoding, don't forget that!!!
         encodings = self.scaler.transform(encodings)
 
-        # Return only the first one
-        if len(encodings) > 0:
-            return encodings[0]
-
-        return None
+        # Return only the first encoding (there's only one face)
+        return encodings[0]
     
     def predict(self, face_image_message):
         encoding = self.calculate_encoding(face_image_message)

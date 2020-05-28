@@ -181,8 +181,8 @@ class Detection(object):
         
         # Select most frequent face label, add it to detection
         label = self.get_most_frequent_label()
-        self.detection.face_label = label
-        rospy.loginfo("Sending new face detection to brain with label: {}".format(label))
+        if label is not None:
+            self.detection.face_label = label
         
         return self.detection
 

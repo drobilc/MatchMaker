@@ -43,6 +43,8 @@
         <arg name="raw_face_markers" value="$(arg raw_face_markers)"/>
     </include>
 
+    <include file="$(find face_classification)/launch/face_classification.launch" />
+
     <!-- Cylinders -->
     <include file="$(find love_maker_2000)/launch/cylinder_detector.launch">
         <arg name="wait_for_movement_controller" value="$(arg wait_for_movement_controller)"/>
