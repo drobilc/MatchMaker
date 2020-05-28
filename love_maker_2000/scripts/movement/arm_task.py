@@ -10,8 +10,9 @@ from std_msgs.msg import String
 
 class ArmTask(MovementTask):
 
-    EXTENDED_POSITIONS = [0,0.3,1,0]
-    RETRACTED_POSITIONS = [0,-1.3,2.2,1]
+    EXTENDED_POSITIONS = [0, 0.3, 1, 0]
+    RETRACTED_POSITIONS = [0, -1.3, 2.2, 1]
+    GRAB_RING_POSITIONS = [0, -1.0, 1.5, 1]
 
     def __init__(self, movement_controller, callback, arm_joint_positions, duration=2.0):
         super(ArmTask, self).__init__(movement_controller, callback)
@@ -69,7 +70,7 @@ class TossACoinTask(ArmTask):
 class PickUpRingTask(ArmTask):
 
     def __init__(self, movement_controller, callback, duration=2.0):
-        super(PickUpRingTask, self).__init__(movement_controller, callback, [[0,0,0,0], ArmTask.RETRACTED_POSITIONS], duration=duration)
+        super(PickUpRingTask, self).__init__(movement_controller, callback, [ArmTask.GRAB_RING_POSITIONS, ArmTask.RETRACTED_POSITIONS], duration=duration)
     
     def __str__(self):
         return '<PickUpRingTask>'
