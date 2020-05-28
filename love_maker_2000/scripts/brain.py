@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import rospy
+from transitions import Machine, State, Transition
 from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
@@ -9,7 +10,7 @@ from geometry_msgs.msg import PoseStamped
 
 from movement.controller import MovementController
 from greeter import Greeter
-from utils import FACE_DETAILS
+from utils import FACE_DETAILS, FaceDetails
 
 from zbar_detector.msg import Marker
 
@@ -54,7 +55,68 @@ class Brain(object):
         self.movement_controller.add_to_queue(self.wandering_task)
 
         self.object_detections = []
+        self.gargamel = None
+        self.women = []
+        self.rings = []
+        self.cylinders = []
+        self.preferences = None
+
+        self.setup_state_machine()
     
+    def setup_state_machine(self):
+        finding_gargamel = State('finding_gargamel')
+        approaching_gargamel = State('approaching_gargamel')
+        finding_woman = State('finding_woman')
+        approaching_woman = State('approaching_woman')
+        states = [finding_gargamel, approaching_gargamel, finding_woman, approaching_woman]
+
+        self.machine = Machine(model=self, states=states, initial=finding_gargamel, ignore_invalid_triggers=True)
+
+        self.machine.add_transition('start_approaching_gargamel', [finding_gargamel, approaching_woman], approaching_gargamel, before=self.on_start_approaching_gargamel)
+        self.machine.add_transition('start_finding_woman', approaching_gargamel, finding_woman, before=self.on_start_finding_woman)
+        self.machine.add_transition('start_approaching_woman', finding_woman, approaching_woman, before=self.on_start_approaching_woman)
+
+    def on_start_approaching_gargamel(self):
+        # Add new task to approach gargamel
+        self.wandering_task.cancel()
+        task = self.movement_controller.approach(self.gargamel, callback=self.on_gargamel_approached)
+        self.movement_controller.add_to_queue(task)
+    
+    def on_gargamel_approached(self, detection, goal_status, goal_result):
+        if self.preferences is None:
+            self.preferences = self.get_gargamels_preferences()
+            self.start_finding_woman()
+    
+    def on_start_finding_woman(self):
+        for woman in self.women:
+            # If this woman has characteristics that gargamel likes, approach her
+            if self.in_accordance_with_preferences(woman):
+                self.start_approaching_woman(woman)
+                return
+        
+        # If woman that gargamel would like has been detected yet, find her
+        self.movement_controller.add_to_queue(self.wandering_task)
+    
+    def on_start_approaching_woman(self, woman):
+        self.wandering_task.cancel()
+        task = self.movement_controller.approach(woman, callback=self.on_woman_approached)
+        self.movement_controller.add_to_queue(task)
+
+    # PLACEHOLDER
+    def on_woman_approached(self, detection, goal_status, goal_result):
+        rospy.loginfo("Woman has been successfuly approached")
+
+    # PLACEHOLDER
+    def in_accordance_with_preferences(self, woman):
+        if self.preferences is None:
+            return False
+        else:
+            return True
+
+    # PLACEHOLDER   
+    def get_gargamels_preferences(self):
+        return FaceDetails('short', 'dark')
+
     def set_detectors_enabled(self, should_be_enabled=True):
         """Enables or disables all object detectors"""
         if not hasattr(self, 'face_detector_toggle'):
@@ -98,18 +160,30 @@ class Brain(object):
 
     def on_object_detection(self, object_detection):
         rospy.loginfo('New object detected: {}, id = {}'.format(object_detection.type, object_detection.id))
-        self.object_detections.append(object_detection)
 
         if object_detection.type == 'face':
-            rospy.loginfo('Brain has received {}'.format(object_detection.face_label))
 
-        self.wandering_task.cancel()
+            rospy.loginfo('Found new face with label: {}'.format(object_detection.face_label))
+            # We have found Gargamel, let's approach him now, here face19 for testing because it's the 
+            # first face we find
+            if object_detection.face_label == 'face19':
+                self.gargamel = object_detection
+                self.start_approaching_gargamel()
+            
+            # Otherwise it's a woman
+            # Add this woman to the list and check if we are she is in accordance with gargamel's preferences
+            else:
+                self.women.append(object_detection)
+
+                if self.in_accordance_with_preferences(object_detection):
+                    self.start_approaching_woman(object_detection)
+
 
         # If new object has been detected, approach it. If its type is ring,
         # approach it using the fine approaching task
-        fine = object_detection.type == 'ring'
-        task = self.movement_controller.approach(object_detection, callback=self.on_object_approach, fine=fine)
-        self.movement_controller.add_to_queue(task)
+        # fine = object_detection.type == 'ring'
+        # task = self.movement_controller.approach(object_detection, callback=self.on_object_approach, fine=fine)
+        # self.movement_controller.add_to_queue(task)
 
 if __name__ == '__main__':
     controller = Brain([])
