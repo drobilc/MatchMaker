@@ -141,4 +141,4 @@ class ApproachingTask(MovementTask):
         super(ApproachingTask, self).cancel()
     
     def __str__(self):
-        return '<ApproachingTask, color={}, type={}>'.format(self.object_detection.classified_color, self.object_detection.type)
+        return '<ApproachingTask, color={}, type={}>'.format(self.object_detection.color, self.object_detection.type)

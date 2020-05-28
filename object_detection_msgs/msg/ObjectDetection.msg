@@ -1,9 +1,9 @@
 std_msgs/Header header
+string id
 sensor_msgs/Image image
 geometry_msgs/Pose object_pose
 geometry_msgs/Pose approaching_point_pose
-std_msgs/ColorRGBA color
-string classified_color
+string color
 string face_label
 string type
-string additional_information
+string barcode_data

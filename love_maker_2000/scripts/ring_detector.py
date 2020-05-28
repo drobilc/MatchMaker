@@ -30,6 +30,10 @@ class RingDetector(object):
 
         self.bridge = CvBridge()
 
+        # Subscriber to enable or disable ring detector
+        self.enabled = False
+        self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
+
         # Create a new time synchronizer to synchronize depth and rgb image callbacks.
         # Also subscribe to camera info so we can get camera calibration matrix.
         self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
@@ -41,10 +45,6 @@ class RingDetector(object):
         # Color classification service
         rospy.wait_for_service('color_classifier')
         self.classify_color = rospy.ServiceProxy('color_classifier', ColorClassification)
-
-        # Subscriber to enable or disable face detector
-        self.enabled = False
-        self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Publisher for ring ObjectDetections
         self.detections_publisher = rospy.Publisher('/ring_detections_raw', ObjectDetection, queue_size=10)
@@ -73,7 +73,7 @@ class RingDetector(object):
     
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
-        if not self.enabled:
+        if not hasattr(self, "enabled") or not self.enabled:
             return
         
         # Because of the TimeSynchronizer, depth image, rgb image and camera
@@ -172,7 +172,7 @@ class RingDetector(object):
             if ring_position is not None:
                 _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
                 if approaching_point is not None:
-                    detection = self.construct_detection_message(ring_position, approaching_point, ring_color, classified_color, timestamp)
+                    detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
                     self.detections_publisher.publish(detection)
                 else:
                     rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
@@ -207,15 +207,14 @@ class RingDetector(object):
             rospy.logwarn(e)
             return None
 
-    def construct_detection_message(self, ring_pose, approaching_point, ring_color, classified_color, timestamp):
+    def construct_detection_message(self, ring_pose, approaching_point, classified_color, timestamp):
         """Construct ObjectDetection from ring detection"""
         detection = ObjectDetection()
         detection.header.frame_id = 'map'
         detection.header.stamp = timestamp
         detection.object_pose = ring_pose.pose
         detection.approaching_point_pose = approaching_point.pose
-        detection.color = ring_color
-        detection.classified_color = classified_color
+        detection.color = classified_color
         detection.type = 'ring'
         return detection
 
