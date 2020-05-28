@@ -10,6 +10,7 @@ from approaching_task import ApproachingTask
 from localization_task import LocalizationTask
 from wandering_task import WanderingTask
 from fine_approaching_task import FineApproachingTask
+from arm_task import TossACoinTask, PickUpRingTask
 
 class MovementController(object):
     
@@ -108,3 +109,11 @@ class MovementController(object):
     def wander(self, callback=None):
         """Create a new wandering task to explore the space"""
         return WanderingTask(self, callback, self.action_client)
+    
+    def toss_a_coin(self, callback=None, duration=2.0):
+        """Create a new coin tossing task that moves the arm"""
+        return TossACoinTask(self, callback, duration=duration)
+    
+    def pick_up_ring(self, callback=None, duration=2.0):
+        """Create a new ring picking task that moves the arm"""
+        return PickUpRingTask(self, callback, duration=duration)
