@@ -242,7 +242,7 @@
 	% not ok, zdj se bere kot da nardimo povprečje (detekcija + app.point)/2, kar seveda ni res.
 	% Zadnji stavek je treba lepše povezat noter, possibly z vejico, da se priključi prejšnji povedi
 	
-	\subsection{Smart exploration of space}
+	\subsection{Smart exploration of space} \label{smart_exploration}
 	% dobi mapo
 	% določi, kje je zid
 	% morph
@@ -250,7 +250,7 @@
 	% hierarhical clustering
 	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
 	
-	\subsection{Fine movement}
+	\subsection{Fine movement} \label{fine_movement}
 	Fine movement is a special way in which our robot can move. It is used when the normal movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
 	% definiraj normal movement
 
@@ -361,6 +361,19 @@
 	% Manjka, ker se ne vemo kako bo delalo
 	
 	\subsection{Movement controller}
+	\texttt{Movement controller} is an object, that allows our robot to interact with its environment. It allows it to move and explore the space and use its robotic arm to grab items. It works using a series of tasks, which the robot executes one by one. When the task is finished, a callback function is used to notify the robot that the action is done. \\
+
+	\subsubsection{Movement tasks}
+	Each task represents one action that the robot can do.
+
+	\end{\begin{enumerate}
+		\item \texttt{Localization task} is a task that is run at the beginning. The robot knows its approximate location in space, but before it can move around the environment, it must pinpoint its exact location. This task rotates the robot around its vertical axis for one full rotation using odometry information. The robot uses depth information to localize itself using adaptive Monte Carlo localization algorithm.
+		\item \texttt{Approaching task} is a task that drives the robout around its environment. There are two options of this task, one is the standard \texttt{move\_base} package to drive around the map and the other uses our fine movement algorithm as explained in section \ref{fine_movement}. Only the rings are approached using the second algorithm, because it is rather slow (for the obvious reason - so that it doesn't hit the wall).
+		\item \texttt{Wandering rask} is a task where the robot is exploring its environment, searching for faces, rings and cylinders. It uses the points generated using the algorithm in section \ref{smart_exploration} and drives the robot around using \texttt{approaching task}. This task can be cancelled at any time so the robot can visit detected objects if needed.
+		\item \texttt{Arm task} is a task where the robot uses its pincher arm that is positioned on top of it. This task is used to throw a coin in a wishing well (moving the robot arm above a cylinder) or pick up a ring that is floating above the ground.
+	\end{enumerate}}
+
+	The \texttt{movement controller} uses an ordered list of tasks. If the \texttt{brain} component chooses, it can cancel current task, reorder its task and insert new task to be executed either after all tasks have finished or right at this moment. \\ 
 	
 	\subsection{Greeter}
 	
