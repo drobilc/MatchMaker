@@ -32,6 +32,8 @@ class Detection(object):
         self.color_classifications = []
         if detection.classified_color:
             self.color_classifications.append(detection.classified_color)
+ 
+        self.face_labels = []
         
         # Create object as a dummy object when it is temporary and only used
         # to make certain computations/tasks easier. In this case don't execute the code below.
@@ -39,12 +41,19 @@ class Detection(object):
             return
 
         # If object is a face, try to recognize it, computationaly expensive
-        if detection.type == 'face':
-            face_label = self.get_face_label(detection.image)
-            self.detection.face_label = face_label
-            rospy.loginfo('Adding new face detection with label {}'.format(self.detection.face_label))
+        self.append_new_face_label(self.detection.image)
     
-    def get_face_label(self, image_message):
+    # Try to recognize the face and append the label to the face_labels list
+    def append_new_face_label(self, image_message):
+        if self.detection.type != 'face':
+            return
+
+        response = self.get_new_face_label(image_message)
+        if response is not None:
+            self.face_labels.append(response.face_label)
+    
+    # Get face label for a new face
+    def get_new_face_label(self, image_message):
         rospy.wait_for_service('face_classification')
         try:
             recognize_face = rospy.ServiceProxy('face_classification', FaceClassification)
@@ -52,7 +61,17 @@ class Detection(object):
             return label
         except rospy.ServiceException as e:
             rospy.loginfo("Face classification service call failed: {}".format(e))
-        return None
+            return None
+    
+    def get_most_frequent_label(self):
+        max_count = 0
+        el = None
+        for i in self.face_labels:
+            count = self.face_labels.count(i)
+            if count >= max_count:
+                max_count = count
+                el = i
+        return el
     
     def get_object_pose(self):
         """Get object PoseStamped with detection header and robustified pose"""
@@ -159,6 +178,11 @@ class Detection(object):
         else:
             most_frequent = max(colors, key=self.color_classifications.count)
             self.detection.classified_color = most_frequent
+        
+        # Select most frequent face label, add it to detection
+        label = self.get_most_frequent_label()
+        self.detection.face_label = label
+        rospy.loginfo("Sending new face detection to brain with label: {}".format(label))
         
         return self.detection
 
@@ -285,6 +309,9 @@ class Robustifier(object):
 
         if saved_pose is not None:
             saved_pose.number_of_detections += 1
+
+            if len(saved_pose.face_labels) <= 3:
+                saved_pose.append_new_face_label(detection.image)
 
             # If object was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
