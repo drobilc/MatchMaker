@@ -254,7 +254,7 @@ class FaceDetails(object):
     def __init__(self, hair_length, hair_color):
         self.hair_length = hair_length
         self.hair_color = hair_color
-    def __str__():
+    def __str__(self):
         return "{}, {}".format(self.hair_length, self.hair_color)
 
 FACE_DETAILS = {
