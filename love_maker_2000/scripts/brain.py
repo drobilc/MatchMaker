@@ -90,22 +90,14 @@ class Brain(object):
         self.machine.add_transition('start_finding_ring', approaching_cylinder, finding_ring, before=self.on_start_finding_ring)
         self.machine.add_transition('start_approaching_ring', finding_ring, approaching_ring, before=self.on_start_approaching_ring)
 
-    # There are two cases where we approach Gargamel
-    # 1. We inquire about his preferences
-    # 2. We inquire if he likes found woman (param need_confirmation is used for that)
-    def on_start_approaching_gargamel(self, need_confirmation=False):
-        # Approach him and inquire about preferences
-        if not need_confirmation:
-            self.wandering_task.cancel()
-            task = self.movement_controller.approach(self.gargamel, callback=self.on_gargamel_approached)
-            self.movement_controller.add_to_queue(task)
-        
-        # Approach him and inquire if he likes the woman
-        else:
-            task = self.movement_controller.approach(self.gargamel, callback=self.on_gargamel_approached)
-            self.movement_controller.add_to_queue(task)
+    def on_start_approaching_gargamel(self):
+        self.wandering_task.cancel()
+        task = self.movement_controller.approach(self.gargamel, callback=self.on_gargamel_approached)
+        self.movement_controller.add_to_queue(task)
     
     # There are two cases where we approach Gargamel
+    # 1. We inquire about his preferences
+    # 2. We inquire if he likes found woman
     def on_gargamel_approached(self, detection, goal_status, goal_result):
         # If preferences are not set, we have come to ask what he likes on women
         if self.preferences is None:
@@ -117,7 +109,6 @@ class Brain(object):
         else:
             likes = self.get_gargamels_affirmation(self.current_woman)
 
-            # If he likes the woman, first need to approach a cylinder and then a ring
             if likes:
                 rospy.loginfo("Gargamel likes this woman and wants YOU to find him a ring.")
                 self.start_finding_cylinder()
@@ -129,11 +120,10 @@ class Brain(object):
                 self.start_finding_woman()
 
     
-    # PLACEHOLDER
+    # TODO: implement actual behavior
     def get_gargamels_affirmation(self, woman):
         import random
-        # return random.uniform(0, 1) < 0.5
-        return True
+        return random.uniform(0, 1) < 0.5
     
     def on_start_finding_woman(self):
         for woman in self.women:
@@ -144,10 +134,11 @@ class Brain(object):
                 return
         
         # If woman that gargamel would like has not been detected yet, find her
-        rospy.loginfo("Adding a wandering task to find a new woman")
+        rospy.loginfo("Looking for a new woman!")
         self.movement_controller.add_to_queue(self.wandering_task)
     
     def on_start_approaching_woman(self, woman):
+        rospy.loginfo("Approaching woman with label: {}".format(woman.face_label))
         self.wandering_task.cancel()
         task = self.movement_controller.approach(woman, callback=self.on_woman_approached)
         self.movement_controller.add_to_queue(task)
@@ -167,6 +158,7 @@ class Brain(object):
 
             if accepts_proposal:
                 rospy.loginfo("They lived happily ever after")
+                # TODO: add final node
             
             else:
                 rospy.loginfo("She said no.. ugh, now I have to find a new one")
@@ -174,37 +166,44 @@ class Brain(object):
                 self.favorite_color = None
                 self.start_finding_woman()
     
-    # PLACEHOLDER
-    def get_womans_favorite_color(self):
+    # TODO: implement actual behavior
+    def get_womans_affirmation(self):
         import random
-        return random.choice(['red', 'green', 'blue', 'yellow', 'white', 'black'])
+        return random.uniform(0, 1) < 0.5
 
-    # PLACEHOLDER
+    # TODO: implement actual behavior
+    def get_womans_favorite_color(self):
+        return 'blue'
+
     def in_accordance_with_preferences(self, woman):
         if self.preferences is None:
             return False
         else:
-            # TODO: this is the part where we ask him
-            return True
+            return True     # For testing purposes
+            # woman_face_details = FACE_DETAILS[woman.face_label]
+            # return woman_face_details == self.preferences
 
-    # PLACEHOLDER   
+    # TODO: implement actual behavior
     def get_gargamels_preferences(self):
+        # TODO: this is the part where we ask him
         return FaceDetails('short', 'dark')
     
     def on_start_finding_cylinder(self):
         for cylinder in self.cylinders:
             if cylinder.color == self.favorite_color:
                 self.start_approaching_cylinder(cylinder)
-                self.current_cylinder = cylinder
                 return
         
+        rospy.loginfo("Searching for {} cylinder.".format(self.favorite_color))
         self.movement_controller.add_to_queue(self.wandering_task)
     
     def on_start_approaching_cylinder(self, cylinder):
+        rospy.loginfo("Approaching {} cylinder".format(cylinder.color))
         self.wandering_task.cancel()
         task = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached)
         self.movement_controller.add_to_queue(task)
     
+    # TODO: throw an imaginary coin into the well or make a wish
     def on_cylinder_approached(self, detection, goal_status, goal_result):
         self.start_finding_ring()
 
@@ -213,16 +212,19 @@ class Brain(object):
             if ring.color == self.favorite_color:
                 self.start_approaching_ring(ring)
                 return
-            
+        
+        rospy.loginfo("Searching for {} ring".format(self.favorite_color))
         self.movement_controller.add_to_queue(self.wandering_task)
 
+    # TODO: implement fine approaching
     def on_start_approaching_ring(self, ring):
+        rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
         task = self.movement_controller.approach(ring, callback=self.on_ring_approached)
         self.movement_controller.add_to_queue(task)
     
+    # TODO: first grab the ring with the robotic arm
     def on_ring_approached(self, detection, goal_status, goal_result):
-        # TODO: pick up the ring or something first
         self.start_approaching_woman(self.current_woman)
 
     def set_detectors_enabled(self, should_be_enabled=True):
@@ -238,33 +240,8 @@ class Brain(object):
         self.face_detector_toggle.publish(message)
         self.ring_detector_toggle.publish(message)
         self.cylinder_detector_toggle.publish(message)
-    
-    def on_object_approach(self, detection, goal_status, goal_result):
-        """Callback function that is called when robot approaches or fails to approach object"""
-        if goal_status == GoalStatus.SUCCEEDED:
-            self.on_successful_object_approach(detection)
-        else:
-            self.on_unsuccessful_object_approach(detection)
-    
-    def on_successful_object_approach(self, detection):
-        """Callback function that is called when the object was successfully approached"""
-        self.greeter.say('Hello {} {}!'.format(detection.color, detection.type))
-        if detection.type == 'face':
-            if detection.barcode_data is not None and len(detection.barcode_data) > 0:
-                face_data = utils.get_request(detection.barcode_data)
-                rospy.loginfo("Data received: {}".format(face_data))
-    
-    def on_unsuccessful_object_approach(self, detection):
-        """Callback function that is called if the robot could not successfully approach the object"""
-        # Create a new movement task and add it to the end of the movement
-        # controller queue. Basically visit this object at latter time.
-        fine = detection.type == 'ring'
-        task = self.movement_controller.approach(detection, callback=self.on_object_approach, fine=fine)
-        self.movement_controller.add_to_queue(task)
 
     def on_object_detection(self, object_detection):
-        rospy.loginfo('New object detected: {}, id = {}'.format(object_detection.type, object_detection.id))
-
         if object_detection.type == 'face':
             rospy.loginfo('Found new face with label: {}'.format(object_detection.face_label))
             self.on_face_detection(object_detection)
@@ -281,6 +258,7 @@ class Brain(object):
         # We have found Gargamel, let's approach him now, here face19 for testing because it's 
         # usually the first face we find
         if object_detection.face_label == 'face19':
+            rospy.loginfo("Gargamel found!")
             self.gargamel = object_detection
             self.start_approaching_gargamel()
             
@@ -294,7 +272,7 @@ class Brain(object):
         elif self.preferences is not None:
             if self.in_accordance_with_preferences(object_detection):
 
-                if self.state != 'approaching_woman':
+                if self.state == 'finding_woman':
                     self.start_approaching_woman(object_detection)
                     self.current_woman = object_detection
 
