@@ -7,6 +7,8 @@ import cv2
 import numpy, math
 import message_filters
 
+import utils
+
 import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_geometry_msgs import PointStamped
@@ -31,7 +33,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = False
+        self.enabled = True
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Create a new time synchronizer to synchronize depth and rgb image callbacks.
@@ -62,8 +64,8 @@ class RingDetector(object):
         self.map_origin = self.occupancy_grid.info.origin.position
         self.map_data = numpy.asarray(self.occupancy_grid.data)
         self.map_data = numpy.reshape(self.map_data, (height, width))
-        self.map_data[self.map_data == 100] = 255
-        self.map_data[self.map_data == -1] = 0
+        self.map_data[self.map_data == 100] = 255  # walls
+        self.map_data[self.map_data == -1] = 0  # free space
         self.map_data = self.map_data.astype('uint8')
     
     def toggle(self, enable):
@@ -148,9 +150,9 @@ class RingDetector(object):
             # Try to filter depth_region to only include circle (basically, get
             # the highest bin in histogram and filter out everything that is not
             # in this bin)
-            histogram, bins = numpy.histogram(depth_region[depth_region != 0], bins=10, range=(0, 255))
+            histogram, bins = numpy.histogram(depth_region[depth_region != 0], bins=24, range=(0, 255))
             best_bin = numpy.argmax(histogram)
-            depth_region[numpy.abs(depth_region - bins[best_bin]) > 25] = 0
+            depth_region[numpy.abs(depth_region - bins[best_bin]) > 255/24] = 0
             
             depth_mask = depth_region > 0
             disparity_region = disparity_region * depth_mask
@@ -230,12 +232,12 @@ class RingDetector(object):
     
     def compute_approaching_point(self, ring_position, timestamp):
         # To compute approaching point we should do the following: First, we
-        # should get the detected face position and robot position in map
-        # coordinates. Then, the face and robot map coordinates should be
-        # converted to map pixels. A small region around the face pixel should
+        # should get the detected ring position and robot position in map
+        # coordinates. Then, the ring and robot map coordinates should be
+        # converted to map pixels. A small region around the ring pixel should
         # be extracted where hough line transform should be performed. After
         # lines have been found, they should be sorted by their scalar products
-        # with the face - robot vector, so that lines that.
+        # with the ring - robot vector, so that lines that.
 
         ring_point = PointStamped()
         ring_point.header.frame_id = ring_position.header.frame_id
@@ -249,40 +251,6 @@ class RingDetector(object):
         robot_point.header.frame_id = "camera_depth_optical_frame"
         robot_point.header.stamp = timestamp
         robot_point = self.tf_buffer.transform(robot_point, "map")
-        
-        def to_map_pixel(position):
-            # Convert position from map coordinates in m to pixel position (u, v) 
-            pixel_x = int((position.point.x - self.map_origin.x) / self.map_resolution)
-            pixel_y = int((position.point.y - self.map_origin.y) / self.map_resolution)
-            return numpy.asarray([pixel_x, pixel_y])
-        
-        def closest_wall_pixel(pixel, max_distance=5):
-            # Use flood fill algorithm with breadth first search to find the
-            # closest wall pixel. Use neighboring pixels as defined below
-            neighborhood = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-
-            # First, extract a small region around the pixel (a square region of
-            # size 2 * max_distance + 1)
-            map_region = self.map_data[pixel[1]-max_distance-1:pixel[1]+max_distance, pixel[0]-max_distance-1:pixel[0]+max_distance]
-            
-            visited = numpy.zeros_like(map_region, dtype=bool)
-            frontier = [(max_distance, max_distance)]
-            while len(frontier) > 0:
-                current_pixel = frontier.pop(0)
-
-                # If current pixel has a non-zero probability, we have found the closest wall point
-                if map_region[current_pixel[1], current_pixel[0]] == 255:
-                    return (current_pixel[0] + pixel[0] - max_distance, current_pixel[1] + pixel[1] - max_distance)
-
-                # Mark pixel as visited
-                visited[current_pixel[1], current_pixel[0]] = True
-                
-                # Add four neighbours to frontier
-                for neighbor in neighborhood:
-                    new_x, new_y = current_pixel[0] + neighbor[0], current_pixel[1] + neighbor[1]
-                    if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x]:
-                        continue
-                    frontier.append((new_x, new_y))
 
         def closest_line(ring_pixel, wall_pixel, max_distance=8):
             map_region = self.map_data[ring_pixel[1]-max_distance-1:ring_pixel[1]+max_distance, ring_pixel[0]-max_distance-1:ring_pixel[0]+max_distance]
@@ -301,17 +269,75 @@ class RingDetector(object):
                     best_line = (start, end)
             return best_line, best_distance
 
+        # Calculate approaching point position
+        # if ring pixel is not in the wall, first find the closest wall
+        temp_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        temp_pixel_1 = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        rospy.logwarn(temp_pixel)
+        rospy.logwarn(self.map_data[temp_pixel_1[1]][temp_pixel_1[0]])
+        if self.map_data[temp_pixel_1[1]][temp_pixel_1[0]] != 255:
+            temp_pixel_2 = utils.closest_wall_pixel(self.map_data, temp_pixel_1, max_distance=10)
+            rospy.logwarn("temp_2")
+            rospy.logwarn(temp_pixel_2)
+            if temp_pixel_2 == None:
+                return ring_position, None
+            else:
+                temp_pixel = temp_pixel_2
+
+        temp_pixel = [temp_pixel[0], temp_pixel[1]]
+        rospy.logwarn(temp_pixel)
+
+        # Find closest free pixel 
+        closest_free_pixel = utils.nearest_free_pixel(temp_pixel, self.map_data)
+        direction = [closest_free_pixel[0] - temp_pixel[0], closest_free_pixel[1] - temp_pixel[1]]
+        # closest_free_pixel_map = utils.pixel_to_map(direction, self.map_origin, self.map_resolution)
+        #closest_free_pixel_map = direction / numpy.linalg.norm(direction)
+
+        rospy.logwarn("closest_free_pixel and ring_pixel")
+        rospy.logwarn(closest_free_pixel)
+        rospy.logwarn(temp_pixel)
+        rospy.logwarn("orientation vector")
+        rospy.logwarn(direction)
+
+        # Get vector direction from ring to closest free pixel - mogoce zamenjaj 0 in 1
+        orientation_parameters = direction #[closest_free_pixel_map[0], closest_free_pixel_map[1], 0]
+
+        # get orientation quaternion from orientation vector
+        orientation = math.atan2(orientation_parameters[1], orientation_parameters[0]) # maybe switch the order
+        orientation = quaternion_from_euler(0, 0, orientation + math.pi) # mogoce brez + pi
+        orientation_quaternion = Quaternion(*orientation)
+
+        # Normalize orientation vector
+        normalized_orientation = orientation_parameters / numpy.linalg.norm(orientation_parameters)
+        rospy.logwarn("normalized_orientation")
+        rospy.logwarn(normalized_orientation)
+        
+        # Move in this direction for 0.2m
+        approaching_point = Pose()
+        approaching_point.position.x = ring_point.point.x + 0.2 * normalized_orientation[0]
+        approaching_point.position.y = ring_point.point.y + 0.2 * normalized_orientation[1]
+        approaching_point.position.z = 0
+
+        # TODO: Orientation of the ring is orientation of the wall normal rotated 90 degrees to the right
+
+        ring_pixel = numpy.asarray(closest_free_pixel)
+       
+        # Calculate approaching point orientation
         # Convert map coordinates to map pixel coordinates
-        ring_pixel = to_map_pixel(ring_point)
-        robot_pixel = to_map_pixel(robot_point)
+        # ring_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
 
         # Find the closest wall pixel and line that passes closest to that wall
         # pixel (preferably line that goes through the wall pixel)
-        closest_wall = closest_wall_pixel(ring_pixel)
+        closest_wall = utils.closest_wall_pixel(self.map_data, ring_pixel)
+        rospy.logwarn("closest wall pixel")
+        rospy.logwarn(closest_wall)
         if closest_wall is None:
+            rospy.logwarn('No wall found near pixel.')
             return ring_position, None
         line, distance = closest_line(ring_pixel, closest_wall)
         if line is None:
+            rospy.logwarn('No line was found around pixel.')
             return ring_position, None
 
         # Use dot product to find direction of the wall. If dot product is < 0,
@@ -322,7 +348,9 @@ class RingDetector(object):
         if numpy.dot(robot_pixel - closest_wall, orientation) < 0:
             orientation = -orientation
         
-        face_orientation = orientation / numpy.linalg.norm(orientation)
+        wall_orientation = orientation / numpy.linalg.norm(orientation)
+        # approaching_point = numpy.asarray([self.map_origin.x, self.map_origin.y]) + (ring_pixel * self.map_resolution) + wall_orientation * 0.15
+
 
         orientation = -orientation
         orientation = math.atan2(orientation[1], orientation[0])
@@ -332,9 +360,9 @@ class RingDetector(object):
         approaching_pose = PoseStamped()
         approaching_pose.header = ring_position.header
         approaching_pose.header.frame_id = 'map'
-        approaching_pose.pose.position.x = ring_position.pose.position.x
-        approaching_pose.pose.position.y = ring_position.pose.position.y
-        approaching_pose.pose.position.z = ring_position.pose.position.z
+        approaching_pose.pose.position.x = approaching_point.position.x
+        approaching_pose.pose.position.y = approaching_point.position.y
+        approaching_pose.pose.position.z = 0
         approaching_pose.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
