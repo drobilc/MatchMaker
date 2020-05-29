@@ -45,6 +45,7 @@
 	% dodaj sliko slabe detekcje zaradi pomanjkljive časovne sinhronizacije
 	\begin{figure}[h]
 		\centering
+		\includegraphics[height=4cm]{images/detections}
 		\caption{Inacurate detection of the object's position due to lack of time synchronization among depth and colour image}
 		\label{fig:non_synchronized_raw_detection}
 	\end{figure}
@@ -238,8 +239,25 @@
 	\end{enumerate}
 
 	If two detections are close enough (the distance between them is less than \texttt{minimum distance}), they are considered the same object. The world position and approaching point position of those two detections are then averaged. So the object position is closer to its actual position in space.
+	
+	\begin{figure}[h]
+		\centering
+		\includegraphics[height=4cm]{images/detections}
+		\caption{Many inaccurate object detections}
+		\label{fig:inaccurate_detections}
+	\end{figure}
+
+	% Popravi, tole je blo napisano ko sem bil zelo utrujen
+
+	Figure \ref{fig:inaccurate_detections} shows why the robustification process is needed. Face detector works very fast, but the localization isn't that accurate. Each red sphere represents one face detection. By averaging many face detections, the pink sphere position is obtained. As we can see, the the averaged position is much closer to the real face position (which is in this case on the wall near this averaged position) than each individual detection. The distance between the farthest points in figure \ref{fig:inaccurate_detections} is 0.3 metres, which is another reason why we think robustification process is needed. \\
+	
+	It should also be noted that similar process is applied to the approaching point. Approaching point is computed for each face detection and is then averaged. In figure \ref{fig:inaccurate_detections}, this point is coloured yellow. \\
+
 	% world position not defined
+	
 	% not ok, zdj se bere kot da nardimo povprečje (detekcija + app.point)/2, kar seveda ni res.
+	% Opomba, po novem se računa točno na tak način kot si napisala zgoraj torej (prejšnja + nova) * 0.5 tko da lahko pustimo
+	
 	% Zadnji stavek je treba lepše povezat noter, possibly z vejico, da se priključi prejšnji povedi
 	
 	\subsection{Smart exploration of space} \label{smart_exploration}
@@ -366,12 +384,12 @@
 	\subsubsection{Movement tasks}
 	Each task represents one action that the robot can do.
 
-	\end{\begin{enumerate}
+	\begin{enumerate}
 		\item \texttt{Localization task} is a task that is run at the beginning. The robot knows its approximate location in space, but before it can move around the environment, it must pinpoint its exact location. This task rotates the robot around its vertical axis for one full rotation using odometry information. The robot uses depth information to localize itself using adaptive Monte Carlo localization algorithm.
 		\item \texttt{Approaching task} is a task that drives the robout around its environment. There are two options of this task, one is the standard \texttt{move\_base} package to drive around the map and the other uses our fine movement algorithm as explained in section \ref{fine_movement}. Only the rings are approached using the second algorithm, because it is rather slow (for the obvious reason - so that it doesn't hit the wall).
 		\item \texttt{Wandering rask} is a task where the robot is exploring its environment, searching for faces, rings and cylinders. It uses the points generated using the algorithm in section \ref{smart_exploration} and drives the robot around using \texttt{approaching task}. This task can be cancelled at any time so the robot can visit detected objects if needed.
 		\item \texttt{Arm task} is a task where the robot uses its pincher arm that is positioned on top of it. This task is used to throw a coin in a wishing well (moving the robot arm above a cylinder) or pick up a ring that is floating above the ground.
-	\end{enumerate}}
+	\end{enumerate}
 
 	The \texttt{movement controller} uses an ordered list of tasks. If the \texttt{brain} component chooses, it can cancel current task, reorder its task and insert new task to be executed either after all tasks have finished or right at this moment. \\ 
 	
