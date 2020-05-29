@@ -179,16 +179,17 @@ class Brain(object):
         import random
         return random.choice(['red', 'green', 'blue', 'yellow', 'white', 'black'])
 
-    # PLACEHOLDER
     def in_accordance_with_preferences(self, woman):
         if self.preferences is None:
             return False
+
         else:
-            # TODO: this is the part where we ask him
-            return True
+            woman_face_details = FACE_DETAILS[woman.face_label]
+            return woman_face_details == self.preferences
 
     # PLACEHOLDER   
     def get_gargamels_preferences(self):
+        # TODO: this is the part where we ask him
         return FaceDetails('short', 'dark')
     
     def on_start_finding_cylinder(self):

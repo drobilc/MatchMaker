@@ -158,6 +158,8 @@ class FaceDetails(object):
         self.hair_color = hair_color
     def __str__(self):
         return "{}, {}".format(self.hair_length, self.hair_color)
+    def __eq__(self, other):
+        return self.hair_color == other.hair_color and self.hair_length == other.hair_length
 
 FACE_DETAILS = {
     'face02': FaceDetails('long'    , 'bright'  ),
