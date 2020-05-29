@@ -173,15 +173,15 @@ class Brain(object):
 
     # TODO: implement actual behavior
     def get_womans_favorite_color(self):
-        import random
-        return random.choice(['red', 'green', 'blue', 'yellow', 'white', 'black'])
+        return 'blue'
 
     def in_accordance_with_preferences(self, woman):
         if self.preferences is None:
             return False
         else:
-            woman_face_details = FACE_DETAILS[woman.face_label]
-            return woman_face_details == self.preferences
+            return True     # For testing purposes
+            # woman_face_details = FACE_DETAILS[woman.face_label]
+            # return woman_face_details == self.preferences
 
     # TODO: implement actual behavior
     def get_gargamels_preferences(self):
@@ -242,8 +242,6 @@ class Brain(object):
         self.cylinder_detector_toggle.publish(message)
 
     def on_object_detection(self, object_detection):
-        rospy.loginfo('New object detected: {}, id = {}'.format(object_detection.type, object_detection.id))
-
         if object_detection.type == 'face':
             rospy.loginfo('Found new face with label: {}'.format(object_detection.face_label))
             self.on_face_detection(object_detection)
@@ -260,6 +258,7 @@ class Brain(object):
         # We have found Gargamel, let's approach him now, here face19 for testing because it's 
         # usually the first face we find
         if object_detection.face_label == 'face19':
+            rospy.loginfo("Gargamel found!")
             self.gargamel = object_detection
             self.start_approaching_gargamel()
             
@@ -273,7 +272,7 @@ class Brain(object):
         elif self.preferences is not None:
             if self.in_accordance_with_preferences(object_detection):
 
-                if self.state != 'approaching_woman':
+                if self.state == 'finding_woman':
                     self.start_approaching_woman(object_detection)
                     self.current_woman = object_detection
 
