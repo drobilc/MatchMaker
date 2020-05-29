@@ -84,119 +84,21 @@ def nearest_free_pixel(pixel, map_data):
     frontier.put(pixel)
     visited = numpy.zeros_like(map_data, dtype=bool)
     visited[pixel[1], pixel[0]] = True
+    i = 0
 
     while not frontier.empty():
         current = frontier.get()
-        if map_data[current[1], current[0]] != 255:
+        if map_data[current[1], current[0]] != 255 and i > 0:
             rospy.logerr("Found nearest non-wall pixel")
             return current
         for next in neighbors_all(current):
             if not visited[next[1], next[0]]:
                 frontier.put(next)
                 visited[next[1], next[0]] = True
+        i += 1
     
     rospy.logerr("Couldn't find closest non-wall pixel")
     return None
-
-def move_away_from_the_wall(map_data, point, too_close):
-    """Checks if the point has wall in neighborhood of range too_close around given 
-    pixel in 4 basic directions. Checks if we would have hit the wall trying to move 
-    the point 3*too_close in any of 4 basic directions. Then move point 2*too_close 
-    in the opposite direction of that in which the wall is too_close if that means 
-    we won't hit the wall."""
-    # Create neighbourhoods
-    neighbours_base = [0]
-    for i in range(1, too_close + 1):
-        neighbours_base.append(i)
-
-    neighbours_left = []
-    neighbours_right = []
-    neighbours_up = []
-    neighbours_down = []
-    extended_neighbours_left = []
-    extended_neighbours_right = []
-    extended_neighbours_up = []
-    extended_neighbours_down = []
-
-    for neighbour in neighbours_base:
-        # Neighbors in too_close range
-        neighbours_right.append([point[0] + neighbour, point[1]])
-        neighbours_left.append([point[0] + (-1) * neighbour, point[1]])
-        neighbours_down.append([point[0], point[1] + neighbour])
-        neighbours_up.append([point[0], point[1] + (-1) * neighbour])
-
-        # Neighbors in 3 * too_close range
-        extended_neighbours_right.append([point[0] + 3 * neighbour, point[1]])
-        extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour, point[1]])
-        extended_neighbours_down.append([point[0], point[1] + 3 * neighbour])
-        extended_neighbours_up.append([point[0], point[1] + (-1) * 3* neighbour])
-        extended_neighbours_right.append([point[0] + 3 * neighbour + 1, point[1]])
-        extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour + 1, point[1]])
-        extended_neighbours_down.append([point[0], point[1] + 3 * neighbour + 1])
-        extended_neighbours_up.append([point[0], point[1] + (-1) * 3 * neighbour + 1])
-        extended_neighbours_right.append([point[0] + 3 * neighbour + 2, point[1]])
-        extended_neighbours_left.append([point[0] + (-1) * 3 * neighbour + 2, point[1]])
-        extended_neighbours_down.append([point[0], point[1] + 3 * neighbour + 2])
-        extended_neighbours_up.append([point[0], point[1] + (-1) * 3 * neighbour + 2])
-        
-    # Check for walls in each direction
-    wall_to_the_right = False
-    wall_to_the_left = False
-    wall_to_the_bottom = False
-    wall_to_the_top = False
-    free_to_move_right = True
-    free_to_move_left = True
-    free_to_move_down = True
-    free_to_move_up = True
-    for i in range(1, too_close + 1):
-        # Check if there is wall inside too_close range neighborhood
-        if map_data[neighbours_right[i][1]][neighbours_right[i][0]] < 250:
-            wall_to_the_right = True
-        if map_data[neighbours_left[i][1]][neighbours_left[i][0]] < 250:
-            wall_to_the_left = True
-        if map_data[neighbours_up[i][1]][neighbours_up[i][0]] < 250:
-            wall_to_the_top = True
-        if map_data[neighbours_down[i][1]][neighbours_down[i][0]] < 250:
-            wall_to_the_bottom = True
-
-        # Check if there is wall in extended neighbourhood that would prevent us from moving 
-        # the point in that direction
-        if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -2][1]][extended_neighbours_right[3 * i -2][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i -1][1]][extended_neighbours_right[3 * i -1][0]] < 250:
-            wall_to_the_right = False
-        if map_data[extended_neighbours_right[3 * i][1]][extended_neighbours_right[3 * i][0]] < 250:
-            wall_to_the_right = False
-
-    # For each wall to close, move the point too_close pixels in the opposite direction
-    if wall_to_the_right and free_to_move_right:
-        point[0] -= 2 * too_close
-    if wall_to_the_left and free_to_move_left:
-        point[0] += 2 * too_close
-    if wall_to_the_bottom and free_to_move_up:
-        point[1] -= 2 * too_close
-    if wall_to_the_top and free_to_move_down:
-        point[1] += 2 * too_close
-
-    return point
 
 def closest_wall_pixel(map_data, pixel, max_distance=5):
     """Finds closest pixel to given pixel that contains wall"""
@@ -223,7 +125,7 @@ def closest_wall_pixel(map_data, pixel, max_distance=5):
         # Add four neighbours to frontier
         for neighbor in neighborhood:
             new_x, new_y = current_pixel[0] + neighbor[0], current_pixel[1] + neighbor[1]
-            if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x]:
+            if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x] or (new_x, new_y) in frontier:
                 continue
             frontier.append((new_x, new_y))
 
