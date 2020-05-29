@@ -166,7 +166,7 @@
 			\includegraphics[width=.8\linewidth]{images/ring_detection}
 			\caption{Ring detection}
 			\label{fig:detected_ring}
-		\end{subfigure}%
+		\end{subfigure}
 		\begin{subfigure}{.5\textwidth}
 			\centering
 			\includegraphics[width=.8\linewidth]{images/ring_detection_cropped}
@@ -206,6 +206,13 @@
 
 	The distance to the ring is computed as the average of distances to each pixel in the masked distance image. The ring position in world frame is computed using as explained in section \ref{pixel_to_world}. \\
 
+	\subsubsection{Ring approaching point computation}
+	Computation of approachin points for rings takes advantage of the static map. First we check whether the detected ring position is above the wall or not. If it is, we use it's position as our starting position. If it isn't, we find the closest pixel occupied by the wall and use it as our starting position. Next, we need to find the direction in which we'll set the approaching point. \\
+
+	We do this by searching for the nearest pixel to the starting poisiton (located on the wall) that is not occupied by a wall. By subtracting the starting position pixel from the pixel we just found, we get a vector that points from the ring to our soon to be approaching point. This vector is then normalized so it can be used in further computation. \\
+
+	Now we move along the calculated direction vector for 0.15 meters and set this position as the position of the approaching point. Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
+
 	\subsubsection{Ring colour detection}
 	The ring colour is computed using the mask that we have computed in section \ref{ring_detection}. The \texttt{rgb} image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
 	
@@ -222,13 +229,13 @@
 	\subsubsection{Removal of planes}
 	\subsubsection{Cylinder detection}
 	
-	\subsubsection{Approaching point computation}
+	\subsubsection{Cylinder approaching point computation}
 	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on the line connecting the robot and the cylinder. \\
 	
 	A point that lies 0.5 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
 	
 	\subsection{Robustification} \label{robustification}
-	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might comput the distance inaccurately, or the robot may not have been localized. Detectors might return a false positives and so on. \\
+	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might compute the distance inaccurately, or the robot may not have been localized. Detectors might return false positives and so on. \\
 	
 	To combat this problem, a robustification is performed on the detected objects. The object detectors send detections to robustifier, which collects data and determines if the detection is a true positive or not. \\
 	
@@ -238,7 +245,7 @@
 		\item There is at least a \texttt{minimum distance} meters distance between this detection and every other previous detection.
 	\end{enumerate}
 
-	If two detections are close enough (the distance between them is less than \texttt{minimum distance}), they are considered the same object. The world position and approaching point position of those two detections are then averaged. So the object position is closer to its actual position in space.
+	If two detections are close enough (the distance between them is less than \texttt{minimum distance}), they are considered the same object. The positions of those two detections in the world are then averaged, so the object position is closer to its actual position in space.
 	
 	\begin{figure}[h]
 		\centering
@@ -247,19 +254,10 @@
 		\label{fig:inaccurate_detections}
 	\end{figure}
 
-	% Popravi, tole je blo napisano ko sem bil zelo utrujen
-
 	Figure \ref{fig:inaccurate_detections} shows why the robustification process is needed. Face detector works very fast, but the localization isn't that accurate. Each red sphere represents one face detection. By averaging many face detections, the pink sphere position is obtained. As we can see, the the averaged position is much closer to the real face position (which is in this case on the wall near this averaged position) than each individual detection. The distance between the farthest points in figure \ref{fig:inaccurate_detections} is 0.3 metres, which is another reason why we think robustification process is needed. \\
 	
-	It should also be noted that similar process is applied to the approaching point. Approaching point is computed for each face detection and is then averaged. In figure \ref{fig:inaccurate_detections}, this point is coloured yellow. \\
-
-	% world position not defined
-	
-	% not ok, zdj se bere kot da nardimo povprečje (detekcija + app.point)/2, kar seveda ni res.
-	% Opomba, po novem se računa točno na tak način kot si napisala zgoraj torej (prejšnja + nova) * 0.5 tko da lahko pustimo
-	
-	% Zadnji stavek je treba lepše povezat noter, possibly z vejico, da se priključi prejšnji povedi
-	
+	It should also be noted that similar process is applied to the approaching points. Approaching point is computed for each face detection and as positions of the face detections are averaged, approaching points are averaged as well. In figure \ref{fig:inaccurate_detections}, this point is yellow. \\
+		
 	\subsection{Smart exploration of space} \label{smart_exploration}
 	% dobi mapo
 	% določi, kje je zid
@@ -269,8 +267,7 @@
 	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
 	
 	\subsection{Fine movement} \label{fine_movement}
-	Fine movement is a special way in which our robot can move. It is used when the normal movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
-	% definiraj normal movement
+	Fine movement is a special way in which our robot can move. It is used when the default movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
 
 	The \texttt{move\_base} package can be used with \texttt{ROS} to move the mobile base around the map. It uses local and global planner information to avoid obstacles and try to reach the given goal. If it fails to reach the goal, it tries to clear its local map. If that fails, the robot stops trying to reach the goal and notifies us that it has failed to move to the goal. \\
 	
