@@ -90,14 +90,14 @@ class Brain(object):
         self.machine.add_transition('start_finding_ring', approaching_cylinder, finding_ring, before=self.on_start_finding_ring)
         self.machine.add_transition('start_approaching_ring', finding_ring, approaching_ring, before=self.on_start_approaching_ring)
 
-    def on_start_approaching_gargamel(self, need_confirmation=False):
+    def on_start_approaching_gargamel(self):
         self.wandering_task.cancel()
         task = self.movement_controller.approach(self.gargamel, callback=self.on_gargamel_approached)
         self.movement_controller.add_to_queue(task)
     
     # There are two cases where we approach Gargamel
     # 1. We inquire about his preferences
-    # 2. We inquire if he likes found woman (param need_confirmation is used for that)
+    # 2. We inquire if he likes found woman
     def on_gargamel_approached(self, detection, goal_status, goal_result):
         # If preferences are not set, we have come to ask what he likes on women
         if self.preferences is None:
