@@ -10,7 +10,7 @@ from approaching_task import ApproachingTask
 from localization_task import LocalizationTask
 from wandering_task import WanderingTask
 from fine_approaching_task import FineApproachingTask
-from arm_task import TossACoinTask, PickUpRingTask
+from arm_task import TossACoinTask, PickUpRingTask, RetractArmTask
 
 class MovementController(object):
     
@@ -117,3 +117,7 @@ class MovementController(object):
     def pick_up_ring(self, callback=None, duration=2.0):
         """Create a new ring picking task that moves the arm"""
         return PickUpRingTask(self, callback, duration=duration)
+    
+    def retract_arm(self, callback=None, duration=2.0):
+        """Create a new task that retracts the arm"""
+        return RetractArmTask(self, callback, duration=duration)
