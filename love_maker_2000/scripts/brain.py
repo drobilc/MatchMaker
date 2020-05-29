@@ -54,9 +54,9 @@ class Brain(object):
         self.wandering_task = self.movement_controller.wander()
         self.movement_controller.add_to_queue(self.wandering_task)
 
-        self.object_detections = []
         self.gargamel = None
         self.current_woman = None
+
         self.women = []
         self.rings = []
         self.cylinders = []
@@ -72,15 +72,19 @@ class Brain(object):
         approaching_woman = State('approaching_woman')
         finding_cylinder = State('finding_cylinder')
         approaching_cylinder = State('approaching_cylinder')
-        states = [finding_gargamel, approaching_gargamel, finding_woman, approaching_woman, finding_cylinder, approaching_cylinder]
+        finding_ring = State('finding_ring')
+        approaching_ring = State('approaching_ring')
+        states = [finding_gargamel, approaching_gargamel, finding_woman, approaching_woman, finding_cylinder, approaching_cylinder, finding_ring, approaching_ring]
 
         self.machine = Machine(model=self, states=states, initial=finding_gargamel, ignore_invalid_triggers=True)
 
         self.machine.add_transition('start_approaching_gargamel', [finding_gargamel, approaching_woman], approaching_gargamel, before=self.on_start_approaching_gargamel)
         self.machine.add_transition('start_finding_woman', approaching_gargamel, finding_woman, before=self.on_start_finding_woman)
-        self.machine.add_transition('start_approaching_woman', finding_woman, approaching_woman, before=self.on_start_approaching_woman)
+        self.machine.add_transition('start_approaching_woman', [finding_woman, approaching_ring], approaching_woman, before=self.on_start_approaching_woman)
         self.machine.add_transition('start_finding_cylinder', approaching_gargamel, finding_cylinder, before=self.on_start_finding_cylinder)
         self.machine.add_transition('start_approaching_cylinder', finding_cylinder, approaching_cylinder, before=self.on_start_approaching_cylinder)
+        self.machine.add_transition('start_finding_ring', approaching_cylinder, finding_ring, before=self.on_start_finding_ring)
+        self.machine.add_transition('start_approaching_ring', finding_ring, approaching_ring, before=self.on_start_approaching_ring)
 
     # There are two cases where we approach Gargamel
     # 1. We inquire about his preferences
@@ -112,7 +116,7 @@ class Brain(object):
             # If he likes the woman, first need to approach a cylinder and then a ring
             if likes:
                 rospy.loginfo("Gargamel likes this woman and wants YOU to find him a ring.")
-                self.start_finding_cylinder(self.current_woman.color)
+                self.start_finding_cylinder()
             else:
                 rospy.loginfo("Gargamel doesn't like this woman's taste in color, picky mother*ucker")
                 self.women.remove(self.current_woman)
@@ -124,7 +128,8 @@ class Brain(object):
     # PLACEHOLDER
     def get_gargamels_affirmation(self, woman):
         import random
-        return random.uniform(0, 1) < 0.5
+        # return random.uniform(0, 1) < 0.5
+        return True
     
     def on_start_finding_woman(self):
         for woman in self.women:
@@ -153,9 +158,17 @@ class Brain(object):
         
         # This is the second time we are here, propose
         else:
-            # TODO: propose to her
             rospy.loginfo("Hey will you marry Gargamel?")
+            accepts_proposal = self.get_womans_affirmation()
 
+            if accepts_proposal:
+                rospy.loginfo("They lived happily ever after")
+            
+            else:
+                rospy.loginfo("She said no.. ugh, now I have to find a new one")
+                self.women.remove(self.current_woman)
+                self.favorite_color = None
+                self.start_finding_woman()
     
     # PLACEHOLDER
     def get_womans_favorite_color(self):
@@ -174,10 +187,11 @@ class Brain(object):
     def get_gargamels_preferences(self):
         return FaceDetails('short', 'dark')
     
-    def on_start_finding_cylinder(self, color):
+    def on_start_finding_cylinder(self):
         for cylinder in self.cylinders:
-            if cylinder.color == color:
+            if cylinder.color == self.favorite_color:
                 self.start_approaching_cylinder(cylinder)
+                self.current_cylinder = cylinder
                 return
         
         self.movement_controller.add_to_queue(self.wandering_task)
@@ -188,8 +202,24 @@ class Brain(object):
         self.movement_controller.add_to_queue(task)
     
     def on_cylinder_approached(self, detection, goal_status, goal_result):
-        # TODO: implement this method
-        pass
+        self.start_finding_ring()
+
+    def on_start_finding_ring(self):
+        for ring in self.rings:
+            if ring.color == self.favorite_color:
+                self.start_approaching_ring(ring)
+                return
+            
+        self.movement_controller.add_to_queue(self.wandering_task)
+
+    def on_start_approaching_ring(self, ring):
+        self.wandering_task.cancel()
+        task = self.movement_controller.approach(ring, callback=self.on_ring_approached)
+        self.movement_controller.add_to_queue(task)
+    
+    def on_ring_approached(self, detection, goal_status, goal_result):
+        # TODO: pick up the ring or something first
+        self.start_approaching_woman(self.current_woman)
 
     def set_detectors_enabled(self, should_be_enabled=True):
         """Enables or disables all object detectors"""
@@ -218,11 +248,7 @@ class Brain(object):
         if detection.type == 'face':
             if detection.barcode_data is not None and len(detection.barcode_data) > 0:
                 face_data = utils.get_request(detection.barcode_data)
-                rospy.loginfo("Data received: {}".format(face_data))                
-
-        self.object_detections.remove(detection)
-        if len(self.object_detections) <= 0:
-            self.movement_controller.add_to_queue(self.wandering_task)
+                rospy.loginfo("Data received: {}".format(face_data))
     
     def on_unsuccessful_object_approach(self, detection):
         """Callback function that is called if the robot could not successfully approach the object"""
@@ -241,35 +267,48 @@ class Brain(object):
 
         elif object_detection.type == 'ring':
             rospy.loginfo('New {} ring detected'.format(object_detection.color))
-            # TODO: self.on_ring_detection(object_detection)
+            self.on_ring_detection(object_detection)
         
         else:
             rospy.loginfo('New {} cylinder detected'.format(object_detection.color))
-            # TODO: self.on_cylinder_detection(object_detection)
+            self.on_cylinder_detection(object_detection)
     
     def on_face_detection(self, object_detection):
-            # We have found Gargamel, let's approach him now, here face19 for testing because it's 
-            # usually the first face we find
-            if object_detection.face_label == 'face19':
-                self.gargamel = object_detection
-                self.start_approaching_gargamel()
+        # We have found Gargamel, let's approach him now, here face19 for testing because it's 
+        # usually the first face we find
+        if object_detection.face_label == 'face19':
+            self.gargamel = object_detection
+            self.start_approaching_gargamel()
             
-            # Otherwise it's a woman, if we do not know Gargamel's preferences yet
-            # just add her to the list
-            elif self.preferences is None:
+        # Otherwise it's a woman, if we do not know Gargamel's preferences yet
+        # just add her to the list
+        elif self.preferences is None:
+            self.women.append(object_detection)
+
+        # If we already know gargamel's preferences and if this woman is a potential match,
+        # add her to the list and approach her if we are not approaching any other woman already
+        elif self.preferences is not None:
+            if self.in_accordance_with_preferences(object_detection):
+
+                if self.state != 'approaching_woman':
+                    self.start_approaching_woman(object_detection)
+                    self.current_woman = object_detection
+
                 self.women.append(object_detection)
 
-            # If we already know gargamel's preferences and if this woman is a potential match,
-            # add her to the list and approach her if we are not approaching any other woman already
-            elif self.preferences is not None:
-                if self.in_accordance_with_preferences(object_detection):
+    def on_cylinder_detection(self, cylinder):
+        self.cylinders.append(cylinder)
 
-                    if self.current_woman is None:
-                        self.start_approaching_woman(object_detection)
-                        self.current_woman = object_detection
+        # If we are currently looking for a cylinder of this color, approach it
+        if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
+            self.start_approaching_cylinder(cylinder)
+    
+    def on_ring_detection(self, ring):
+        self.rings.append(ring)
 
-                    self.women.append(object_detection)
-
+        # If we are currently looking for a ring of this color, approach it
+        if self.state == 'finding_ring' and ring.color == self.favorite_color:
+            self.start_approaching_ring(ring)
 
 if __name__ == '__main__':
     controller = Brain([])

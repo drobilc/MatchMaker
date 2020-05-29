@@ -63,14 +63,17 @@ class WanderingTask(MovementTask):
     def cancel(self):
         if hasattr(self, 'current_goal'):
             if self.current_goal not in self.goals:
-                self.goals.insert(0, self.current_goal)
+                if self.current_goal is not None:
+                    self.goals.insert(0, self.current_goal)
+            
             self.current_goal = None
         super(WanderingTask, self).cancel()
     
     def finish(self):
         if hasattr(self, 'current_goal'):
-            self.goals.insert(0, self.current_goal)
-            self.current_goal = None
+            if self.current_goal is not None:
+                self.goals.insert(0, self.current_goal)
+                self.current_goal = None
         self.action_client.stop_tracking_goal()
         self.action_client.cancel_all_goals()
         super(WanderingTask, self).finish()
