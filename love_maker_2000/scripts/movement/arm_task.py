@@ -74,3 +74,11 @@ class PickUpRingTask(ArmTask):
     
     def __str__(self):
         return '<PickUpRingTask>'
+
+class RetractArmTask(ArmTask):
+
+    def __init__(self, movement_controller, callback, duration=2.0):
+        super(RetractArmTask, self).__init__(movement_controller, callback, [ArmTask.RETRACTED_POSITIONS], duration=duration)
+    
+    def __str__(self):
+        return '<RetractArmTask>'

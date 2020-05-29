@@ -48,9 +48,13 @@ class Brain(object):
         localization_task = self.movement_controller.localize(callback=on_localization_finished)
         self.movement_controller.add_to_queue(localization_task)
         
-        # After the localization has been done, add a wandering task to our
-        # robot. Wandering task first creates exploration points and then moves
-        # to each point.
+        # After the localization has been done, retract the robot arm, so that
+        # we don't hit floating objects with it.
+        self.movement_controller.add_to_queue(self.movement_controller.retract_arm())
+
+        # After arm has been retracted, add a wandering task to our robot.
+        # Wandering task first creates exploration points and then moves to each
+        # point.
         self.wandering_task = self.movement_controller.wander()
         self.movement_controller.add_to_queue(self.wandering_task)
 
