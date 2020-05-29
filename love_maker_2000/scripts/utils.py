@@ -87,7 +87,7 @@ def nearest_free_pixel(pixel, map_data):
 
     while not frontier.empty():
         current = frontier.get()
-        if map_data[current[1], current[0]] == 255:
+        if map_data[current[1], current[0]] != 255:
             rospy.logerr("Found nearest non-wall pixel")
             return current
         for next in neighbors_all(current):

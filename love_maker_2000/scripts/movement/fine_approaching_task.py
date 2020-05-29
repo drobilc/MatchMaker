@@ -253,6 +253,11 @@ class FineApproachingTask(MovementTask):
         # If there is no current_goal that means that the path has just been
         # computed, get the first element of the path and visit it
         if not hasattr(self, 'current_goal'):
+
+            # Prevent crashes in case the path cannot be found (if approaching point for the ring is inside the wall)
+            if self.path == None:
+                self.finish()
+
             self.current_goal = self.path.pop(0)
 
         # Send a path to the path_publisher so we can visualize it in rviz
