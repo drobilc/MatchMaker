@@ -232,12 +232,12 @@ class RingDetector(object):
     
     def compute_approaching_point(self, ring_position, timestamp):
         # To compute approaching point we should do the following: First, we
-        # should get the detected face position and robot position in map
-        # coordinates. Then, the face and robot map coordinates should be
-        # converted to map pixels. A small region around the face pixel should
+        # should get the detected ring position and robot position in map
+        # coordinates. Then, the ring and robot map coordinates should be
+        # converted to map pixels. A small region around the ring pixel should
         # be extracted where hough line transform should be performed. After
         # lines have been found, they should be sorted by their scalar products
-        # with the face - robot vector, so that lines that.
+        # with the ring - robot vector, so that lines that.
 
         ring_point = PointStamped()
         ring_point.header.frame_id = ring_position.header.frame_id
@@ -251,40 +251,6 @@ class RingDetector(object):
         robot_point.header.frame_id = "camera_depth_optical_frame"
         robot_point.header.stamp = timestamp
         robot_point = self.tf_buffer.transform(robot_point, "map")
-        
-        def to_map_pixel(position):
-            # Convert position from map coordinates in m to pixel position (u, v) 
-            pixel_x = int((position.point.x - self.map_origin.x) / self.map_resolution)
-            pixel_y = int((position.point.y - self.map_origin.y) / self.map_resolution)
-            return numpy.asarray([pixel_x, pixel_y])
-        
-        def closest_wall_pixel(pixel, max_distance=5):
-            # Use flood fill algorithm with breadth first search to find the
-            # closest wall pixel. Use neighboring pixels as defined below
-            neighborhood = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-
-            # First, extract a small region around the pixel (a square region of
-            # size 2 * max_distance + 1)
-            map_region = self.map_data[pixel[1]-max_distance-1:pixel[1]+max_distance, pixel[0]-max_distance-1:pixel[0]+max_distance]
-            
-            visited = numpy.zeros_like(map_region, dtype=bool)
-            frontier = [(max_distance, max_distance)]
-            while len(frontier) > 0:
-                current_pixel = frontier.pop(0)
-
-                # If current pixel has a non-zero probability, we have found the closest wall point
-                if map_region[current_pixel[1], current_pixel[0]] == 255:
-                    return (current_pixel[0] + pixel[0] - max_distance, current_pixel[1] + pixel[1] - max_distance)
-
-                # Mark pixel as visited
-                visited[current_pixel[1], current_pixel[0]] = True
-                
-                # Add four neighbours to frontier
-                for neighbor in neighborhood:
-                    new_x, new_y = current_pixel[0] + neighbor[0], current_pixel[1] + neighbor[1]
-                    if new_x < 0 or new_y < 0 or new_x >= max_distance * 2 or new_y >= max_distance * 2 or visited[new_y, new_x]:
-                        continue
-                    frontier.append((new_x, new_y))
 
         def closest_line(ring_pixel, wall_pixel, max_distance=8):
             map_region = self.map_data[ring_pixel[1]-max_distance-1:ring_pixel[1]+max_distance, ring_pixel[0]-max_distance-1:ring_pixel[0]+max_distance]
@@ -303,23 +269,21 @@ class RingDetector(object):
                     best_line = (start, end)
             return best_line, best_distance
 
-        # TRENUTNO STANJE
-        # Se vedno se zgodi situacija, ko sta temp in closest free pixel enaka => crash.
-        # Zadeva bi naj delovala tako, da ce je ring na prosti tocki, 
-        # poiscemo najblizji zid in se delamo, da je na zidu. Ce je ze na zidu, ne storimo nicesar. 
-        # Nato poiscemo najblizji pixel v okolici ringa, ki je brez zidu. 
-        # Razlika nam da smer. Pazi, kako se obnasa linalg.norm, ce je nea stevilka 0.
-
-
         # Calculate approaching point position
         # if ring pixel is not in the wall, first find the closest wall
-        temp_pixel = to_map_pixel(ring_point)
-        temp_pixel_1 = to_map_pixel(ring_point)
+        temp_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        temp_pixel_1 = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
         rospy.logwarn(temp_pixel)
         rospy.logwarn(self.map_data[temp_pixel_1[1]][temp_pixel_1[0]])
         if self.map_data[temp_pixel_1[1]][temp_pixel_1[0]] != 255:
-            temp_pixel = closest_wall_pixel(temp_pixel_1, max_distance=20)
-        
+            temp_pixel_2 = utils.closest_wall_pixel(self.map_data, temp_pixel_1, max_distance=10)
+            rospy.logwarn("temp_2")
+            rospy.logwarn(temp_pixel_2)
+            if temp_pixel_2 == None:
+                return ring_position, None
+            else:
+                temp_pixel = temp_pixel_2
+
         temp_pixel = [temp_pixel[0], temp_pixel[1]]
         rospy.logwarn(temp_pixel)
 
@@ -353,24 +317,27 @@ class RingDetector(object):
         approaching_point.position.x = ring_point.point.x + 0.2 * normalized_orientation[0]
         approaching_point.position.y = ring_point.point.y + 0.2 * normalized_orientation[1]
         approaching_point.position.z = 0
+
+        # TODO: Orientation of the ring is orientation of the wall normal rotated 90 degrees to the right
+
+        ring_pixel = numpy.asarray(closest_free_pixel)
        
         # Calculate approaching point orientation
         # Convert map coordinates to map pixel coordinates
-        #ring_pixel = to_map_pixel(ring_point)
-        ring_pixel = numpy.asarray(closest_free_pixel)
-        robot_pixel = to_map_pixel(robot_point)
-        rospy.logwarn("approaching point:")
-        rospy.logwarn(utils.pose_to_map_pixel(approaching_point, self.map_origin, self.map_resolution))
+        # ring_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
 
         # Find the closest wall pixel and line that passes closest to that wall
         # pixel (preferably line that goes through the wall pixel)
-        closest_wall = closest_wall_pixel(ring_pixel)
+        closest_wall = utils.closest_wall_pixel(self.map_data, ring_pixel)
         rospy.logwarn("closest wall pixel")
         rospy.logwarn(closest_wall)
         if closest_wall is None:
+            rospy.logwarn('No wall found near pixel.')
             return ring_position, None
         line, distance = closest_line(ring_pixel, closest_wall)
         if line is None:
+            rospy.logwarn('No line was found around pixel.')
             return ring_position, None
 
         # Use dot product to find direction of the wall. If dot product is < 0,
@@ -381,7 +348,9 @@ class RingDetector(object):
         if numpy.dot(robot_pixel - closest_wall, orientation) < 0:
             orientation = -orientation
         
-        # face_orientation = orientation / numpy.linalg.norm(orientation)
+        wall_orientation = orientation / numpy.linalg.norm(orientation)
+        # approaching_point = numpy.asarray([self.map_origin.x, self.map_origin.y]) + (ring_pixel * self.map_resolution) + wall_orientation * 0.15
+
 
         orientation = -orientation
         orientation = math.atan2(orientation[1], orientation[0])
@@ -393,7 +362,7 @@ class RingDetector(object):
         approaching_pose.header.frame_id = 'map'
         approaching_pose.pose.position.x = approaching_point.position.x
         approaching_pose.pose.position.y = approaching_point.position.y
-        approaching_pose.pose.position.z = approaching_point.position.z
+        approaching_pose.pose.position.z = 0
         approaching_pose.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
