@@ -32,6 +32,7 @@ class Brain(object):
         self.cylinders = []
         self.preferences = None
         self.favorite_color = None
+        self.object_detections = {}
 
         self.setup_state_machine()
 
@@ -267,19 +268,34 @@ class Brain(object):
         self.cylinder_detector_toggle.publish(message)
 
     def on_object_detection(self, object_detection):
+        is_redetection = False
+        if object_detection.id not in self.object_detections:
+            # This is the first time the object has been detected
+            self.object_detections[object_detection.id] = object_detection
+        else:
+            # This object has already been detected
+            is_redetection = True
+            self.object_detections[object_detection.id] = object_detection
+
+        # Call the appropriate object detection function and add a parameter
+        # that tells it if this is object redetection
         if object_detection.type == 'face':
             rospy.loginfo('Found new face with label: {}'.format(object_detection.face_label))
-            self.on_face_detection(object_detection)
+            self.on_face_detection(object_detection, is_redetection)
 
         elif object_detection.type == 'ring':
             rospy.loginfo('New {} ring detected'.format(object_detection.color))
-            self.on_ring_detection(object_detection)
+            self.on_ring_detection(object_detection, is_redetection)
         
         else:
             rospy.loginfo('New {} cylinder detected'.format(object_detection.color))
-            self.on_cylinder_detection(object_detection)
+            self.on_cylinder_detection(object_detection, is_redetection)
     
-    def on_face_detection(self, object_detection):
+    def on_face_detection(self, object_detection, is_redetection=False):
+        # TODO: Update data if this is redetection
+        if is_redetection:
+            return
+
         # We have found Gargamel, let's approach him now, here face19 for testing because it's 
         # usually the first face we find
         if object_detection.face_label == 'face19':
@@ -294,14 +310,22 @@ class Brain(object):
                 self.start_approaching_woman(object_detection)
                 self.current_woman = object_detection
 
-    def on_cylinder_detection(self, cylinder):
+    def on_cylinder_detection(self, cylinder, is_redetection=False):
+        # TODO: Update data if this is redetection
+        if is_redetection:
+            return
+        
         self.cylinders.append(cylinder)
 
         # If we are currently looking for a cylinder of this color, approach it
         if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
             self.start_approaching_cylinder(cylinder)
     
-    def on_ring_detection(self, ring):
+    def on_ring_detection(self, ring, is_redetection=False):
+        # TODO: Update data if this is redetection
+        if is_redetection:
+            return
+        
         self.rings.append(ring)
 
         # If we are currently looking for a ring of this color, approach it
