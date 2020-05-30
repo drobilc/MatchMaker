@@ -131,9 +131,11 @@ class Brain(object):
                 self.start_finding_woman()
 
     def get_gargamels_preferences(self):
-        # pref = self.inquire_preferences()
-        # return FaceDetails(pref.hair_length, pref.hair_color)
-        return FaceDetails('short', 'dark')
+        pref = self.inquire_preferences()
+        rospy.logerr("Length preference: {}".format(pref.hair_length))
+        rospy.logerr("Color preference: {}".format(pref.hair_color))
+        return FaceDetails(pref.hair_length, pref.hair_color)
+        # return FaceDetails('short', 'dark')
 
     def get_gargamels_affirmation(self, woman):
         # import random
@@ -193,7 +195,7 @@ class Brain(object):
         rospy.logerr("[ROBOT]: {}... Will you marry Gargamel?".format(self.current_woman.face_label))
         return self.get_affirmation()
 
-    # TODO: implement actual behavior
+    # TODO: robustify all speech recognition parts
     def get_womans_favorite_color(self):
         color = self.inquire_color().color
         if color != '':
