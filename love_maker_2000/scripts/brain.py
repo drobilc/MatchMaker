@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 import rospy
-from transitions import Machine, State, Transition
+from transitions import Machine, State
 from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
@@ -11,6 +11,7 @@ from geometry_msgs.msg import PoseStamped
 from movement.controller import MovementController
 from greeter import Greeter
 from utils import FACE_DETAILS, FaceDetails
+from speech_transcription.srv import InquireAffirmation
 
 from zbar_detector.msg import Marker
 
@@ -21,6 +22,19 @@ class Brain(object):
     
     def __init__(self, goals):
         rospy.init_node('brain', anonymous=False)
+
+        # First setup all necessary objects so we can create publishers and subscribers
+        self.gargamel = None
+        self.current_woman = None
+
+        self.women = []
+        self.rings = []
+        self.cylinders = []
+        self.preferences = None
+        self.favorite_color = None
+
+        self.setup_state_machine()
+
         # Brain component is the component that collects face, cylinder and ring
         # information and then plans how to solve the given task. It can use
         # MovementController to move the robot to goals. It should also be
@@ -62,16 +76,9 @@ class Brain(object):
         self.wandering_task = self.movement_controller.wander()
         self.movement_controller.add_to_queue(self.wandering_task)
 
-        self.gargamel = None
-        self.current_woman = None
-
-        self.women = []
-        self.rings = []
-        self.cylinders = []
-        self.preferences = None
-        self.favorite_color = None
-
-        self.setup_state_machine()
+        # Speech recognition services
+        rospy.wait_for_service('inquire_affirmation')
+        self.inquire_affirmation = rospy.ServiceProxy('inquire_affirmation', InquireAffirmation)
     
     def setup_state_machine(self):
         finding_gargamel = State('finding_gargamel')
@@ -126,8 +133,12 @@ class Brain(object):
     
     # TODO: implement actual behavior
     def get_gargamels_affirmation(self, woman):
-        import random
-        return random.uniform(0, 1) < 0.5
+        # import random
+        # return random.uniform(0, 1) < 0.5
+        rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
+        affirmation = self.inquire_affirmation().affirmation
+        rospy.logerr(affirmation)
+        return affirmation == 'true'
     
     def on_start_finding_woman(self):
         for woman in self.women:
