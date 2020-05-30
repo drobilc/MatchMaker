@@ -62,7 +62,7 @@ class ArmTask(MovementTask):
 class TossACoinTask(ArmTask):
     
     def __init__(self, movement_controller, callback, duration=2.0):
-        super(TossACoinTask, self).__init__(movement_controller, callback, [ArmTask.EXTENDED_POSITIONS, ArmTask.RETRACTED_POSITIONS], duration=duration)
+        super(TossACoinTask, self).__init__(movement_controller, callback, [[0, 0.5, 0.5, 0.8], ArmTask.RETRACTED_POSITIONS], duration=duration)
 
     def __str__(self):
         return '<TossACoinTask>'
