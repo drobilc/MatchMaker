@@ -13,6 +13,8 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_geometry_msgs import PointStamped
 
+from visualization_msgs.msg import MarkerArray, Marker
+
 from std_msgs.msg import Header, ColorRGBA, Bool
 from detection_msgs.msg import Detection
 from sensor_msgs.msg import Image, CameraInfo
@@ -42,6 +44,18 @@ class RingDetector(object):
 
         # Publisher for ring ObjectDetections
         self.detections_publisher = rospy.Publisher('/ring_detections_raw', ObjectDetection, queue_size=10)
+
+        # Publisher for publishing raw object detections
+        self.markers = MarkerArray()
+        self.markers_publisher = rospy.Publisher('/ring_markers', MarkerArray, queue_size=1000)
+        self.COLOR_MAP = {
+            "red": ColorRGBA(1, 0, 0, 1),
+            "green": ColorRGBA(0, 1, 0, 1),
+            "blue": ColorRGBA(0, 0, 1, 1),
+            "yellow": ColorRGBA(1, 1, 0, 1),
+            "white": ColorRGBA(1, 1, 1, 1),
+            "black": ColorRGBA(0, 0, 0, 1)
+        }
 
         # Transformation buffer nd listener
         self.tf_buffer = tf2_ros.Buffer()
@@ -191,6 +205,17 @@ class RingDetector(object):
             # Compute position of ring in 3d world coordinate system
             ring_position = self.to_world_position(keypoint, disparity_region, camera_model, timestamp, maximum_distance)
 
+            # publish the ring_position
+            if ring_position != None:
+                style = {}
+                style['color'] = self.COLOR_MAP[classified_color]
+                style['marker_type'] = Marker.SPHERE
+                rospy.logwarn(style)
+                rospy.logwarn(ring_position.pose.position)
+                new_marker = utils.stamped_pose_to_marker(ring_position, index=len(self.markers.markers), **style)
+                self.markers.markers.append(new_marker)
+                self.markers_publisher.publish(self.markers)
+
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
                 _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
@@ -277,9 +302,7 @@ class RingDetector(object):
         # if ring pixel is not in the wall, first find the closest wall
         temp_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
         temp_pixel_1 = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
-        # rospy.logwarn("New ring detection:")
-        # rospy.logwarn(temp_pixel)
-        # rospy.logwarn(self.map_data[temp_pixel_1[1]][temp_pixel_1[0]])
+
         if self.map_data[temp_pixel_1[1]][temp_pixel_1[0]] != 255:
             temp_pixel_2 = utils.closest_wall_pixel(self.map_data, temp_pixel_1, max_distance=10)
             if temp_pixel_2 == None:
@@ -299,11 +322,24 @@ class RingDetector(object):
         # Normalize orientation vector
         normalized_orientation = orientation_parameters / numpy.linalg.norm(orientation_parameters)
         
-        # Move in this direction for 0.2m
-        approaching_point = Pose()
-        approaching_point.position.x = ring_point.point.x + 0.2 * normalized_orientation[0]
-        approaching_point.position.y = ring_point.point.y + 0.2 * normalized_orientation[1]
-        approaching_point.position.z = 0
+        # Move in this direction for 0.2m => pickup_point
+        pickup_point = Pose()
+        pickup_point.position.x = ring_point.point.x + 0.2 * normalized_orientation[0]
+        pickup_point.position.y = ring_point.point.y + 0.2 * normalized_orientation[1]
+        pickup_point.position.z = ring_point.point.z
+
+        # Move in this direction for 0.5m => get_close_point
+        get_close_point = Pose()
+        get_close_point.position.x = ring_point.point.x + 0.5 * normalized_orientation[0]
+        get_close_point.position.y = ring_point.point.y + 0.5 * normalized_orientation[1]
+        get_close_point.position.z = 0
+
+        # Orientation for get_close_point should be towards the wall
+        get_close_orientation_parameters = normalized_orientation * (-1)
+        get_close_orientation = math.atan2(get_close_orientation_parameters[1], get_close_orientation_parameters[0])
+        get_close_quaternion = quaternion_from_euler(0, 0, get_close_orientation)
+        get_close_quaternion = Quaternion(*get_close_quaternion)
+
 
         # Orientation of the ring is the direction, rotated 90 degrees to the right
         # This will only work correctly, if ring detections are accurate and close to the wall
@@ -319,13 +355,20 @@ class RingDetector(object):
         orientation_quaternion = quaternion_from_euler(0, 0, orientation)
         orientation_quaternion = Quaternion(*orientation_quaternion)
 
+        # set get_close_point
         approaching_pose = PoseStamped()
         approaching_pose.header = ring_position.header
         approaching_pose.header.frame_id = 'map'
-        approaching_pose.pose.position.x = approaching_point.position.x
-        approaching_pose.pose.position.y = approaching_point.position.y
+        approaching_pose.pose.position.x = get_close_point.position.x
+        approaching_pose.pose.position.y = get_close_point.position.y
         approaching_pose.pose.position.z = 0
-        approaching_pose.pose.orientation = orientation_quaternion
+        approaching_pose.pose.orientation = get_close_quaternion
+
+        # set pickup_point
+        ring_position.pose.position.x = pickup_point.position.x
+        ring_position.pose.position.y = pickup_point.position.y
+        ring_position.pose.position.z = 0  # pickup_point.position.z
+        ring_position.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
 
