@@ -84,10 +84,11 @@ class SpeechTranscriptionServer(object):
         if 'yes' in transcription:
             affirmation = 'yes'
 
-        if 'no' in transcription:
+        elif 'no' in transcription:
             affirmation = 'no'
 
-        affirmation = 'error'
+        else:
+            affirmation = 'error'
 
         return InquireAffirmationResponse(affirmation)
     

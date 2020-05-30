@@ -70,5 +70,8 @@
     <!-- Run the color classification service -->
     <include file="$(find color_classification)/launch/color_classifier.launch"/>
 
+    <!-- Speech recognition -->
+    <include file="$(find speech_transcription)/launch/speech_transcription.launch" />
+
     <!-- <include file="$(find love_maker_2000)/launch/brain.launch"/> -->
 </launch>
