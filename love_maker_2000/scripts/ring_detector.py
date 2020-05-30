@@ -33,7 +33,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = True
+        self.enabled = False
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Color classification service
@@ -193,12 +193,12 @@ class RingDetector(object):
 
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
-                #_, approaching_point = self.compute_approaching_point(ring_position, timestamp)
-                #if approaching_point is not None:
-                #    detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
-                #    self.detections_publisher.publish(detection)
-                #else:
-                #    rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
+                _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
+                if approaching_point is not None:
+                   detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
+                   self.detections_publisher.publish(detection)
+                else:
+                   rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
                 detection = self.construct_detection_message(ring_position, ring_position, classified_color, timestamp)
                 self.detections_publisher.publish(detection)
             else:
