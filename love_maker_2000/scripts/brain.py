@@ -91,15 +91,15 @@ class Brain(object):
         approaching_ring = State('approaching_ring')
         states = [finding_gargamel, approaching_gargamel, finding_woman, approaching_woman, finding_cylinder, approaching_cylinder, finding_ring, approaching_ring]
 
-        self.machine = Machine(model=self, states=states, initial=finding_gargamel, ignore_invalid_triggers=True)
+        self.machine = Machine(model=self, states=states, initial=finding_gargamel)
 
-        self.machine.add_transition('start_approaching_gargamel', [finding_gargamel, approaching_woman], approaching_gargamel, before=self.on_start_approaching_gargamel)
-        self.machine.add_transition('start_finding_woman', approaching_gargamel, finding_woman, before=self.on_start_finding_woman)
-        self.machine.add_transition('start_approaching_woman', [finding_woman, approaching_ring], approaching_woman, before=self.on_start_approaching_woman)
-        self.machine.add_transition('start_finding_cylinder', approaching_gargamel, finding_cylinder, before=self.on_start_finding_cylinder)
-        self.machine.add_transition('start_approaching_cylinder', finding_cylinder, approaching_cylinder, before=self.on_start_approaching_cylinder)
-        self.machine.add_transition('start_finding_ring', approaching_cylinder, finding_ring, before=self.on_start_finding_ring)
-        self.machine.add_transition('start_approaching_ring', finding_ring, approaching_ring, before=self.on_start_approaching_ring)
+        self.machine.add_transition('start_approaching_gargamel', [finding_gargamel, approaching_woman], approaching_gargamel, after=self.on_start_approaching_gargamel)
+        self.machine.add_transition('start_finding_woman', [approaching_gargamel, approaching_woman], finding_woman, after=self.on_start_finding_woman)
+        self.machine.add_transition('start_approaching_woman', [finding_woman, approaching_ring], approaching_woman, after=self.on_start_approaching_woman)
+        self.machine.add_transition('start_finding_cylinder', approaching_gargamel, finding_cylinder, after=self.on_start_finding_cylinder)
+        self.machine.add_transition('start_approaching_cylinder', finding_cylinder, approaching_cylinder, after=self.on_start_approaching_cylinder)
+        self.machine.add_transition('start_finding_ring', approaching_cylinder, finding_ring, after=self.on_start_finding_ring)
+        self.machine.add_transition('start_approaching_ring', finding_ring, approaching_ring, after=self.on_start_approaching_ring)
 
     def on_start_approaching_gargamel(self):
         self.wandering_task.cancel()
@@ -133,12 +133,15 @@ class Brain(object):
     
     # TODO: implement actual behavior
     def get_gargamels_affirmation(self, woman):
-        # import random
-        # return random.uniform(0, 1) < 0.5
+        import random
+        return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
+        # return self.get_affirmation()
+    
+    def get_affirmation(self):
         affirmation = self.inquire_affirmation().affirmation
         rospy.logerr(affirmation)
-        return affirmation == 'true'
+        return affirmation == 'yes'
     
     def on_start_finding_woman(self):
         for woman in self.women:
@@ -185,6 +188,8 @@ class Brain(object):
     def get_womans_affirmation(self):
         import random
         return random.uniform(0, 1) < 0.5
+        rospy.logerr("[ROBOT]: {}... Will you marry Gargamel?".format(self.current_woman.face_label))
+        # return self.get_affirmation()
 
     # TODO: implement actual behavior
     def get_womans_favorite_color(self):
@@ -277,21 +282,12 @@ class Brain(object):
             self.gargamel = object_detection
             self.start_approaching_gargamel()
             
-        # Otherwise it's a woman, if we do not know Gargamel's preferences yet
-        # just add her to the list
-        elif self.preferences is None:
+        # Otherwise it's a woman
+        else:
             self.women.append(object_detection)
-
-        # If we already know gargamel's preferences and if this woman is a potential match,
-        # add her to the list and approach her if we are not approaching any other woman already
-        elif self.preferences is not None:
-            if self.in_accordance_with_preferences(object_detection):
-
-                if self.state == 'finding_woman':
-                    self.start_approaching_woman(object_detection)
-                    self.current_woman = object_detection
-
-                self.women.append(object_detection)
+            if self.in_accordance_with_preferences(object_detection) and self.state == 'finding_woman':
+                self.start_approaching_woman(object_detection)
+                self.current_woman = object_detection
 
     def on_cylinder_detection(self, cylinder):
         self.cylinders.append(cylinder)
