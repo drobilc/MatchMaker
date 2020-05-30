@@ -51,20 +51,18 @@
 	% map coordinates
 	
 	\subsection{Camera pixel to world position} \label{pixel_to_world}
-	Object detectors must be able to compute the positions of the detected objects in the world. To do that, \texttt{rgb} camera and depth images are used. Because the robot is moving, and the environment is changing very fast, we must make sure that the received colour and depth image are synchronized with one another. Even a small delay between images can cause computed world positions to be inaccurate. \\ 
+	Object detectors must be able to compute the positions of the detected objects in the world. The robot is equipped with Kinect sensor that provides colour and depth images of its surroundings. The object detection is performed on received images. When the detector detects an object it computes its position in the image plane (that is, pixel $(u, v)$ in the image where the object appears). Using pixel $(u, v)$, depth image and some additional camera information, the object's world position can be computed. \\
 	
-	%Dopiši, kaj smo uporabli za sinhronizacijo
-
-	% dodaj sliko slabe detekcje zaradi pomanjkljive časovne sinhronizacije
+	But before the computation can be performed, both colour and depth images must be synchronized. Because the robot is moving and the environment is changing very fast, even a small delay between images can cause computed world positions to be inaccurate. This problem can be seen in figure \ref{fig:non_synchronized_raw_detection}. \\ 
+	
 	\begin{figure}[h]
 		\centering
 		\includegraphics[height=4cm]{images/detections}
 		\caption{Inacurate detection of the object's position due to lack of time synchronization among depth and colour image}
 		\label{fig:non_synchronized_raw_detection}
 	\end{figure}
-	
-	Object detections are performed on images. Object detectors output pixels from \texttt{rgb} image (or in case of ring detector from depth image) where the object is detected. Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. \\
-	% Object detections are performed on WHAT KIND OF images?
+
+	Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about the width and height of the camera sensor. The camera also has additional information about its position in the world (namely, its position and rotation). \\
 
 	\begin{figure}[h]
 		\centering
@@ -76,13 +74,12 @@
 	% https://alicevision.readthedocs.io/en/latest/_images/pinholeCamera.png
 	
 	Assuming that the camera is using pinhole camera model (and the camera calibration matrix is known), a ray can be "cast" from the centre of the camera coordinate system to the pixel on image plane, where the object was detected. This can be seen in the figure \ref{fig:pinhole_camera_model}. Using depth image information, we can obtain the distance from the centre of the camera to the detected object in space. Using the computed ray and the distance to the object, we can compute object's position in a three-dimensional space in camera frame. \\
-	% razloži, kaj je tu camera frame
 	
-	After that, we can use a transforamtion matrix to finally convert the position of the detected object from the camera frame to the world coordinate system. \\ 
-	% dodaj te frame v nek dictionary (glej zgoraj)
+	After that, we can use a transformation matrix to finally convert the position of the detected object from the camera frame to the world coordinate system. \\ 
 	
-	In our system, the face and ring positions are computed this way, meanwhile the detection of cylinders works with point clouds, where the points are already computed in the world frame.
-	% kaj je world frame? Dodaj v dictionary
+	In our system, the face and ring positions are computed this way, meanwhile the detection of cylinders works with point clouds, where the points are already computed in the world frame. \\
+	
+	The algorithm explained in this section is used when localizing detected faces and rings. Cylinders are localized using \texttt{PointCloud} information (which is in fact computed from the depth image with a similar approach). \\
 	
 	\subsection{Faces}
 	In this section, we present algorithms that our robot uses to detect faces, compute their orientation in space and classify them.
@@ -93,9 +90,16 @@
 	
 	\begin{figure}[h]
 		\centering
-		\caption{A few examples of haar features}
+		\begin{tikzpicture}
+			\fill[lightgray] (0,0.5) rectangle (4,4.5);
+			\fill[black] (1,2.75) rectangle (3,3.5);
+			\fill[white] (1,2) rectangle (3,2.75);
+		\end{tikzpicture}
+		\caption{An example of a good haar feature}
 		\label{fig:haar_features}
 	\end{figure}
+
+	An example haar feature is displyed in figure \ref{fig:haar_features}. The grey region represents the face region (which fits well in a square). The black and white region is a haar feature. This specific feature performs well in human eye region detection. It detects the transition from eyes to forehead. \\
 	
 	The face images are first cropped to the same size and aligned so that the eyes approximately match. Then, a set of Haar features is generated. Each feature is defined at certain position in the face rectangle and consists of black and white regions (see figure \ref{fig:haar_features}). The value of the feature is computed as as difference between the sum of pixel intensities in the dark regions and the sum of pixel intensities in the light regions. \\
 	
@@ -104,17 +108,15 @@
 	The detection is then done with a sliding window method. This simply means that we are evaluating every possible rectangle area in the image. If we want to detect faces of different scales, the image must be resized and the entire algorithm is repeated. So the cascade is crucial for speed here. \\
 	
 	\subsubsection{Computing the orientation of the faces} \label{face_orientation_computation}
-	After the face has been detected in an image, it's position in the world coordinate system is computed. The approaching point is then calculated using static map information. \texttt{Approaching point} is a point close to the face and directly in front it that the robot must visit to approach the face. \\
-	% Evo, tu je en primer definicije novega izraza (approaching point)
+	After the face has been detected in an image, it's position in the world coordinate system is computed. The approaching point is then calculated using static map information. \textbf{Approaching point} is a point close to the face and directly in front it that the robot must visit to approach the face. \\
 	
-	To compute the \texttt{approaching point}, we must first find the orientation of the detected face (from now on \texttt{face orientation}). In order to do that, we need the static map information.
-	% what static map information?
-	The calculated position of the detected face (from now on \texttt{face position}) in the world coordinates is first converted to map coordinates. Then, the corresponding pixel in map is calculated. \\
-	% dodaj world coordinates v dictionary
-	% dodaj map coordinates v dictionary
+	To compute the approaching point, the orientation of the detected face must first be determined. The face orientation is the direction in which the face is pointing at. In order to do that, we need the static map information. \\
+	
+	Static map is the map of the robot environment. It is used for robot localization and path computation. In our case it was generated before the task, though algorithms that can explore unknown space exist and could be used to enable our robot to perform this task in unseen environment. In ROS, the map is simply an image with some additional metadata. Each pixel on map represents a small part of the world (in our case, each map pixel represents 5 centimetres in the world).\\
+	
+	To compute face orientation, its position in the world coordinates is first converted to map coordinates. Then, the corresponding pixel in map is calculated. \\
 	
 	\begin{figure}[h]
-		% This image should be replaced with something better
 		\centering
 		\begin{tikzpicture}
 			\draw[step=0.5cm,lightgray,very thin] (0.1,1.1) grid (6.4,4.9);
@@ -130,16 +132,15 @@
 		\label{fig:orientation_computation}
 	\end{figure}
 	
-	Because of depth sensor inaccuracy, the computed map pixel coordinate doesn't always lie on the wall. In figure \ref{fig:orientation_computation}, computed face pixel is coloured red. \\ 
-	% map pixel coordinate v dictionary
+	Because of depth sensor inaccuracy, the computed map pixel coordinate doesn't always lie on the wall. In figure \ref{fig:orientation_computation}, the computed face pixel is marked with a red circle. \\ 
 	
-	% TO NI VEČ RELEVANTNO, KER JE ZDJ DRUGA SLIKA
-	Using a simple breadth first search in the proximity of the pixel which corresponds to the position of the detected face (from now on \texttt{face pixel}), the closest pixel from the set of pixels, which correspond to the positions occupied by the walls (from now on \texttt{wall pixel}), is determined. In figure \ref{fig:orientation_computation}, this pixel is also coloured red. \\
-	% Damn it, ne morta bit oba rdeča. Če jih hočemo opisat z barvami, morta bit različnih barv. Sicer ju mormo opisat drugače, recimo dodat oznaki A in B
+	Using a simple breadth first search in the proximity of the pixel which corresponds to the position of the detected face (from now on face pixel), the closest pixel from the set of pixels, which correspond to the positions occupied by the walls (from now on wall pixel), is determined. In figure \ref{fig:orientation_computation}, this pixel is coloured red. \\
 	
-	% TO NI VEČ RELEVANTNO, KER JE ZDJ DRUGA SLIKA
-	After the wall pixel has been found, the Hough line finding algorithm is executed on an area around it. The detected lines in figure \ref{fig:orientation_computation} are represented with a yellow colour. If the algorithm finds more than one line, the line which is closest to the wall pixel is selected. After the line is selected, there are two possible orientations as represented in figure \ref{fig:orientation_computation}. The vector that is pointing in the direction of the robot is chosen to be the face orientation. \\ 
-	% prestrukturiraj v smislu da normala na najdeno linijo nam določa orientacijo obraza. Ker pa mamo vektorje, sta možni orientaciji dve, vsaka v svoji smeri (v nasprotnih smereh). Ker robot ne vidi skozi zid, pride v poštev tista izmed orientacij, ki je bližje vektorju od pozicije obraza do pozicije robota.
+	After the wall pixel has been found, the Hough line finding algorithm is executed on an area around it. The detected line in figure \ref{fig:orientation_computation} is represented in black. If the algorithm finds more than one line, the line which is closest to the wall pixel is selected. \\
+	
+	Because the face is positioned on the wall, on of the wall normals can be chosen as the face orientation. But there are two possible options (as represented in figure \ref{fig:orientation_computation} with labels $\vec{n}$ and $-\vec{n}$), pointing in the opposite directions. The normal that is pointing in the direction of the robot is chosen because otherwise the robot would not be able see the face. \\
+	
+	Similar algorithm is used for computation of the ring orientation, but instead of the normal of the wall, the direction of the wall is used as the ring orientation. \\
 	
 	\subsubsection{Face classification}
 	After faces are detected and localized in the world, they have to be identified.
@@ -151,10 +152,10 @@
 	
 	So the colour classifier in the final task uses the k-nearest neighbours algorithm and takes in an input vector in $(red, green, blue)$ format and returns a colour label with one of the six possible classes listed above. \\
 	
-	Because of the uneven lighting in the Gazebo simulator (and probably in the real world too), the classifier sometimes returns an incorrect label. We solved this problem by using the robustification process as described in the \ref{robustification} section. Colour classifier is run multiple times on different detections of the same object and the most frequent colour is chosen as the colour of the object (from now on \texttt{object colour}). \\
+	Because of the uneven lighting in the Gazebo simulator (and probably in the real world too), the classifier sometimes returns an incorrect label. We solved this problem by using the robustification process as described in the \ref{robustification} section. Colour classifier is run multiple times on different detections of the same object and the most frequent colour is chosen as the colour of the object (from now on object colour). \\
 	
 	\subsection{Rings}
-	In this section, the algorithm for ring detection is presented.
+	In this section, the algorithm for ring detection and its approaching point computation is presented.
 	
 	\subsubsection{Ring detection} \label{ring_detection}
 	When robot finds the woman that is willing to marry Gargamel, it must help him find a ring that she will like. Luckily, she is kind enough to tell us her favourite colour. The robot must then find the ring in that colour, give it to her and ask her to marry him. \\
@@ -213,14 +214,14 @@
 	The distance to the ring is computed as the average of distances to each pixel in the masked distance image. The ring position in world frame is computed using as explained in section \ref{pixel_to_world}. \\
 
 	\subsubsection{Ring approaching point computation}
-	Computation of approachin points for rings takes advantage of the static map. First we check whether the detected ring position is above the wall or not. If it is, we use it's position as our starting position. If it isn't, we find the closest pixel occupied by the wall and use it as our starting position. Next, we need to find the direction in which we'll set the approaching point. \\
+	Computation of approaching points for rings takes advantage of the static map. First we check whether the detected ring position is above the wall or not. If it is, we use it's position as our starting position. If it isn't, we find the closest pixel occupied by the wall and use it as our starting position. Next, we need to find the direction in which we'll set the approaching point. \\
 
-	We do this by searching for the nearest pixel to the starting poisiton (located on the wall) that is not occupied by a wall. By subtracting the starting position pixel from the pixel we just found, we get a vector that points from the ring to our soon to be approaching point. This vector is then normalized so it can be used in further computation. \\
+	We do this by searching for the nearest pixel to the starting position (located on the wall) that is not occupied by a wall. By subtracting the starting position pixel from the pixel we just found, we get a vector that points from the ring to our soon to be approaching point. This vector is then normalized so it can be used in further computation. \\
 
 	Now we move along the calculated direction vector for 0.15 meters and set this position as the position of the approaching point. Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
 
 	\subsubsection{Ring colour detection}
-	The ring colour is computed using the mask that we have computed in section \ref{ring_detection}. The \texttt{rgb} image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
+	The ring colour is computed using the mask that we have calculated in section \ref{ring_detection}. The colour  image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
 	
 	\begin{figure}[h]
 		\centering
