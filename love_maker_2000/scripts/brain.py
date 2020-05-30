@@ -133,10 +133,10 @@ class Brain(object):
     
     # TODO: implement actual behavior
     def get_gargamels_affirmation(self, woman):
-        import random
-        return random.uniform(0, 1) < 0.5
+        # import random
+        # return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
-        # return self.get_affirmation()
+        return self.get_affirmation()
     
     def get_affirmation(self):
         affirmation = self.inquire_affirmation().affirmation
@@ -186,10 +186,10 @@ class Brain(object):
     
     # TODO: implement actual behavior
     def get_womans_affirmation(self):
-        import random
-        return random.uniform(0, 1) < 0.5
+        # import random
+        # return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: {}... Will you marry Gargamel?".format(self.current_woman.face_label))
-        # return self.get_affirmation()
+        return self.get_affirmation()
 
     # TODO: implement actual behavior
     def get_womans_favorite_color(self):
