@@ -32,7 +32,7 @@ class SpeechTranscriptionServer(object):
         # from the microphone
         with mic as source:
             #recognizer.adjust_for_ambient_noise(source, duration=1)
-            audio = recognizer.listen(source)
+            audio = recognizer.listen(source, timeout=10)
         
         response = {
             'success': True,
