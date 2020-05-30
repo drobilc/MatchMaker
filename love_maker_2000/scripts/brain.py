@@ -277,21 +277,12 @@ class Brain(object):
             self.gargamel = object_detection
             self.start_approaching_gargamel()
             
-        # Otherwise it's a woman, if we do not know Gargamel's preferences yet
-        # just add her to the list
-        elif self.preferences is None:
+        # Otherwise it's a woman
+        else:
             self.women.append(object_detection)
-
-        # If we already know gargamel's preferences and if this woman is a potential match,
-        # add her to the list and approach her if we are not approaching any other woman already
-        elif self.preferences is not None:
-            if self.in_accordance_with_preferences(object_detection):
-
-                if self.state == 'finding_woman':
-                    self.start_approaching_woman(object_detection)
-                    self.current_woman = object_detection
-
-                self.women.append(object_detection)
+            if self.in_accordance_with_preferences(object_detection) and self.state == 'finding_woman':
+                self.start_approaching_woman(object_detection)
+                self.current_woman = object_detection
 
     def on_cylinder_detection(self, cylinder):
         self.cylinders.append(cylinder)
