@@ -262,10 +262,6 @@ class Robustifier(object):
 
         self.publish_raw_markers = rospy.get_param('~publish_raw_markers', True)
 
-        # Subscriber and publisher for object detections
-        self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
-        self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
-
         # Face classification service that is used to recognize face
         rospy.wait_for_service('face_classification')
         self.face_recognition = rospy.ServiceProxy('face_classification', FaceClassification)
@@ -277,6 +273,10 @@ class Robustifier(object):
         # TODO: Instead of using a list use a quadtree or a grid
         # A list of Detection objects used for finding the closest pose
         self.object_detections = []
+
+        # Subscriber and publisher for object detections
+        self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
+        self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
 
     def publish_marker(self, detection, marker_style={}, approaching_point=False):
         # Construct a marker from detected object, add it to markers array

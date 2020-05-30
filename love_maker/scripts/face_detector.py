@@ -49,15 +49,8 @@ class FaceFinder(object):
         # We can use dlib, haar, or hog detector here
         self.face_detector = HaarDetector(self.haar_cascade_data_file_path)
 
-        # Create a new time synchronizer to synchronize depth and rgb image callbacks.
-        # Also subscribe to camera info so we can get camera calibration matrix.
-        self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
-        self.image_subscriber = message_filters.Subscriber('/camera/rgb/image_raw', Image)
-        self.camera_info_subscriber = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
-        self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
-        self.image_synchronizer.registerCallback(self.on_data_received)
-
-        # Subscriber to enable or disable face detector
+        # Subscriber to enable or disable face detector, the self.enabled flag
+        # must be set before the first image is received, otherwise it will fail
         self.enabled = False
         self.toggle_subscriber = rospy.Subscriber('/face_detector_toggle', Bool, self.toggle, queue_size=10)
 
@@ -70,6 +63,14 @@ class FaceFinder(object):
 
         # Get static map information from map service
         self.map_data, self.map_resolution, self.map_origin = utils.get_map_data()
+
+        # Create a new time synchronizer to synchronize depth and rgb image callbacks.
+        # Also subscribe to camera info so we can get camera calibration matrix.
+        self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
+        self.image_subscriber = message_filters.Subscriber('/camera/rgb/image_raw', Image)
+        self.camera_info_subscriber = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
+        self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
+        self.image_synchronizer.registerCallback(self.on_data_received)
     
     def toggle(self, enable):
         """Callback to enable or disable face detector"""
@@ -79,7 +80,6 @@ class FaceFinder(object):
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
         if not self.enabled:
-            self.enabled = True
             return
 
         # Because of the TimeSynchronizer, depth image, rgb image and camera

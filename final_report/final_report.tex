@@ -20,7 +20,20 @@
 	\maketitle
 	
 	\section{Introduction}
-	% kaj je bil task
+	In this report we will explain how our robot by the name of Erazem performs the task of a skilled match maker. He was hired by Gargamel, who wanted to find love and get married as quick as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usualy his clients also cared about the looks, he also wanted to find out about this kind of preferences. \\
+	
+	When Gargamel suprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook of this thought since he had had much stranger clients before and started looking right away. \\
+
+	He was scanning the place for the women. For each face he saw, he quickly filled his mental checklist with Gargamel preferences. "Such easy criteria", he thought to himself, "but so little matches..." When he finally came across a woman that matched Gargamel's preferences, he fixed his tie, took a deep breath, and approached her. She seemed interested in meeting Gargamel but was very secretive. When Erasem asked her to tell him something about herself, she only told him her favourite colour. Erazem firmly remembered this little detail and after some chit-chat said goodbye to her. He was happy to have finally found a potential suitor but at the same time a little worried about the lack of information he had about her. \\
+	
+	Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erasem told him all he knew about that woman. It was up to Gargamel to decide wheteher she seemed promising or no. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite color and toss a coin in it while also saying the wish for Gargamel and the woman to marrs and live happily ever after. \\
+
+	Erazem searched through his memory whether he has already seen the well in this colour. If he could remeber, he would have definitely known where to go. After some time, he found the right wishing well, tossed the coin and said the wish. Now he went about to find a perfect ring. Of course, it had to be in the woman's favourite colour since Gargamel didn't have musch opinion on which colours he liked. He picked it up and brought it to the woman. \\
+	
+	This was the moment of truth. Will she agree to mary Gargamel, having received such thoughtfull gift? If she agrees, Erazem's work here is done. But what if she isn't impressed? Well, then Erazem will find another potential suitor and charge Gargamel some extra money, for the inconvenience. \\
+
+	He knew that his job was very impactfull. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after.
+
 	% shema stanj robota
 	
 	\section{Methods} \label{methods}
@@ -39,7 +52,7 @@
 	
 	\subsection{Camera pixel to world position} \label{pixel_to_world}
 	Object detectors must be able to compute the positions of the detected objects in the world. To do that, \texttt{rgb} camera and depth images are used. Because the robot is moving, and the environment is changing very fast, we must make sure that the received colour and depth image are synchronized with one another. Even a small delay between images can cause computed world positions to be inaccurate. \\ 
-	% To se lahka odraža s tem, da zaznave niso na mestih, kjer dejansko so, ampak zraven in dobimo napačno pozicijo, sploh če se robot rotira (Primer so cilindri - raw detections) 
+	
 	%Dopiši, kaj smo uporabli za sinhronizacijo
 
 	% dodaj sliko slabe detekcje zaradi pomanjkljive časovne sinhronizacije
@@ -59,13 +72,11 @@
 		\label{fig:pinhole_camera_model}
 	\end{figure}
 	
-	% Uporabimo kaksen drug izraz kot marked
 	% Damo neko podobno sliko kot na naslednji povezavi
 	% https://alicevision.readthedocs.io/en/latest/_images/pinholeCamera.png
 	
 	Assuming that the camera is using pinhole camera model (and the camera calibration matrix is known), a ray can be "cast" from the centre of the camera coordinate system to the pixel on image plane, where the object was detected. This can be seen in the figure \ref{fig:pinhole_camera_model}. Using depth image information, we can obtain the distance from the centre of the camera to the detected object in space. Using the computed ray and the distance to the object, we can compute object's position in a three-dimensional space in camera frame. \\
 	% razloži, kaj je tu camera frame
-	% js bi tu dodala mogoče slikico, da si bo lažje predstavljat
 	
 	After that, we can use a transforamtion matrix to finally convert the position of the detected object from the camera frame to the world coordinate system. \\ 
 	% dodaj te frame v nek dictionary (glej zgoraj)
@@ -95,14 +106,12 @@
 	\subsubsection{Computing the orientation of the faces} \label{face_orientation_computation}
 	After the face has been detected in an image, it's position in the world coordinate system is computed. The approaching point is then calculated using static map information. \texttt{Approaching point} is a point close to the face and directly in front it that the robot must visit to approach the face. \\
 	% Evo, tu je en primer definicije novega izraza (approaching point)
-	% Dodaj slikico approaching pointa, lahko tudi na spodnjo slikico, ki ralaga orientacijo
 	
 	To compute the \texttt{approaching point}, we must first find the orientation of the detected face (from now on \texttt{face orientation}). In order to do that, we need the static map information.
 	% what static map information?
 	The calculated position of the detected face (from now on \texttt{face position}) in the world coordinates is first converted to map coordinates. Then, the corresponding pixel in map is calculated. \\
 	% dodaj world coordinates v dictionary
 	% dodaj map coordinates v dictionary
-	% pixel map ubesedi drugače, ker ne-mi-človek ne ve, kaj to je
 	
 	\begin{figure}[h]
 		% This image should be replaced with something better
@@ -123,17 +132,14 @@
 	
 	Because of depth sensor inaccuracy, the computed map pixel coordinate doesn't always lie on the wall. In figure \ref{fig:orientation_computation}, computed face pixel is coloured red. \\ 
 	% map pixel coordinate v dictionary
-	% "lie on the wall" -> neki drugega v smislu na pixlu, kjer je zid al pa "correspond" namest "lie" - nisem znala zdle pogruntat smiselne zadeve, zato samo komentar.
 	
+	% TO NI VEČ RELEVANTNO, KER JE ZDJ DRUGA SLIKA
 	Using a simple breadth first search in the proximity of the pixel which corresponds to the position of the detected face (from now on \texttt{face pixel}), the closest pixel from the set of pixels, which correspond to the positions occupied by the walls (from now on \texttt{wall pixel}), is determined. In figure \ref{fig:orientation_computation}, this pixel is also coloured red. \\
-	% A bi blo bolj smiselno definirat posebi face pixel in wall pixel in ju potem šele uporabit v stavku? (glej prejšnje stanje zgornjega odstavka)
 	% Damn it, ne morta bit oba rdeča. Če jih hočemo opisat z barvami, morta bit različnih barv. Sicer ju mormo opisat drugače, recimo dodat oznaki A in B
 	
+	% TO NI VEČ RELEVANTNO, KER JE ZDJ DRUGA SLIKA
 	After the wall pixel has been found, the Hough line finding algorithm is executed on an area around it. The detected lines in figure \ref{fig:orientation_computation} are represented with a yellow colour. If the algorithm finds more than one line, the line which is closest to the wall pixel is selected. After the line is selected, there are two possible orientations as represented in figure \ref{fig:orientation_computation}. The vector that is pointing in the direction of the robot is chosen to be the face orientation. \\ 
 	% prestrukturiraj v smislu da normala na najdeno linijo nam določa orientacijo obraza. Ker pa mamo vektorje, sta možni orientaciji dve, vsaka v svoji smeri (v nasprotnih smereh). Ker robot ne vidi skozi zid, pride v poštev tista izmed orientacij, ki je bližje vektorju od pozicije obraza do pozicije robota.
-	
-	A similar algorithm is used to detect the orientation of the rings (from now on \texttt{ring orientation}).
-	% Tuki rabimo še povedat, akj j e pravzaprav orientacija obročka, ker načeloma sam po seb nima orientacije. Mi smo se odločli, da določimo orientacijo kot normalo na ravnino v kateri leži obroček v taki smeri, da lahka robot, ki ima palčko na desni strani (torej robotova desna stran je ob kocki, na kateri je pritrjen obroček), pobere obroček.
 	
 	\subsubsection{Face classification}
 	After faces are detected and localized in the world, they have to be identified.
@@ -158,7 +164,7 @@
 	% I am not sure that the information below is correct
 	Depth image is computed from disparity image, which is calculated from Kinect stereo camera system. The further away an object is, the smaller its disparity will be. Using calibration matrix, depth of each pixel can be approximated from disparity image. Object that appear further away from the camera have a smaller disparity, which reduces the accuracy of depth computation. To combat this, our algorithm first removes all objects that are over a certain distance away from the camera. \\
 	
-	After inaccurate depths are removed, a blob detection algorithm is applied to our depth image. The algorithm finds regions in our image that differ in colour. It actually searches for dark areas (areas that are further away from the camera) in the depth image. Because the inside of the ring is darker than the ring itself, the inner part is considered a blob. But not all blobs are considered rings. We can then apply some domain knowledge to the problem. We know that all the rings are positioned 12 cm above the cubes, so we can filter all blobs that lie below that height. If we look at the ring from any angle, they look elliptical, so the blobs are filtered by their roundness too. \\
+	After inaccurate depths are removed, a blob detection algorithm is applied to our depth image. The algorithm finds regions in our image that differ in colour. It actually searches for dark areas (areas that are further away from the camera) in the depth image. Because the inside of the ring is darker than the ring itself, the inner part is considered a blob. But not all blobs are considered rings. We can then apply some domain knowledge to the problem. We know that all the rings are positioned 11 cm above the cubes, so we can filter all blobs that lie below that height. If we look at the ring from any angle, they look elliptical, so the blobs are filtered by their roundness too. \\
 	
 	\begin{figure}[h]
 		\begin{subfigure}{.5\textwidth}
@@ -259,12 +265,32 @@
 	It should also be noted that similar process is applied to the approaching points. Approaching point is computed for each face detection and as positions of the face detections are averaged, approaching points are averaged as well. In figure \ref{fig:inaccurate_detections}, this point is yellow. \\
 		
 	\subsection{Smart exploration of space} \label{smart_exploration}
-	% dobi mapo
-	% določi, kje je zid
-	% morph
-	% delaunayeva triangulacija
-	% hierarhical clustering
+	There are two ways to determine some goals for space exploration; either you hardcode a list of goals or you create a system that automatically sets the goals based on the shape of the map. Hardcoding is almost never a good idea, se we went with the latter. \\
+
+	Our algorithm uses static map as the input. First, the contrast between the walls or unknown space, and the space where robot can move, is amplified. After that a morphological operation of closing is performed to smooth out the corners which robot can't reach because of it's circular shape. \\
+	
+	The part containing the relevant map is cropped out of the whole image as the other empty parts are not needed in the rest of the process. We then find the corners with Harris corner detector and then apply the nonamxima suppresion to only keep the actual corners. The corners are corners in the walls and obstacles and also the ends of the walls. \\
+	
+	An edge is a sudden change in brightness and a corner is the point where two edges meet. Corners are the points, where gradient change is big in all directions. Harris corner detector works on a grayscale image, smoothed by a Gaussian filter (removes any noise). For each pixel in the image, it considers a 3x3 window around it and uses derivatives to computes a Harris value for it. Harris value is a score which tells how likely does the pixel contain a corner. Non maxima suppression is used to only declare corners in the pixels, whose score is the local maximum of the certain window and also exceed some threshold value. \\
+
+	With the list of corners in the map ready, we can perform Delaunay triangulation to split the space without obstacles into triangles. Delaunay triangulation is a special kind of triangulation, where  no point form the set that the triangulation is performed on is inside the circumcircle of any triangle in the trinagulation. Another property of the Delaunay triangulation is that it maximizes the minimum angle in the triangles and thus create more even distribution of the area. \\
+
+	For each triangle, our algorithm find its centroid - the center of the circumcircle. If we were to connect the centroids, we would obtain a so called Voronoi diagram, a partition of the plane into regions. Each region contains all of the points that are closer to the seed inside this region, in our case a corner, than to any other seed (corner). The points from the Delaunay triangulation (centroids) are therefore as far away from all walls as possible. This makes them great points for space exploration as they are far from the obstacles and somewhat evenly distributed across the map. \\
+
+	We have to be careful as centroids form the Delaunay triangulation will also be set in narrow passageways to which robot may not have access. And sometimes, two points might end up very close together, which isn't ideal for the exploration. \\
+	
+	To eliminate the second problem, we use hierarhical clustering with the minimum distance as the stopping criteria. This merges any points that are too close together into one, their average. It does so hierarhically, in each iteration it merges only the two points that are the closest. \\
+	
+	This step can sometimes also solve the first problem. To be sure that the robot can reach all of the exploration goals, we check if any goal is too close to any wall and if so, move it into the opposite direction, away from the wall, if possible. \\
+
+	In the figure below, we can see the Delaunay triangulation of our map in green and the centroids in red. The points in blue represent the exploration goals after hierarhical clustering and moving points away from the walls.
 	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
+
+	\begin{figure}[h]
+		\centering
+		\caption{Delaunay triangulation and exploration goals before (left) and after the hierarhical clustering and moving unreachable ones to reachable position (right)}
+		\label{fig:exploration_goals}
+	\end{figure}
 	
 	\subsection{Fine movement} \label{fine_movement}
 	Fine movement is a special way in which our robot can move. It is used when the default movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
