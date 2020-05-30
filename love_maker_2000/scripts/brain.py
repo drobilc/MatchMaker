@@ -35,6 +35,14 @@ class Brain(object):
 
         self.setup_state_machine()
 
+        # Speech recognition services
+        rospy.wait_for_service('inquire_affirmation')
+        self.inquire_affirmation = rospy.ServiceProxy('inquire_affirmation', InquireAffirmation)
+        rospy.wait_for_service('inquire_color')
+        self.inquire_color = rospy.ServiceProxy('inquire_color', InquireColor)
+        rospy.wait_for_service('inquire_preferences')
+        self.inquire_preferences = rospy.ServiceProxy('inquire_preferences', InquirePreferences)
+
         # Brain component is the component that collects face, cylinder and ring
         # information and then plans how to solve the given task. It can use
         # MovementController to move the robot to goals. It should also be
@@ -71,14 +79,6 @@ class Brain(object):
         # point.
         self.wandering_task = self.movement_controller.wander()
         self.movement_controller.add_to_queue(self.wandering_task)
-
-        # Speech recognition services
-        rospy.wait_for_service('inquire_affirmation')
-        self.inquire_affirmation = rospy.ServiceProxy('inquire_affirmation', InquireAffirmation)
-        rospy.wait_for_service('inquire_color')
-        self.inquire_color = rospy.ServiceProxy('inquire_color', InquireColor)
-        rospy.wait_for_service('inquire_preferences')
-        self.inquire_preferences = rospy.ServiceProxy('inquire_preferences', InquirePreferences)
     
     def setup_state_machine(self):
         finding_gargamel = State('finding_gargamel')
