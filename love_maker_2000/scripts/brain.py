@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseStamped
 from movement.controller import MovementController
 from greeter import Greeter
 from utils import FACE_DETAILS, FaceDetails
-from speech_transcription.srv import InquireAffirmation
+from speech_transcription.srv import InquireAffirmation, InquireColor, InquirePreferences
 
 from zbar_detector.msg import Marker
 
@@ -79,6 +79,10 @@ class Brain(object):
         # Speech recognition services
         rospy.wait_for_service('inquire_affirmation')
         self.inquire_affirmation = rospy.ServiceProxy('inquire_affirmation', InquireAffirmation)
+        rospy.wait_for_service('inquire_color')
+        self.inquire_color = rospy.ServiceProxy('inquire_color', InquireColor)
+        rospy.wait_for_service('inquire_preferences')
+        self.inquire_preferences = rospy.ServiceProxy('inquire_preferences', InquirePreferences)
     
     def setup_state_machine(self):
         finding_gargamel = State('finding_gargamel')
@@ -130,8 +134,11 @@ class Brain(object):
                 self.favorite_color = None
                 self.start_finding_woman()
 
-    
-    # TODO: implement actual behavior
+    def get_gargamels_preferences(self):
+        # pref = self.inquire_preferences()
+        # return FaceDetails(pref.hair_length, pref.hair_color)
+        return FaceDetails('short', 'dark')
+
     def get_gargamels_affirmation(self, woman):
         # import random
         # return random.uniform(0, 1) < 0.5
@@ -184,7 +191,6 @@ class Brain(object):
                 self.favorite_color = None
                 self.start_finding_woman()
     
-    # TODO: implement actual behavior
     def get_womans_affirmation(self):
         # import random
         # return random.uniform(0, 1) < 0.5
@@ -193,7 +199,12 @@ class Brain(object):
 
     # TODO: implement actual behavior
     def get_womans_favorite_color(self):
-        return 'blue'
+        color = self.inquire_color().color
+        if color != '':
+            return color
+        else:
+            rospy.logerr("Cannot understand what you are saying")
+            return 'blue'
 
     def in_accordance_with_preferences(self, woman):
         if self.preferences is None:
@@ -202,11 +213,6 @@ class Brain(object):
             return True     # For testing purposes
             # woman_face_details = FACE_DETAILS[woman.face_label]
             # return woman_face_details == self.preferences
-
-    # TODO: implement actual behavior
-    def get_gargamels_preferences(self):
-        # TODO: this is the part where we ask him
-        return FaceDetails('short', 'dark')
     
     def on_start_finding_cylinder(self):
         for cylinder in self.cylinders:
