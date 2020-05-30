@@ -69,8 +69,6 @@ class WanderingTask(MovementTask):
         min_distance = 100000
         closest_goal = None
 
-        rospy.logwarn(self.current_robot_pose)
-
         if self.current_robot_pose == None:
             closest_goal = None
         
