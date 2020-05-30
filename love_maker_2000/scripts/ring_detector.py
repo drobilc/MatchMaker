@@ -33,16 +33,8 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = False
+        self.enabled = True
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
-
-        # Create a new time synchronizer to synchronize depth and rgb image callbacks.
-        # Also subscribe to camera info so we can get camera calibration matrix.
-        self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
-        self.image_subscriber = message_filters.Subscriber('/camera/rgb/image_raw', Image)
-        self.camera_info_subscriber = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
-        self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
-        self.image_synchronizer.registerCallback(self.on_data_received)
 
         # Color classification service
         rospy.wait_for_service('color_classifier')
@@ -67,6 +59,14 @@ class RingDetector(object):
         self.map_data[self.map_data == 100] = 255  # walls
         self.map_data[self.map_data == -1] = 0  # free space
         self.map_data = self.map_data.astype('uint8')
+
+        # Create a new time synchronizer to synchronize depth and rgb image callbacks.
+        # Also subscribe to camera info so we can get camera calibration matrix.
+        self.depth_image_subscriber = message_filters.Subscriber('/camera/depth/image_raw', Image)
+        self.image_subscriber = message_filters.Subscriber('/camera/rgb/image_raw', Image)
+        self.camera_info_subscriber = message_filters.Subscriber('/camera/rgb/camera_info', CameraInfo)
+        self.image_synchronizer = message_filters.TimeSynchronizer([self.depth_image_subscriber, self.image_subscriber, self.camera_info_subscriber], 10)
+        self.image_synchronizer.registerCallback(self.on_data_received)
     
     def toggle(self, enable):
         """Callback to enable or disable ring detector"""
