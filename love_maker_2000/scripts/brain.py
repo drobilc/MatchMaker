@@ -61,10 +61,6 @@ class Brain(object):
         self.set_detectors_enabled(False)
         localization_task = self.movement_controller.localize(callback=on_localization_finished)
         self.movement_controller.add_to_queue(localization_task)
-
-        # Fold the arm
-        self.toss_a_coin_task = self.movement_controller.toss_a_coin()
-        self.movement_controller.add_to_queue(self.toss_a_coin_task)
         
         # After the localization has been done, retract the robot arm, so that
         # we don't hit floating objects with it.
@@ -228,6 +224,7 @@ class Brain(object):
         self.wandering_task.cancel()
         task = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached)
         self.movement_controller.add_to_queue(task)
+        self.movement_controller.add_to_queue(self.movement_controller.toss_a_coin(duration=5.0))
     
     # TODO: throw an imaginary coin into the well or make a wish
     def on_cylinder_approached(self, detection, goal_status, goal_result):
