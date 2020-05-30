@@ -40,12 +40,6 @@ class SpeechTranscriptionServer(object):
             'transcription': None
         }
 
-        # response2 = type('obj', (object,), {
-        #     'success': True,
-        #     'error': None,
-        #     'transcription': None
-        # })
-
         try:
             response['transcription'] = recognizer.recognize_google(audio)
         except sr.RequestError:
@@ -64,6 +58,9 @@ class SpeechTranscriptionServer(object):
         response = self.listen()
         transcription = response['transcription']
 
+        hair_length = ''
+        hair_color = ''
+
         if 'bright' in transcription:
             hair_color = 'bright'
         elif 'dark' in transcription:
@@ -81,14 +78,13 @@ class SpeechTranscriptionServer(object):
         response = self.listen()
         transcription = response['transcription']
 
+        affirmation = ''
+
         if 'yes' in transcription:
             affirmation = 'yes'
 
         elif 'no' in transcription:
             affirmation = 'no'
-
-        else:
-            affirmation = 'error'
 
         return InquireAffirmationResponse(affirmation)
     

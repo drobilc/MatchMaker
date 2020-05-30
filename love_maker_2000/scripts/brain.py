@@ -19,6 +19,8 @@ from actionlib_msgs.msg import GoalStatus
 import utils
 
 class Brain(object):
+
+    GARGAMEL_LABEL = 'face19'
     
     def __init__(self, goals):
         rospy.init_node('brain', anonymous=False)
@@ -131,12 +133,16 @@ class Brain(object):
                 self.favorite_color = None
                 self.start_finding_woman()
 
+    # TODO: robustify this part
     def get_gargamels_preferences(self):
-        pref = self.inquire_preferences()
-        rospy.logerr("Length preference: {}".format(pref.hair_length))
-        rospy.logerr("Color preference: {}".format(pref.hair_color))
-        return FaceDetails(pref.hair_length, pref.hair_color)
-        # return FaceDetails('short', 'dark')
+        for i in range(2):
+            pref = self.inquire_preferences()
+            rospy.loginfo("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
+            if pref.hair_color != '' and pref.hair_length != '':
+                return FaceDetails(pref.hair_length, pref.hair_color)
+
+        # TODO: here we want manual input for the final task
+        return FaceDetails('short', 'dark')
 
     def get_gargamels_affirmation(self, woman):
         # import random
@@ -145,9 +151,13 @@ class Brain(object):
         return self.get_affirmation()
     
     def get_affirmation(self):
-        affirmation = self.inquire_affirmation().affirmation
-        rospy.logerr(affirmation)
-        return affirmation == 'yes'
+        for i in range(2):
+            affirmation = self.inquire_affirmation().affirmation
+            rospy.logerr(affirmation)
+            if affirmation != '':
+                return affirmation == 'yes'
+        # TODO: we should use manual input here if speech recognition fails
+        return True
     
     def on_start_finding_woman(self):
         for woman in self.women:
