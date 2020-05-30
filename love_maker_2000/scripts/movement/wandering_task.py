@@ -8,7 +8,6 @@ from task import MovementTask
 from move_base_msgs.msg import MoveBaseGoal
 
 import tf2_ros
-# from tf2_geometry_msgs import PointStamped
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 
@@ -70,8 +69,6 @@ class WanderingTask(MovementTask):
         min_distance = 100000
         closest_goal = None
 
-        rospy.logwarn(self.current_robot_pose)
-
         if self.current_robot_pose == None:
             closest_goal = None
         
@@ -88,13 +85,12 @@ class WanderingTask(MovementTask):
             self.finish()
             return
 
+        # Set the closest goal as the current goal
         closest_goal = self.get_closest_goal()
-
         if closest_goal == None:
             idx = 0
         else:
             idx = self.goals.index(closest_goal)
-
         self.current_goal = self.goals.pop(idx)
 
         # rospy.loginfo('Moving to goal [type = {}] {}'.format(detection.type, detection.approaching_point_pose))

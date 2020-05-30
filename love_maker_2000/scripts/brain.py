@@ -18,6 +18,8 @@ from zbar_detector.msg import Marker
 from actionlib_msgs.msg import GoalStatus
 import utils
 
+from random import randint
+
 class Brain(object):
 
     GARGAMEL_LABEL = 'face19'
@@ -35,6 +37,14 @@ class Brain(object):
         self.preferences = None
         self.favorite_color = None
         self.object_detections = {}
+
+        hair_length = ['short', 'long']
+        hair_color = ['light', 'dark']
+        self.default_preference_hair_length = hair_length[randint(0, len(hair_length) - 1)]
+        self.default_preference_hair_color = hair_color[randint(0, len(hair_color) - 1)]
+
+        self.default_color_selection = ['blue', 'red', 'green', 'black']
+        self.default_affirmation_selection = ['yes', 'no']
 
         self.setup_state_machine()
 
@@ -135,14 +145,19 @@ class Brain(object):
 
     # TODO: robustify this part
     def get_gargamels_preferences(self):
-        for i in range(2):
-            pref = self.inquire_preferences()
-            rospy.loginfo("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
-            if pref.hair_color != '' and pref.hair_length != '':
-                return FaceDetails(pref.hair_length, pref.hair_color)
+        try:
+            for i in range(2):
+                pref = self.inquire_preferences()
+                rospy.loginfo("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
+                if pref.hair_color != '' and pref.hair_length != '':
+                    return FaceDetails(pref.hair_length, pref.hair_color)
 
-        # TODO: here we want manual input for the final task
-        return FaceDetails('short', 'dark')
+            # TODO: here we want manual input for the final task
+            return FaceDetails('short', 'dark')   
+        except Exception:
+            rospy.logerr("Length preference: {}".format(self.default_preference_hair_length))
+            rospy.logerr("Color preference: {}".format(self.default_preference_hair_color))
+            return FaceDetails(self.default_preference_hair_length, self.default_preference_hair_color)
 
     def get_gargamels_affirmation(self, woman):
         # import random
@@ -151,13 +166,18 @@ class Brain(object):
         return self.get_affirmation()
     
     def get_affirmation(self):
-        for i in range(2):
-            affirmation = self.inquire_affirmation().affirmation
+        try:
+            for i in range(2):
+                affirmation = self.inquire_affirmation().affirmation
+                rospy.logerr(affirmation)
+                if affirmation != '':
+                    return affirmation == 'yes'
+            # TODO: we should use manual input here if speech recognition fails
+            return True
+        except Exception:
+            affirmation = self.default_affirmation_selection[randint(0, len(self.default_affirmation_selection) - 1)]
             rospy.logerr(affirmation)
-            if affirmation != '':
-                return affirmation == 'yes'
-        # TODO: we should use manual input here if speech recognition fails
-        return True
+            return affirmation == 'yes'
     
     def on_start_finding_woman(self):
         for woman in self.women:
@@ -213,7 +233,8 @@ class Brain(object):
             return color
         else:
             rospy.logerr("Cannot understand what you are saying")
-            return 'blue'
+            color = self.default_color_selection[randint(0, len(self.default_color_selection) - 1)]
+            return color
 
     def in_accordance_with_preferences(self, woman):
         if self.preferences is None:
