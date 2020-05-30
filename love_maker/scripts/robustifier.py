@@ -30,7 +30,7 @@ class Detection(object):
         "black": ColorRGBA(0, 0, 0, 1)
     }
 
-    def __init__(self, detection, dummy=False):
+    def __init__(self, detection, dummy=False, minimum_detections=7):
         # Detection object is an object that adds some aditional metadata to the
         # ObjectDetection message.
         self.detection = detection
@@ -38,6 +38,7 @@ class Detection(object):
         # When a new Detection object is constructed, the number of its
         # detections should be one.
         self.number_of_detections = 1
+        self.minimum_detections = minimum_detections
 
         # The already_sent parameter is set to True when the object is first
         # sent to the Brain node. If the object has drastically changed, the
@@ -161,6 +162,7 @@ class Detection(object):
         #   * object color and face label are chosen so that only the most frequent value is used
         #   * additional_information (QR code) is updated if the code has been recognized
         # The needs_resending flag is set to True only if additional_information changes
+        self.number_of_detections += 1
         
         # Update the object pose and approaching point pose
         new_object_pose = self.average_poses(self.detection.object_pose, other_detection.object_pose)
@@ -174,6 +176,10 @@ class Detection(object):
 
         # Update QR code data
         self.update_barcode_data(other_detection)
+
+        # Every self.minimum_detections resend data
+        if int((self.number_of_detections - 1) / self.minimum_detections) < int(self.number_of_detections / self.minimum_detections):
+            self.needs_resending = True
     
     def to_pose_stamped(self, pose, on_floor=False):
         pose_stamped = PoseStamped()
@@ -342,28 +348,28 @@ class Robustifier(object):
         saved_pose = self.already_detected(detection)
 
         if saved_pose is not None:
-            saved_pose.number_of_detections += 1
 
             if saved_pose.face_recognition_necessary():
                 recognized_face = self.recognize_face(detection)
                 if recognized_face is not None:
                     detection.face_label = recognized_face
 
+            # The detected object pose and previously saved pose are very similar,
+            # calculate mean position of both poses and save data to saved_pose
+            saved_pose.update(detection)
+
             # If object was detected more than self.minimum_detections, it is now
             # considered true positive, send it to movement controller
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent or saved_pose.needs_resending:
-                    self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
+                    if not saved_pose.already_sent:
+                        self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
                     self.object_publisher.publish(saved_pose.get_detection())
                     saved_pose.already_sent = True
                     saved_pose.needs_resending = False
-            else:
-                # The detected object pose and previously saved pose are very similar,
-                # calculate mean position of both poses and save data to saved_pose
-                saved_pose.update(detection)
         else:
             # Construct a new detection object, add it to detections
-            saved_pose = Detection(detection)
+            saved_pose = Detection(detection, minimum_detections=self.minimum_detections)
             self.object_detections.append(saved_pose)
 
 if __name__ == '__main__':
