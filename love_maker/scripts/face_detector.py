@@ -205,7 +205,10 @@ class FaceFinder(object):
         robot_point = self.tf_buffer.transform(robot_point, "map")
 
         # Convert map coordinates to map pixel coordinates
-        face_pixel = utils.pose_to_map_pixel(face_pose.pose, self.map_origin, self.map_resolution)
+        try:
+            face_pixel = utils.pose_to_map_pixel(face_pose.pose, self.map_origin, self.map_resolution)
+        except:
+            return None
         robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
 
         # Find the closest wall pixel and line that passes closest to that wall
