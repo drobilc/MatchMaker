@@ -75,7 +75,7 @@ class RingDetector(object):
     
     def on_data_received(self, depth_image_message, image_message, camera_info):
         """Callback for when depth image, rgb image and camera information is received"""
-        if not hasattr(self, "enabled") or not self.enabled:
+        if not self.enabled:
             return
         
         # Because of the TimeSynchronizer, depth image, rgb image and camera
@@ -94,7 +94,7 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=10):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
@@ -147,12 +147,33 @@ class RingDetector(object):
             image_region = numpy.copy(rgb_image[top:bottom, left:right])
             disparity_region = disparity[top:bottom, left:right]
 
+            # First filtering step: Remove too bright areas from the colour
+            # image (this will make our robot not be able to detect white rings)
+                        # First filtering step: Remove too bright areas from the colour
+            # image (this will make our robot not be able to detect white rings)
+            
+            # First, get all depths that are non-zero from the coloured image
+            non_zero_regions = depth_region > 0
+            filtered_image_region = image_region * non_zero_regions[...,None]
+
+            # Then convert the coloured image to grayscale and remove all parts
+            # that are too white (threshold is set to 200 at the moment, maybe
+            # change this in the future)
+            gray_filtered_image_region = cv2.cvtColor(filtered_image_region, cv2.COLOR_BGR2GRAY)
+            too_bright_regions = gray_filtered_image_region < 200
+
+            colour_mask = non_zero_regions * too_bright_regions
+
+            depth_region = depth_region * colour_mask
+            disparity_region = disparity_region * colour_mask
+            image_region = image_region * colour_mask[...,None]
+
             # Try to filter depth_region to only include circle (basically, get
             # the highest bin in histogram and filter out everything that is not
             # in this bin)
-            histogram, bins = numpy.histogram(depth_region[depth_region != 0], bins=24, range=(0, 255))
+            histogram, bins = numpy.histogram(depth_region[depth_region != 0], bins=number_of_bins, range=(0, 255))
             best_bin = numpy.argmax(histogram)
-            depth_region[numpy.abs(depth_region - bins[best_bin]) > 255/24] = 0
+            depth_region[numpy.abs(depth_region - bins[best_bin]) > 255/number_of_bins] = 0
             
             depth_mask = depth_region > 0
             disparity_region = disparity_region * depth_mask
@@ -172,18 +193,25 @@ class RingDetector(object):
 
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
-                _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
-                if approaching_point is not None:
-                    detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
-                    self.detections_publisher.publish(detection)
-                else:
-                    rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
+                #_, approaching_point = self.compute_approaching_point(ring_position, timestamp)
+                #if approaching_point is not None:
+                #    detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
+                #    self.detections_publisher.publish(detection)
+                #else:
+                #    rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
+                detection = self.construct_detection_message(ring_position, ring_position, classified_color, timestamp)
+                self.detections_publisher.publish(detection)
             else:
                 rospy.logwarn('Ring detected, but the ring position could not be determined')
     
     def to_world_position(self, keypoint, disparity_region, camera_model, timestamp, maximum_distance=2.5):
-        # Get average distance to the ring
-        average_distance = numpy.nanmean(disparity_region)
+        # Get average distance to the ring, if the slice that we are trying to
+        # get the mean of is empty this will result in error.
+        try:
+            average_distance = numpy.nanmean(disparity_region[numpy.nonzero(disparity_region)])
+        except Exception as e:
+            rospy.logerr('Average distance could not be computed')
+            return None
 
         if average_distance > maximum_distance:
             return None
