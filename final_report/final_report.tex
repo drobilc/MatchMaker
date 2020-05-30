@@ -231,10 +231,19 @@
 	\end{figure}
 		
 	\subsection{Cylinder detection}
-	Cylinder detection runs on a point cloud data that is computed from depth information. \\
+	The backbone of our cylinder detection algorithm is fitting a point cloud, that is computed from depth information, to a certain model using RANdom SAmple Consesus (RANSAC). This is an iterative method that is used to estimate parameters of a mathematical model from a set of data containing outliers. In every iteration RANSAC selects a random subsample of the input data. These points are then considered inliers and the hypotesis is tested in a few steps. First the model is fitted to the inliers, then all data points are tested against the fitted model and, if they fit well they are also considered inliers. After that the model is reestimated from the original and new inliers and finally, it is evaluated by estimating the error of the inliers relative to the model. After a fixed number of iterations, the best model is chosen. \\
+
+	We had to do some preprocessing on the input point cloud data before our algorithm could be run. Namely, making the point cloud sparser in order to reduce the execution time of the algorithm and filtering out points beyond some distance from the robot in order to avoid errors in model fitting, because of the point cloud being too sparse. \\
 	
 	\subsubsection{Removal of planes}
+	To be able to detect cylinders efficiently and robustly, we need first remove all planes from the point cloud in order to reduce the computational load and avoid many flat surfaces and corners from being detected as cylinders. We do this by iteratively fitting the point cloud to a plane model with RANSAC, as explained above, and then removing all the inliers from the point cloud. This way we remove all large planes in the point cloud that have more inliers than some empirically set threshold. \\
+	
+	A threshold is used so that the points that are part of the cylinders are retained, because a small enough area of the cylinder might be considered a plane, and thus be removed from the point cloud. This parameter had to be fine tuned in order to remove as many planes from the point cloud, but also keep the cylinder inliers. \\
+
 	\subsubsection{Cylinder detection}
+	After all or most of the planes have been removed from the point cloud, we can detect cylinders. The method for this is very similar to the one used for detecting planes, but instead of fitting a point cloud to a plane, we fit it to a cylinder. This is trickier, because cylinders are more complex objects with more paramateres and thus, it is harder to fit the points to the model. The parameters for this method had to be carefully chosen in order to accurately detect cylinders and avoid incorrect detections such as corners. \\
+
+	We chose to only detect one cylinder in a point cloud, first, because usually they are relatively far apart, so there is no fear that we could miss one and second, because the farther the object is from the robot, the sparser the point cloud and consequently more errors are present, such as mistaking a cylinder for a plane or vice versa. \\
 	
 	\subsubsection{Cylinder approaching point computation}
 	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on the line connecting the robot and the cylinder. \\
