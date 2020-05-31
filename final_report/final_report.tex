@@ -379,16 +379,16 @@
 			\tikzset{every edge/.append style={font=\footnotesize}}
 			\tikzset{every node/.append style={font=\footnotesize}}
 			
-			\node[initial,state] (FG) {Finding \\ Gargamel};
-	 		\node[state]         (AG) [right of=FG] {Approaching \\ Gargamel};
-  			\node[state]         (FW) [right of=AG] {Finding \\ woman};
-  			\node[state]         (AW) [right of=FW] {Approaching \\ woman};
-  			\node[state]         (AG2) [right of=AW] {Approaching \\ Gargamel 2};
-  			\node[state]         (FC) [below of=AG2] {Finding \\ cylinder};
-  			\node[state]         (AC) [left of=FC] {Approaching \\ cylinder};
-  			\node[state]         (FR) [left of=AC] {Finding \\ ring};
-  			\node[state]         (AR) [left of=FR] {Approaching \\ ring};
-  			\node[state]         (AW2) [left of=AR] {Approaching \\ woman 2};
+			\node[initial,state] 	(FG) {Finding \\ Gargamel};
+	 		\node[state] (AG) 		[right of=FG] {Approaching \\ Gargamel};
+  			\node[state]         	(FW) [right of=AG] {Finding \\ woman};
+  			\node[state]         	(AW) [right of=FW] {Approaching \\ woman};
+  			\node[state]         	(AG2) [right of=AW] {Approaching \\ Gargamel 2};
+  			\node[state]         	(FC) [below of=AG2] {Finding \\ cylinder};
+  			\node[state]         	(AC) [left of=FC] {Approaching \\ cylinder};
+  			\node[state]         	(FR) [left of=AC] {Finding \\ ring};
+  			\node[state]         	(AR) [left of=FR] {Approaching \\ ring};
+  			\node[accepting, state] (AW2) [left of=AR] {Approaching \\ woman 2};
   			
   			\path (FG) edge[bend left] node {Gargamel \\ found} (AG);
   			
