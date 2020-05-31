@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="display_camera_window" default="false"/>
-  <arg name="downscale_factor" default="2"/>
+  <arg name="downscale_factor" default="1.5"/>
   <arg name="haar_cascade_data_file_path" default="$(find love_maker)/scripts/detectors/data/haarcascade_face.xml" />
   <arg name="wait_for_movement_controller" default="true"/>
 
