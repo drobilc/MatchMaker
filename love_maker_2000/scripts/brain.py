@@ -300,16 +300,10 @@ class Brain(object):
     def on_start_approaching_ring(self, ring):
         rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
-<<<<<<< HEAD
         approach, fine_approach = self.movement_controller.approach(ring, None, fine=True)
         self.movement_controller.add_to_queue(approach)
         self.movement_controller.add_to_queue(fine_approach)
         self.movement_controller.add_to_queue(self.movement_controller.pick_up_ring(callback=self.on_ring_approached, duration=6.0))
-=======
-        get_close_task, pickup_task = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
-        self.movement_controller.add_to_queue(get_close_task)
-        self.movement_controller.add_to_queue(pickup_task)
->>>>>>> ed93e75b8a398cfa7c071d307296d987275af9d4
     
     # TODO: first grab the ring with the robotic arm
     def on_ring_approached(self):
@@ -353,47 +347,69 @@ class Brain(object):
     def on_face_detection(self, face, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
-            return
+            self.update_face_object_detection(face)
 
-        rospy.loginfo('Found new face with label: {}'.format(face.face_label))
-
-        # We have found Gargamel, let's approach him now, here face19 for testing because it's 
-        # usually the first face we find
-        if face.face_label == 'face19':
-            rospy.loginfo("Gargamel found!")
-            self.gargamel = face
-            self.start_approaching_gargamel()
-            
-        # Otherwise it's a woman
         else:
-            self.women.append(face)
-            if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
-                self.start_approaching_woman(face)
-                self.current_woman = face
+            rospy.loginfo('Found new face with label: {}'.format(face.face_label))
+
+            # We have found Gargamel, let's approach him now, here face19 for testing because it's 
+            # usually the first face we find
+            if face.face_label == 'face19':
+                rospy.loginfo("Gargamel found!")
+                self.gargamel = face
+                self.start_approaching_gargamel()
+
+            # Otherwise it's a woman
+            else:
+                self.women.append(face)
+                if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
+                    self.start_approaching_woman(face)
+                    self.current_woman = face
 
     def on_cylinder_detection(self, cylinder, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
-            return
-        
-        rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
-        self.cylinders.append(cylinder)
+            for c in self.cylinders:
+                if c.id == cylinder.id:
+                    self.update_object_detection(c, cylinder)
 
-        # If we are currently looking for a cylinder of this color, approach it
-        if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
-            self.start_approaching_cylinder(cylinder)
+        else:
+            rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
+            self.cylinders.append(cylinder)
+
+            # If we are currently looking for a cylinder of this color, approach it
+            if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
+                self.start_approaching_cylinder(cylinder)
     
     def on_ring_detection(self, ring, is_redetection=False):
-        # TODO: Update data if this is redetection
         if is_redetection:
-            return
+            for r in self.rings:
+                if r.id == ring.id:
+                    self.update_object_detection(r, ring)
 
-        rospy.loginfo('New {} ring detected'.format(ring.color))
-        self.rings.append(ring)
+        else:
+            rospy.loginfo('New {} ring detected'.format(ring.color))
+            self.rings.append(ring)
 
-        # If we are currently looking for a ring of this color, approach it
-        if self.state == 'finding_ring' and ring.color == self.favorite_color:
-            self.start_approaching_ring(ring)
+            # If we are currently looking for a ring of this color, approach it
+            if self.state == 'finding_ring' and ring.color == self.favorite_color:
+                self.start_approaching_ring(ring)
+    
+    def update_face_object_detection(self, new):
+        if self.gargamel is not None and self.gargamel.id == new.id:
+            self.update_object_detection(self.gargamel, new)
+        else:
+            for w in self.women:
+                if w.id == new.id:
+                    self.update_object_detection(w, new)
+
+    def update_object_detection(self, obj, new):
+        obj.image = new.image
+        obj.object_pose = new.object_pose
+        obj.approaching_point_pose = new.approaching_point_pose
+        obj.color = new.color
+        obj.face_label = new.face_label
+        obj.barcode_data = new.barcode_data
 
 if __name__ == '__main__':
     controller = Brain([])
