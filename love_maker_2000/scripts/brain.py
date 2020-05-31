@@ -262,7 +262,9 @@ class Brain(object):
             if woman.face_label is not None:
                 woman_face_details = FACE_DETAILS[woman.face_label]
                 return woman_face_details == self.preferences
-            return False
+            else:
+                # TODO: handle the case when face_label is None
+                return False
     
     def on_start_finding_cylinder(self):
         for cylinder in self.cylinders:
