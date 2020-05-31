@@ -103,7 +103,8 @@ class MovementController(object):
     def approach(self, object_detection, callback=None, fine=False):
         """Create a new rough approaching task to approach object"""
         if fine:
-            return FineApproachingTask(self, callback, self.action_client, object_detection)
+            #return FineApproachingTask(self, callback, self.action_client, object_detection)
+            return ApproachingTask(self, None, self.action_client, object_detection), FineApproachingTask(self, callback, self.action_client, object_detection)
         return ApproachingTask(self, callback, self.action_client, object_detection)
     
     def wander(self, callback=None):
