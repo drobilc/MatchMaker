@@ -45,18 +45,6 @@ class RingDetector(object):
         # Publisher for ring ObjectDetections
         self.detections_publisher = rospy.Publisher('/ring_detections_raw', ObjectDetection, queue_size=10)
 
-        # Publisher for publishing raw object detections
-        self.markers = MarkerArray()
-        self.markers_publisher = rospy.Publisher('/ring_markers', MarkerArray, queue_size=1000)
-        self.COLOR_MAP = {
-            "red": ColorRGBA(1, 0, 0, 1),
-            "green": ColorRGBA(0, 1, 0, 1),
-            "blue": ColorRGBA(0, 0, 1, 1),
-            "yellow": ColorRGBA(1, 1, 0, 1),
-            "white": ColorRGBA(1, 1, 1, 1),
-            "black": ColorRGBA(0, 0, 0, 1)
-        }
-
         # Transformation buffer nd listener
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -201,17 +189,6 @@ class RingDetector(object):
 
             # Compute position of ring in 3d world coordinate system
             ring_position = self.to_world_position(keypoint, disparity_region, camera_model, timestamp, maximum_distance)
-
-            # publish the ring_position
-            if ring_position != None:
-                style = {}
-                style['color'] = self.COLOR_MAP[classified_color]
-                style['marker_type'] = Marker.SPHERE
-                rospy.logwarn(style)
-                rospy.logwarn(ring_position.pose.position)
-                new_marker = utils.stamped_pose_to_marker(ring_position, index=len(self.markers.markers), **style)
-                self.markers.markers.append(new_marker)
-                self.markers_publisher.publish(self.markers)
 
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
