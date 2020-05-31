@@ -27,18 +27,21 @@ class SpeechTranscriptionServer(object):
         mic = sr.Microphone()
 
         rospy.loginfo('Listening for speech ...')
-
-        # Adjust the recognizer sensitivity to ambient noise and record audio
-        # from the microphone
-        with mic as source:
-            #recognizer.adjust_for_ambient_noise(source, duration=1)
-            audio = recognizer.listen(source, timeout=10)
         
         response = {
             'success': True,
             'error': None,
             'transcription': None
         }
+
+        # Adjust the recognizer sensitivity to ambient noise and record audio
+        # from the microphone
+        with mic as source:
+            try:
+                #recognizer.adjust_for_ambient_noise(source, duration=1)
+                audio = recognizer.listen(source, timeout=10)
+            except:
+                return response
 
         try:
             response['transcription'] = recognizer.recognize_google(audio)
