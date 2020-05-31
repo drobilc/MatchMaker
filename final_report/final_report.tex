@@ -10,6 +10,7 @@
 \usepackage{rotating}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usetikzlibrary{arrows,automata}
 \usepackage[bottom]{footmisc}
 
 \author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
@@ -367,6 +368,44 @@
 	The \texttt{A*} algorithm can now be run using states as defined above. We start with initial robot state $(x_0, y_0, \varphi_0)$ and set the goal to the ring position $(x_m, y_m, \varphi_m)$. The closest path between those two states is the path that the robot should follow to get from its current position to the goal position including its orientations. \\
 	
 	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
+	
+	\subsection{Task solving}
+	
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=5cm, scale=0.6, 
+		transform shape, align=center, state/.style={circle, draw, minimum size=2.3cm}]
+		
+			\tikzset{every edge/.append style={font=\footnotesize}}
+			\tikzset{every node/.append style={font=\footnotesize}}
+			
+			\node[initial,state] (FG) {Finding \\ Gargamel};
+	 		\node[state]         (AG) [right of=FG] {Approaching \\ Gargamel};
+  			\node[state]         (FW) [below of=FG] {Finding \\ woman};
+  			\node[state]         (AW) [right of=FW] {Approaching \\ woman};
+  			\node[state]         (FC) [right of=AG] {Finding \\ cylinder};
+  			\node[state]         (AC) [right of=FC] {Approaching \\ cylinder};
+  			\node[state]         (FR) [below of=AC] {Finding \\ ring};
+  			\node[state]         (AR) [left of=FR] {Approaching \\ ring};
+  			
+  			\path (FG) edge[bend left] node {Gargamel \\ found} (AG);
+  			
+  			\path (AG) edge[bend right] node {Preferences \\ received} (FW);
+  			\path (AG) edge[bend left] node {Woman according to \\ preferences found} (FC);
+  			
+  			\path (FC) edge[bend left] node {Cylinder \\ found} (AC);
+  			\path (AC) edge[bend left] node {Cylinder \\ approached} (FR);
+  			\path (FR) edge[bend left] node {Ring \\ found} (AR);
+  			\path (AR) edge[bend left] node {Ring \\ approached } (AW);
+  			
+  			\path (AW) edge[bend right, right] node {Woman willing \\ to marry Gargamel} (AG);
+  			\path (AW) edge[bend right, above] node {Woman not willing \\ to marry Gargamel} (FW);
+  			
+  			\path (FW) edge[bend right, below] node {Woman according to \\ preferences found} (AW);
+		\end{tikzpicture}
+		\caption{Finite state automata}
+		\label{fig:finite_state_automata}
+	\end{figure}
 	
 	\section{Implementation and integration}
 	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at the same time. \\ % tale zadnji stavek bi se dalo še mal boljš ubesedit
