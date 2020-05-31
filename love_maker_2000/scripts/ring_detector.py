@@ -367,7 +367,7 @@ class RingDetector(object):
         # set pickup_point
         ring_position.pose.position.x = pickup_point.position.x
         ring_position.pose.position.y = pickup_point.position.y
-        ring_position.pose.position.z = 0  # pickup_point.position.z
+        #ring_position.pose.position.z = 0  # pickup_point.position.z
         ring_position.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
