@@ -145,6 +145,7 @@ class Brain(object):
 
     # TODO: robustify this part
     def get_gargamels_preferences(self):
+        rospy.logerr("Gargamel, what do you like in a woman?")
         try:
             for i in range(2):
                 pref = self.inquire_preferences()
@@ -152,8 +153,11 @@ class Brain(object):
                 if pref.hair_color != '' and pref.hair_length != '':
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
-            # TODO: here we want manual input for the final task
-            return FaceDetails('short', 'dark')
+            rospy.logerr("Speech recognition failed, please provide the preferences manually...")
+            hair_length = raw_input("Hair length: ")
+            hair_color = raw_input("Hair color: ")
+            rospy.logerr("length: {}, color: {}".format(hair_length, hair_color))
+            return FaceDetails(hair_length, hair_color)
         except:
             rospy.logerr("Length preference: {}".format(self.default_preference_hair_length))
             rospy.logerr("Color preference: {}".format(self.default_preference_hair_color))
@@ -175,7 +179,7 @@ class Brain(object):
             
             # If above fails get affirmation manually
             rospy.logerr("Speech recognition failed, please provide the answer manually.. beep bop:")
-            affirmation = input("(yes or no)")
+            affirmation = raw_input("(yes or no): ")
             print(affirmation)
             return affirmation == 'yes'
 
@@ -233,10 +237,19 @@ class Brain(object):
 
     # TODO: robustify all speech recognition parts
     def get_womans_favorite_color(self):
-        color = self.inquire_color().color
-        if color != '':
+        try:
+            for i in range(2):
+                rospy.logerr("M'lady, what is your favorite color?")
+                color = self.inquire_color().color
+                if color in self.default_color_selection:
+                    return color
+
+            rospy.logerr("Speech recognition failed, please provide the color manually...")
+            color = raw_input("{}: ".format(self.default_color_selection))
+            rospy.logerr(color)
             return color
-        else:
+
+        except:
             rospy.logerr("Cannot understand what you are saying")
             color = self.default_color_selection[randint(0, len(self.default_color_selection) - 1)]
             return color
