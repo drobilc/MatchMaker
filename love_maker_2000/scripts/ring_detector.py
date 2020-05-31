@@ -346,7 +346,7 @@ class RingDetector(object):
         get_close_point.position.z = 0
 
         # Orientation for get_close_point should be towards the wall
-        get_close_orientation_parameters = normalized_orientation * (-1)
+        get_close_orientation_parameters = normalized_orientation #* (-1)
         get_close_orientation = math.atan2(get_close_orientation_parameters[1], get_close_orientation_parameters[0])
         get_close_quaternion = quaternion_from_euler(0, 0, get_close_orientation)
         get_close_quaternion = Quaternion(*get_close_quaternion)
