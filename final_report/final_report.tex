@@ -392,8 +392,8 @@
   			
   			\path (FG) edge[bend left] node {Gargamel \\ found} (AG);
   			
-  			\path (AG) edge[bend right] node {Preferences \\ received} (FW);
-  			\path (FW) edge[bend right, below] node {Woman according to \\ preferences found} (AW);
+  			\path (AG) edge[bend left] node {Preferences \\ received} (FW);
+  			\path (FW) edge[bend left] node {Woman according to \\ preferences found} (AW);
   			\path (AW) edge[bend left] node {Favorite colour received} (AG2);
   			\path (AG2) edge[bend left] node {Gargamel doesn't like her} (FW);
   			
@@ -403,8 +403,7 @@
   			\path (FR) edge[bend left] node {Ring \\ found} (AR);
   			\path (AR) edge[bend left] node {Ring \\ approached} (AW2);
   			
-  			\path (AW2) edge[bend right, right] node {Woman willing \\ to marry Gargamel} (AG);
-  			\path (AW2) edge[bend right, above] node {Woman not willing \\ to marry Gargamel} (FW);
+  			\path (AW2) edge[] node {Woman not willing \\ to marry Gargamel} (FW);
   			
 		\end{tikzpicture}
 		\caption{Finite state automata}
