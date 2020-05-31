@@ -164,12 +164,13 @@ class Detection(object):
         #   * additional_information (QR code) is updated if the code has been recognized
         # The needs_resending flag is set to True only if additional_information changes
         self.number_of_detections += 1
+        self.needs_resending = self.already_sent and self.needs_resending
         
         # Update the object pose and approaching point pose
         new_object_pose = self.average_poses(self.detection.object_pose, other_detection.object_pose)
-        # new_approaching_point_pose = self.average_poses(self.detection.approaching_point_pose, other_detection.approaching_point_pose)
+        new_approaching_point_pose = self.average_poses(self.detection.approaching_point_pose, other_detection.approaching_point_pose)
         self.detection.object_pose = new_object_pose
-        self.detection.approaching_point_pose = other_detection.approaching_point_pose
+        self.detection.approaching_point_pose = new_approaching_point_pose  # other_detection.approaching_point_pose
 
         # Update detection color and label
         self.update_color(other_detection)

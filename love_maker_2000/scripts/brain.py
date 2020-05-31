@@ -154,8 +154,8 @@ class Brain(object):
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
             rospy.logerr("Speech recognition failed, please provide the preferences manually...")
-            hair_length = raw_input("Hair length: ")
-            hair_color = raw_input("Hair color: ")
+            hair_length = raw_input("Hair length (long or short): ")
+            hair_color = raw_input("Hair color (dark or bright): ")
             rospy.logerr("length: {}, color: {}".format(hair_length, hair_color))
             return FaceDetails(hair_length, hair_color)
         except:
@@ -258,9 +258,13 @@ class Brain(object):
         if self.preferences is None:
             return False
         else:
-            return True     # For testing purposes
-            # woman_face_details = FACE_DETAILS[woman.face_label]
-            # return woman_face_details == self.preferences
+            # return True
+            if woman.face_label is not None:
+                woman_face_details = FACE_DETAILS[woman.face_label]
+                return woman_face_details == self.preferences
+            else:
+                # TODO: handle the case when face_label is None
+                return False
     
     def on_start_finding_cylinder(self):
         for cylinder in self.cylinders:
@@ -280,6 +284,7 @@ class Brain(object):
     
     # TODO: throw an imaginary coin into the well or make a wish
     def on_cylinder_approached(self, detection, goal_status, goal_result):
+        rospy.logwarn("Let's find you two a ring now!")
         self.start_finding_ring()
 
     def on_start_finding_ring(self):
@@ -295,8 +300,9 @@ class Brain(object):
     def on_start_approaching_ring(self, ring):
         rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
-        task = self.movement_controller.approach(ring, callback=self.on_ring_approached)
-        self.movement_controller.add_to_queue(task)
+        get_close_task, pickup_task = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
+        self.movement_controller.add_to_queue(get_close_task)
+        self.movement_controller.add_to_queue(pickup_task)
     
     # TODO: first grab the ring with the robotic arm
     def on_ring_approached(self, detection, goal_status, goal_result):
