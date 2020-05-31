@@ -13,8 +13,6 @@ import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_geometry_msgs import PointStamped
 
-from visualization_msgs.msg import MarkerArray, Marker
-
 from std_msgs.msg import Header, ColorRGBA, Bool
 from detection_msgs.msg import Detection
 from sensor_msgs.msg import Image, CameraInfo
@@ -27,6 +25,34 @@ from image_geometry import PinholeCameraModel
 from color_classification.srv import ColorClassification, ColorClassificationResponse
 from nav_msgs.srv import GetMap
 
+def average(first_pose, second_pose):
+    new_pose = PoseStamped()
+    new_pose.header = second_pose.header
+    new_pose.pose.position.x = first_pose.pose.position.x * 0.5 + second_pose.pose.position.x * 0.5
+    new_pose.pose.position.y = first_pose.pose.position.y * 0.5 + second_pose.pose.position.y * 0.5
+    new_pose.pose.position.z = first_pose.pose.position.z * 0.5 + second_pose.pose.position.z * 0.5
+    return new_pose
+
+def distance_between(first_pose, second_pose):
+    # Return simple Euclidean distance between this and other pose
+    dx = first_pose.position.x - second_pose.position.x
+    dy = first_pose.position.y - second_pose.position.y
+    dz = first_pose.position.z - second_pose.position.z
+    return numpy.sqrt(dx*dx + dy*dy + dz*dz)
+
+def get_closest(rings, detection, max_distance=0.5):
+    closest_ring = None
+    distance_closest = 999999999
+    for ring in rings:
+        distance = distance_between(ring[0].pose, detection.pose)
+        if distance < distance_closest:
+            closest_ring = ring
+            distance_closest = distance
+    
+    if distance_closest > max_distance:
+        return None
+    return closest_ring
+
 class RingDetector(object):
     def __init__(self):
         rospy.init_node('ring_detector_beta', anonymous=False)
@@ -35,7 +61,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = False
+        self.enabled = True
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Color classification service
@@ -61,6 +87,8 @@ class RingDetector(object):
         self.map_data[self.map_data == 100] = 255  # walls
         self.map_data[self.map_data == -1] = 0  # free space
         self.map_data = self.map_data.astype('uint8')
+
+        self.last_detections = []
 
         # Create a new time synchronizer to synchronize depth and rgb image callbacks.
         # Also subscribe to camera info so we can get camera calibration matrix.
@@ -96,14 +124,14 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=10):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=3):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
 
         # This part is needed to detect circles in image with better precision
         depth_image = numpy.nan_to_num(depth_image)
-        depth_image[depth_image > 3] = 0
+        depth_image[depth_image > maximum_distance] = 0
         minimum = numpy.min(depth_image)
         maximum = numpy.max(depth_image)
         depth_image = (depth_image - minimum) / (maximum - minimum)
@@ -192,14 +220,23 @@ class RingDetector(object):
 
             # Send the ring position to robustifier, if it is 
             if ring_position is not None:
-                _, approaching_point = self.compute_approaching_point(ring_position, timestamp)
-                if approaching_point is not None:
-                   detection = self.construct_detection_message(ring_position, approaching_point, classified_color, timestamp)
-                   self.detections_publisher.publish(detection)
+                closest_detection = get_closest(self.last_detections, ring_position, max_distance=0.5)
+                if closest_detection is not None:
+                    closest_ring, number_of_detections = closest_detection
+                    self.last_detections.remove(closest_detection)
+                    averaged_ring = average(closest_ring, ring_position)
+                    if number_of_detections + 1 < detections_needed:
+                        self.last_detections.append((averaged_ring, number_of_detections + 1))
+                    else:
+                        _, approaching_point = self.compute_approaching_point(closest_ring, timestamp)
+                        if approaching_point is not None:
+                            detection = self.construct_detection_message(closest_ring, approaching_point, classified_color, timestamp)
+                            self.detections_publisher.publish(detection)
+                        else:
+                            rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
+                            self.last_detections.append((averaged_ring, number_of_detections + 1))
                 else:
-                   rospy.logwarn('Ring detected, but the ring approaching point could not be determined')
-                detection = self.construct_detection_message(ring_position, ring_position, classified_color, timestamp)
-                self.detections_publisher.publish(detection)
+                    self.last_detections.append((ring_position, 1))
             else:
                 rospy.logwarn('Ring detected, but the ring position could not be determined')
     
