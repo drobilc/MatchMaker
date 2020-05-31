@@ -300,19 +300,16 @@ class Brain(object):
     def on_start_approaching_ring(self, ring):
         rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
-<<<<<<< HEAD
-        approach, fine_approach = self.movement_controller.approach(ring, None, fine=True)
+
+        approach, fine_approach, reverse = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
+
         self.movement_controller.add_to_queue(approach)
         self.movement_controller.add_to_queue(fine_approach)
-        self.movement_controller.add_to_queue(self.movement_controller.pick_up_ring(callback=self.on_ring_approached, duration=6.0))
-=======
-        get_close_task, pickup_task = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
-        self.movement_controller.add_to_queue(get_close_task)
-        self.movement_controller.add_to_queue(pickup_task)
->>>>>>> ed93e75b8a398cfa7c071d307296d987275af9d4
+        self.movement_controller.add_to_queue(self.movement_controller.pick_up_ring(duration=6.0))
+        self.movement_controller.add_to_queue(reverse)
     
     # TODO: first grab the ring with the robotic arm
-    def on_ring_approached(self):
+    def on_ring_approached(self, detection, goal_status, goal_result):
         self.start_approaching_woman(self.current_woman)
 
     def set_detectors_enabled(self, should_be_enabled=True):

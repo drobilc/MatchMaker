@@ -19,10 +19,10 @@ import utils
 
 class FineApproachingTask(MovementTask):
 
-    def __init__(self, movement_controller, callback, action_client, object_detection):
+    def __init__(self, movement_controller, callback, object_detection, goal):
         super(FineApproachingTask, self).__init__(movement_controller, callback)
-        self.action_client = action_client
         self.object_detection = object_detection
+        self.goal = goal
 
         # Transformation buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
@@ -45,7 +45,7 @@ class FineApproachingTask(MovementTask):
             return
 
         # Visit the current goal using twist messages
-        self.move_towards_goal(map_position, self.object_detection.object_pose)
+        self.move_towards_goal(map_position, self.goal)
     
     def move_towards_goal(self, map_position, current_goal, rotation_threshold=0.08, distance_threshold=0.2):
         """Move the robot to current_goal using twist messages"""
