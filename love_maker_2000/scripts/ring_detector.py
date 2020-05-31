@@ -163,9 +163,6 @@ class RingDetector(object):
 
             # First filtering step: Remove too bright areas from the colour
             # image (this will make our robot not be able to detect white rings)
-                        # First filtering step: Remove too bright areas from the colour
-            # image (this will make our robot not be able to detect white rings)
-            
             # First, get all depths that are non-zero from the coloured image
             non_zero_regions = depth_region > 0
             filtered_image_region = image_region * non_zero_regions[...,None]

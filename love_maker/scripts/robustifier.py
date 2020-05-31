@@ -63,6 +63,7 @@ class Detection(object):
         # have static variables like Java does
         global DETECTION_ID
         self.detection.id = "{}{}".format(self.detection.type, DETECTION_ID)
+        self.numeric_id = DETECTION_ID
         DETECTION_ID += 1
     
     def average_poses(self, first_pose, second_pose, blending=0.5):
@@ -166,9 +167,9 @@ class Detection(object):
         
         # Update the object pose and approaching point pose
         new_object_pose = self.average_poses(self.detection.object_pose, other_detection.object_pose)
-        new_approaching_point_pose = self.average_poses(self.detection.approaching_point_pose, other_detection.approaching_point_pose)
+        # new_approaching_point_pose = self.average_poses(self.detection.approaching_point_pose, other_detection.approaching_point_pose)
         self.detection.object_pose = new_object_pose
-        self.detection.approaching_point_pose = new_approaching_point_pose
+        self.detection.approaching_point_pose = other_detection.approaching_point_pose
 
         # Update detection color and label
         self.update_color(other_detection)
@@ -273,7 +274,7 @@ class Robustifier(object):
         self.face_recognition = rospy.ServiceProxy('face_classification', FaceClassification)
 
         # Publisher for publishing raw object detections
-        self.markers = MarkerArray()
+        self.raw_markers = []
         self.markers_publisher = rospy.Publisher(self.marker_topic, MarkerArray, queue_size=1000)
 
         # TODO: Instead of using a list use a quadtree or a grid
@@ -283,36 +284,53 @@ class Robustifier(object):
         # Subscriber and publisher for object detections
         self.raw_object_subscriber = rospy.Subscriber(self.raw_detection_topic, ObjectDetection, self.on_object_detection, queue_size=10)
         self.object_publisher = rospy.Publisher(self.detection_topic, ObjectDetection, queue_size=10)
-
-    def publish_marker(self, detection, marker_style={}, approaching_point=False):
-        # Construct a marker from detected object, add it to markers array
-        # and publish it to marker_topic
-        pose = detection.get_object_pose()
-
+    
+    def construct_marker(self, pose, color, marker_style, marker_id):
         marker_style_copy = marker_style.copy()
-
-        # If color is defined in marker style, it overrides the received color
-        color = detection.get_color()
+        marker_color = color
         if 'color' in marker_style:
-            color = marker_style['color']
+            marker_color = marker_style['color']
             marker_style_copy.pop('color')
-        marker_style_copy['color'] = color
+        marker_style_copy['color'] = marker_color
 
-        new_marker = utils.stamped_pose_to_marker(pose,
-            index=len(self.markers.markers),
-            **marker_style_copy
-        )
-        self.markers.markers.append(new_marker)
-
-        if approaching_point:
+        new_marker = utils.stamped_pose_to_marker(pose, index=marker_id, **marker_style_copy)
+        return new_marker
+    
+    def construct_robustified_marker_list(self):
+        robustified_markers = []
+        for detection in self.object_detections:
+            # Get the object and approaching point pose and its color
+            pose = detection.get_object_pose()
             approaching_pose = detection.get_approaching_point_pose()
-            approaching_point_marker = utils.stamped_pose_to_marker(approaching_pose,
-                index=len(self.markers.markers),
-                **Robustifier.APPROACHING_POINT_STYLE
-            )
-            self.markers.markers.append(approaching_point_marker)
+            color = detection.get_color()
 
-        self.markers_publisher.publish(self.markers)
+            marker_style = Robustifier.ROBUSTIFIED_MARKER_STYLE[detection.detection.type]
+            
+            # Construct two markers: object and approaching point
+            marker = self.construct_marker(pose, color, marker_style, 2 * detection.numeric_id)
+            approaching_point_marker = self.construct_marker(approaching_pose, color, Robustifier.APPROACHING_POINT_STYLE, 2 * detection.numeric_id + 1)
+
+            robustified_markers.append(marker)            
+            robustified_markers.append(approaching_point_marker)
+        
+        return robustified_markers
+    
+    def publish_raw_marker(self, detection):
+        index = 10000 + len(self.raw_markers)
+        marker_style = Robustifier.RAW_MARKER_STYLE[detection.detection.type]
+        color = detection.get_color()
+        new_marker = self.construct_marker(detection.get_object_pose(), color, marker_style, index)
+        self.raw_markers.append(new_marker)
+        self.publish_all_markers()
+    
+    def publish_robustifier_marker(self, detection):
+        self.publish_all_markers()
+
+    def publish_all_markers(self):
+        markers = MarkerArray()
+        markers.markers.extend(self.raw_markers)
+        markers.markers.extend(self.construct_robustified_marker_list())
+        self.markers_publisher.publish(markers)
 
     def already_detected(self, new_detection):
         for detection in self.object_detections:
@@ -340,7 +358,7 @@ class Robustifier(object):
             return
         
         if self.publish_raw_markers:
-            self.publish_marker(Detection(detection, dummy=True), Robustifier.RAW_MARKER_STYLE[detection.type])
+            self.publish_raw_marker(Detection(detection, dummy=True))
 
         # Check if detected object is already in object_detections. This cannot be
         # done with simple indexof function because the coordinates will not
@@ -362,8 +380,7 @@ class Robustifier(object):
             # considered true positive, send it to movement controller
             if saved_pose.number_of_detections >= self.minimum_detections:
                 if not saved_pose.already_sent or saved_pose.needs_resending:
-                    if not saved_pose.already_sent:
-                        self.publish_marker(saved_pose, Robustifier.ROBUSTIFIED_MARKER_STYLE[saved_pose.detection.type], approaching_point=True)
+                    self.publish_robustifier_marker(saved_pose)
                     self.object_publisher.publish(saved_pose.get_detection())
                     saved_pose.already_sent = True
                     saved_pose.needs_resending = False
