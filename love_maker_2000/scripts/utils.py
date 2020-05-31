@@ -161,6 +161,7 @@ class FaceDetails(object):
         return self.hair_color == other.hair_color and self.hair_length == other.hair_length
 
 FACE_DETAILS = {
+    'face01': FaceDetails('short'   , 'dark'    ),
     'face02': FaceDetails('long'    , 'bright'  ),
     'face03': FaceDetails('long'    , 'dark'    ),
     'face04': FaceDetails('short'   , 'dark'    ),
