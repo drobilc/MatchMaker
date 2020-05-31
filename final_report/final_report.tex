@@ -379,29 +379,32 @@
 			\tikzset{every edge/.append style={font=\footnotesize}}
 			\tikzset{every node/.append style={font=\footnotesize}}
 			
-			\node[initial,state] (FG) {Finding \\ Gargamel};
-	 		\node[state]         (AG) [right of=FG] {Approaching \\ Gargamel};
-  			\node[state]         (FW) [below of=FG] {Finding \\ woman};
-  			\node[state]         (AW) [right of=FW] {Approaching \\ woman};
-  			\node[state]         (FC) [right of=AG] {Finding \\ cylinder};
-  			\node[state]         (AC) [right of=FC] {Approaching \\ cylinder};
-  			\node[state]         (FR) [below of=AC] {Finding \\ ring};
-  			\node[state]         (AR) [left of=FR] {Approaching \\ ring};
+			\node[initial,state] 	(FG) {Finding \\ Gargamel};
+	 		\node[state] (AG) 		[right of=FG] {Approaching \\ Gargamel};
+  			\node[state]         	(FW) [right of=AG] {Finding \\ woman};
+  			\node[state]         	(AW) [right of=FW] {Approaching \\ woman};
+  			\node[state]         	(AG2) [right of=AW] {Approaching \\ Gargamel 2};
+  			\node[state]         	(FC) [below of=AG2] {Finding \\ cylinder};
+  			\node[state]         	(AC) [left of=FC] {Approaching \\ cylinder};
+  			\node[state]         	(FR) [left of=AC] {Finding \\ ring};
+  			\node[state]         	(AR) [left of=FR] {Approaching \\ ring};
+  			\node[accepting, state] (AW2) [left of=AR] {Approaching \\ woman 2};
   			
   			\path (FG) edge[bend left] node {Gargamel \\ found} (AG);
   			
-  			\path (AG) edge[bend right] node {Preferences \\ received} (FW);
-  			\path (AG) edge[bend left] node {Woman according to \\ preferences found} (FC);
+  			\path (AG) edge[bend left] node {Preferences \\ received} (FW);
+  			\path (FW) edge[bend left] node {Woman according to \\ preferences found} (AW);
+  			\path (AW) edge[bend left] node {Favorite colour received} (AG2);
+  			\path (AG2) edge[bend left] node {Gargamel doesn't like her} (FW);
   			
+  			\path (AG2) edge[bend left] node {Gargamel likes her} (FC);
   			\path (FC) edge[bend left] node {Cylinder \\ found} (AC);
   			\path (AC) edge[bend left] node {Cylinder \\ approached} (FR);
   			\path (FR) edge[bend left] node {Ring \\ found} (AR);
-  			\path (AR) edge[bend left] node {Ring \\ approached } (AW);
+  			\path (AR) edge[bend left] node {Ring \\ approached} (AW2);
   			
-  			\path (AW) edge[bend right, right] node {Woman willing \\ to marry Gargamel} (AG);
-  			\path (AW) edge[bend right, above] node {Woman not willing \\ to marry Gargamel} (FW);
+  			\path (AW2) edge[] node {Woman not willing \\ to marry Gargamel} (FW);
   			
-  			\path (FW) edge[bend right, below] node {Woman according to \\ preferences found} (AW);
 		\end{tikzpicture}
 		\caption{Finite state automata}
 		\label{fig:finite_state_automata}
