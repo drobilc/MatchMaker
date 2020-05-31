@@ -29,7 +29,7 @@ class MovementController(object):
     
     def run_immediately(self, task):
         """Cancel all goals and run this task immediately"""
-        rospy.logwarn('MovementController.run_immediately called, task = {}'.format(task))
+        # rospy.logwarn('MovementController.run_immediately called, task = {}'.format(task))
         other_tasks = self.cancel_all()
         self.tasks.insert(0, task)
         self.tasks.extend(other_tasks)
@@ -38,7 +38,7 @@ class MovementController(object):
 
     def add_to_queue(self, task):
         """Add task to queue to be executed when tasks before are finished"""
-        rospy.logwarn('MovementController.add_to_queue called, task = {}'.format(task))
+        # rospy.logwarn('MovementController.add_to_queue called, task = {}'.format(task))
         self.tasks.append(task)
         if not self.is_running:
             self.start()
@@ -47,7 +47,7 @@ class MovementController(object):
         """Cancel all tasks and return them"""
         # Get current queue of tasks and insert the current running task to the
         # beggining of the list to be run later
-        rospy.logwarn('MovementController.cancel_all called')
+        # rospy.logwarn('MovementController.cancel_all called')
         old_tasks = self.tasks
         if hasattr(self, 'current_task') and self.current_task is not None:
             old_tasks.insert(0, self.current_task)
@@ -61,7 +61,7 @@ class MovementController(object):
     def cancel(self, task):
         # This function is only meant to be called from tasks, not on its own
         # because it will not cancel the function
-        rospy.logwarn('MovementController.cancel called, task = {}'.format(task))
+        # rospy.logwarn('MovementController.cancel called, task = {}'.format(task))
         # There are two options - the task is currently running or the task is
         # waiting in queue
         if task in self.tasks:
@@ -76,7 +76,7 @@ class MovementController(object):
     
     def on_finish(self, task):
         """Callback function that is called after task is finished"""
-        rospy.logwarn('MovementController.on_finish called, task = {}'.format(task))
+        # rospy.logwarn('MovementController.on_finish called, task = {}'.format(task))
         self.is_running = False
         self.current_task = None
         # Execute next task in queue
@@ -84,8 +84,8 @@ class MovementController(object):
     
     def start(self):
         """Get the first task from queue and run it"""
-        rospy.logwarn('MovementController.start called')
-        rospy.loginfo('Task queue: {}'.format(self.tasks))
+        # rospy.logwarn('MovementController.start called')
+        # rospy.loginfo('Task queue: {}'.format(self.tasks))
 
         if len(self.tasks) <= 0 or self.is_running:
             return
@@ -103,7 +103,6 @@ class MovementController(object):
     def approach(self, object_detection, callback=None, fine=False):
         """Create a new rough approaching task to approach object"""
         if fine:
-            #return FineApproachingTask(self, callback, self.action_client, object_detection)
             return ApproachingTask(self, None, self.action_client, object_detection), FineApproachingTask(self, callback, self.action_client, object_detection)
         return ApproachingTask(self, callback, self.action_client, object_detection)
     
