@@ -61,7 +61,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = True
+        self.enabled = False
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Color classification service

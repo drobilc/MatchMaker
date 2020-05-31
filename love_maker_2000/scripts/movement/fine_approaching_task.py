@@ -51,7 +51,7 @@ class FineApproachingTask(MovementTask):
         """Move the robot to current_goal using twist messages"""
         # First, get the positions of the robot in map coordinate frame
         robot_position = numpy.asarray([map_position.pose.position.x, map_position.pose.position.y])
-        goal_position = numpy.asarray([current_goal.pose.position.x, current_goal.pose.position.y])
+        goal_position = numpy.asarray([current_goal.position.x, current_goal.position.y])
 
         # Then compute current robot orientation and rotation from robot
         # position to the goal position
@@ -65,7 +65,7 @@ class FineApproachingTask(MovementTask):
         twist = Twist()
         if distance_to_goal <= distance_threshold:
             # Rotate until the robot is rotated in the detected object orientation    
-            goal_orientation = (utils.orientation_to_angle(current_goal.pose) + (2 * numpy.pi)) % (2 * numpy.pi)
+            goal_orientation = (utils.orientation_to_angle(current_goal) + (2 * numpy.pi)) % (2 * numpy.pi)
             if abs(current_orientation - goal_orientation) <= rotation_threshold:
                 self.velocity_publisher.publish(twist)
                 self.finish()
