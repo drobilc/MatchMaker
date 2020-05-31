@@ -153,8 +153,8 @@ class Brain(object):
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
             # TODO: here we want manual input for the final task
-            return FaceDetails('short', 'dark')   
-        except Exception:
+            return FaceDetails('short', 'dark')
+        except:
             rospy.logerr("Length preference: {}".format(self.default_preference_hair_length))
             rospy.logerr("Color preference: {}".format(self.default_preference_hair_color))
             return FaceDetails(self.default_preference_hair_length, self.default_preference_hair_color)
@@ -172,9 +172,14 @@ class Brain(object):
                 rospy.logerr(affirmation)
                 if affirmation != '':
                     return affirmation == 'yes'
-            # TODO: we should use manual input here if speech recognition fails
-            return True
-        except Exception:
+            
+            # If above fails get affirmation manually
+            rospy.logerr("Speech recognition failed, please provide the answer manually.. beep bop:")
+            affirmation = input("(yes or no)")
+            print(affirmation)
+            return affirmation == 'yes'
+
+        except:
             affirmation = self.default_affirmation_selection[randint(0, len(self.default_affirmation_selection) - 1)]
             rospy.logerr(affirmation)
             return affirmation == 'yes'
@@ -311,41 +316,41 @@ class Brain(object):
         # Call the appropriate object detection function and add a parameter
         # that tells it if this is object redetection
         if object_detection.type == 'face':
-            rospy.loginfo('Found new face with label: {}'.format(object_detection.face_label))
             self.on_face_detection(object_detection, is_redetection)
 
         elif object_detection.type == 'ring':
-            rospy.loginfo('New {} ring detected'.format(object_detection.color))
             self.on_ring_detection(object_detection, is_redetection)
         
         else:
-            rospy.loginfo('New {} cylinder detected'.format(object_detection.color))
             self.on_cylinder_detection(object_detection, is_redetection)
     
-    def on_face_detection(self, object_detection, is_redetection=False):
+    def on_face_detection(self, face, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
             return
 
+        rospy.loginfo('Found new face with label: {}'.format(face.face_label))
+
         # We have found Gargamel, let's approach him now, here face19 for testing because it's 
         # usually the first face we find
-        if object_detection.face_label == 'face19':
+        if face.face_label == 'face19':
             rospy.loginfo("Gargamel found!")
-            self.gargamel = object_detection
+            self.gargamel = face
             self.start_approaching_gargamel()
             
         # Otherwise it's a woman
         else:
-            self.women.append(object_detection)
-            if self.in_accordance_with_preferences(object_detection) and self.state == 'finding_woman':
-                self.start_approaching_woman(object_detection)
-                self.current_woman = object_detection
+            self.women.append(face)
+            if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
+                self.start_approaching_woman(face)
+                self.current_woman = face
 
     def on_cylinder_detection(self, cylinder, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
             return
         
+        rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
         self.cylinders.append(cylinder)
 
         # If we are currently looking for a cylinder of this color, approach it
@@ -356,7 +361,8 @@ class Brain(object):
         # TODO: Update data if this is redetection
         if is_redetection:
             return
-        
+
+        rospy.loginfo('New {} ring detected'.format(ring.color))
         self.rings.append(ring)
 
         # If we are currently looking for a ring of this color, approach it
