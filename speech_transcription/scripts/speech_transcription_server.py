@@ -61,15 +61,16 @@ class SpeechTranscriptionServer(object):
         hair_length = ''
         hair_color = ''
 
-        if 'bright' in transcription:
-            hair_color = 'bright'
-        elif 'dark' in transcription:
-            hair_color = 'dark'
-        
-        if 'short' in transcription:
-            hair_length = 'short'
-        elif 'long' in transcription:
-            hair_length = 'long' 
+        if transcription is not None:
+            if 'bright' in transcription:
+                hair_color = 'bright'
+            elif 'dark' in transcription:
+                hair_color = 'dark'
+
+            if 'short' in transcription:
+                hair_length = 'short'
+            elif 'long' in transcription:
+                hair_length = 'long' 
 
         return InquirePreferencesResponse(hair_length, hair_color)
     
@@ -80,11 +81,12 @@ class SpeechTranscriptionServer(object):
 
         affirmation = ''
 
-        if 'yes' in transcription:
-            affirmation = 'yes'
+        if transcription is not None:
+            if 'yes' in transcription:
+                affirmation = 'yes'
 
-        elif 'no' in transcription:
-            affirmation = 'no'
+            elif 'no' in transcription:
+                affirmation = 'no'
 
         return InquireAffirmationResponse(affirmation)
     
@@ -95,9 +97,10 @@ class SpeechTranscriptionServer(object):
 
         favorite_color = ''
 
-        for color in self.colors:
-            if color in transcription:
-                favorite_color = color
+        if transcription is not None:
+            for color in self.colors:
+                if color in transcription:
+                    favorite_color = color
 
         return InquireColorResponse(favorite_color)
 
