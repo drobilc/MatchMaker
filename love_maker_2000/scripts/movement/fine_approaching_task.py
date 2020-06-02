@@ -77,6 +77,9 @@ class FineApproachingTask(MovementTask):
             else:
                 # close enough but not rotated correctly
                 rospy.logwarn("ALMOST THERE, JUST LET ME SPIN A BIT MORE")
+                twist.linear.x = 0
+                twist.linear.y = 0
+                twist.linear.z = 0
                 twist.angular.z = (goal_orientation - current_orientation) * 0.5
                 self.velocity_publisher.publish(twist)
         else:
