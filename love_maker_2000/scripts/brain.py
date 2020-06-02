@@ -296,8 +296,8 @@ class Brain(object):
 
         self.movement_controller.add_to_queue(approach)
         self.movement_controller.add_to_queue(fine_approach)
-        self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
         self.movement_controller.add_to_queue(self.movement_controller.toss_a_coin(duration=5.0))
+        self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
         self.movement_controller.add_to_queue(reverse)
 
     def get_toss_a_coin_position(self, cylinder):
