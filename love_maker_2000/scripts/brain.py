@@ -146,6 +146,7 @@ class Brain(object):
     # TODO: robustify this part
     def get_gargamels_preferences(self):
         rospy.logerr("Gargamel, what do you like in a woman?")
+        self.greeter.say("Gargamel, what kind of hair style and hair color do you like on a woman?")
         try:
             for i in range(2):
                 pref = self.inquire_preferences()
@@ -154,6 +155,7 @@ class Brain(object):
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
             rospy.logerr("Speech recognition failed, please provide the preferences manually...")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             hair_length = raw_input("Hair length (long or short): ")
             hair_color = raw_input("Hair color (dark or bright): ")
             rospy.logerr("length: {}, color: {}".format(hair_length, hair_color))
@@ -167,6 +169,7 @@ class Brain(object):
         # import random
         # return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
+        self.greeter.say("Gargamel, do you like this woman?")
         return self.get_affirmation()
     
     def get_affirmation(self):
@@ -179,6 +182,7 @@ class Brain(object):
             
             # If above fails get affirmation manually
             rospy.logerr("Speech recognition failed, please provide the answer manually.. beep bop:")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             affirmation = raw_input("(yes or no): ")
             print(affirmation)
             return affirmation == 'yes'
@@ -213,18 +217,22 @@ class Brain(object):
             self.favorite_color = self.get_womans_favorite_color()
             self.start_approaching_gargamel()
             rospy.loginfo("This woman's favorite color is {}".format(self.favorite_color))
+            say_this = "O, you like {}! That's a delightful color.".format(self.favorite_color)
+            self.greeter.say(say_this)
         
         # This is the second time we are here, propose
         else:
-            rospy.loginfo("Hey will you marry Gargamel?")
+            rospy.loginfo("Hello again, beautiful. Will you marry Gargamel?")
             accepts_proposal = self.get_womans_affirmation()
 
             if accepts_proposal:
                 rospy.loginfo("They lived happily ever after")
+                self.greeter.say("Yay, she said YES! My work here is done. May they live the happiest ever after!")
                 # TODO: add final node
             
             else:
                 rospy.loginfo("She said no.. ugh, now I have to find a new one")
+                self.greeter.say("She said no.. ugh, now I have to find a new one")
                 self.women.remove(self.current_woman)
                 self.favorite_color = None
                 self.start_finding_woman()
@@ -233,6 +241,7 @@ class Brain(object):
         # import random
         # return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: {}... Will you marry Gargamel?".format(self.current_woman.face_label))
+        self.greeter.say("Hello again, beautiful. Will you marry Gargamel?")
         return self.get_affirmation()
 
     # TODO: robustify all speech recognition parts
@@ -240,11 +249,13 @@ class Brain(object):
         try:
             for i in range(2):
                 rospy.logerr("M'lady, what is your favorite color?")
+                self.greeter.say("M'lady, what is your favorite color?")
                 color = self.inquire_color().color
                 if color in self.default_color_selection:
                     return color
 
             rospy.logerr("Speech recognition failed, please provide the color manually...")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             color = raw_input("{}: ".format(self.default_color_selection))
             rospy.logerr(color)
             return color
@@ -278,13 +289,27 @@ class Brain(object):
     def on_start_approaching_cylinder(self, cylinder):
         rospy.loginfo("Approaching {} cylinder".format(cylinder.color))
         self.wandering_task.cancel()
-        task = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached)
-        self.movement_controller.add_to_queue(task)
+        # set cylinder's object_position to halfway between the approachng point and the cylinder
+        cylinder = self.get_toss_a_coin_position(cylinder)
+
+        approach, fine_approach, reverse = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached, fine=True)
+
+        self.movement_controller.add_to_queue(approach)
+        self.movement_controller.add_to_queue(fine_approach)
+        self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
         self.movement_controller.add_to_queue(self.movement_controller.toss_a_coin(duration=5.0))
+        self.movement_controller.add_to_queue(reverse)
+
+    def get_toss_a_coin_position(self, cylinder):
+        cylinder.object_pose.position.x = (cylinder.object_pose.position.x + cylinder.approaching_point_pose.position.x) / 2
+        cylinder.object_pose.position.y = (cylinder.object_pose.position.y + cylinder.approaching_point_pose.position.y) / 2  
+        rospy.logwarn("New position: " + str(cylinder.object_pose.position))    
+        return cylinder
     
     # TODO: throw an imaginary coin into the well or make a wish
     def on_cylinder_approached(self, detection, goal_status, goal_result):
         rospy.logwarn("Let's find you two a ring now!")
+        self.greeter.say("Let's find you two a ring now!")
         self.start_finding_ring()
 
     def on_start_finding_ring(self):
