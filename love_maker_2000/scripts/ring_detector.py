@@ -85,8 +85,34 @@ class RingDetector(object):
         self.map_data = numpy.asarray(self.occupancy_grid.data)
         self.map_data = numpy.reshape(self.map_data, (height, width))
         self.map_data[self.map_data == 100] = 255  # walls
-        self.map_data[self.map_data == -1] = 0  # free space
+        self.map_data[self.map_data == -1] = 0  # other
         self.map_data = self.map_data.astype('uint8')
+        # my_dict = {}
+        # for i in range(0, len(self.map_data)):
+        #     for j in range(0, len(self.map_data[i])):
+        #         if self.map_data[i][j] not in my_dict:
+        #             my_dict[self.map_data[i][j]] = 1
+        # rospy.logwarn(my_dict)
+
+        # Get map data from map server
+        rospy.wait_for_service('static_map')
+        get_map = rospy.ServiceProxy('static_map', GetMap)
+        self.occupancy_grid_for_boxes = get_map().map
+        width, height = self.occupancy_grid_for_boxes.info.width, self.occupancy_grid_for_boxes.info.height
+        self.map_resolution_for_boxes = self.occupancy_grid_for_boxes.info.resolution
+        self.map_origin_for_boxes = self.occupancy_grid_for_boxes.info.origin.position
+        self.map_data_for_boxes = numpy.asarray(self.occupancy_grid_for_boxes.data)
+        self.map_data_for_boxes = numpy.reshape(self.map_data_for_boxes, (height, width))
+        self.map_data_for_boxes[self.map_data_for_boxes == 100] = 255  # walls
+        self.map_data_for_boxes[self.map_data_for_boxes == -1] = 100  # unknown territory
+        self.map_data_for_boxes = self.map_data_for_boxes.astype('uint8')
+
+        # my_dict = {}
+        # for i in range(0, len(self.map_data)):
+        #     for j in range(0, len(self.map_data[i])):
+        #         if self.map_data_for_boxes[i][j] not in my_dict:
+        #             my_dict[self.map_data_for_boxes[i][j]] = 1
+        # rospy.logwarn(my_dict)
 
         self.last_detections = []
 
@@ -331,15 +357,22 @@ class RingDetector(object):
                 if distance < best_distance:
                     best_distance = distance
                     best_line = (start, end)
+
+            # img = map_region.astype('uint8')
+            # img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            # cv2.line(img, (int(start[0]), int(start[1])), (int(end[0]), int(end[1])), (0, 255, 0), 2)
+            # img = cv2.resize(img, (200, 200))
+            # cv2.imshow('image', img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
             return best_line, best_distance
 
         # Convert map coordinates to map pixel coordinates
         ring_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
-        robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
 
         # Find the closest wall pixel and line that passes closest to that wall
         # pixel (preferably line that goes through the wall pixel)
-        closest_wall = utils.closest_wall_pixel(self.map_data, ring_pixel, max_distance=5)
+        closest_wall = utils.closest_wall_pixel(self.map_data, ring_pixel)
         if closest_wall is None:
             return ring_position, None
         line, distance = closest_line(ring_pixel, closest_wall)
@@ -362,8 +395,11 @@ class RingDetector(object):
         rotated.append(int(math.sin(-math.radians(90)) * point[0])) # the cosinus part is == 0
 
         # if the neighbouing pixel on the normal to the wall is grey, we are looking in the wrong direction
-        test_pixel = line[0] + rotated
-        if self.map_data[test_pixel[1], test_pixel[0]] != 0:
+        middle_point_on_line = []
+        middle_point_on_line.append(int((line[0][0] + line[1][0]) * 0.5))
+        middle_point_on_line.append(int((line[0][1] + line[1][1]) * 0.5))
+        test_pixel = middle_point_on_line + rotated
+        if self.map_data_for_boxes[test_pixel[1], test_pixel[0]] != 100:
             rotated[0] = - rotated[0]
             rotated[1] = - rotated[1]
 
