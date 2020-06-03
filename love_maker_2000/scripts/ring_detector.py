@@ -297,6 +297,12 @@ class RingDetector(object):
     
     def compute_approaching_point(self, ring_position, timestamp):
 
+        # To compute approaching point we should do the following: First, we
+        # should get the detected face position and robot position in map
+        # coordinates. Then, the face and robot map coordinates should be
+        # converted to map pixels. A small region around the face pixel should
+        # be extracted where hough line transform should be performed. 
+
         ring_point = PointStamped()
         ring_point.header.frame_id = ring_position.header.frame_id
         ring_point.header.stamp = timestamp
@@ -310,77 +316,76 @@ class RingDetector(object):
         robot_point.header.stamp = timestamp
         robot_point = self.tf_buffer.transform(robot_point, "map")
 
-        # Calculate approaching point position
-        # if ring pixel is not in the wall, first find the closest wall
-        temp_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
-        temp_pixel_1 = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        def closest_line(ring_pixel, wall_pixel, max_distance=8):
+            map_region = self.map_data[ring_pixel[1]-max_distance-1:ring_pixel[1]+max_distance, ring_pixel[0]-max_distance-1:ring_pixel[0]+max_distance]
+            x0, y0 = wall_pixel - ring_pixel + max_distance
+            lines = cv2.HoughLinesP(map_region, rho=1, theta=numpy.pi / 180.0, threshold=8, minLineLength=8, maxLineGap=3)
+            if lines is None:
+                return None, None
+            best_line = None
+            best_distance = 100000
+            for line in lines:
+                start = numpy.asarray([line[0][0], line[0][1]])
+                end = numpy.asarray([line[0][2], line[0][3]])
+                distance = abs(((end[1]-start[1])*x0 - (end[0]-start[0])*y0 + end[0]*start[1] - end[1]*start[0]) / numpy.linalg.norm(end - start))
+                if distance < best_distance:
+                    best_distance = distance
+                    best_line = (start, end)
+            return best_line, best_distance
 
-        if self.map_data[temp_pixel_1[1]][temp_pixel_1[0]] != 255:
-            temp_pixel_2 = utils.closest_wall_pixel(self.map_data, temp_pixel_1, max_distance=10)
-            if temp_pixel_2 == None:
-                return ring_position, None
-            else:
-                temp_pixel = temp_pixel_2
+        # Convert map coordinates to map pixel coordinates
+        ring_pixel = utils.to_map_pixel(ring_point, self.map_origin, self.map_resolution)
+        robot_pixel = utils.to_map_pixel(robot_point, self.map_origin, self.map_resolution)
 
-        temp_pixel = [temp_pixel[0], temp_pixel[1]]
+        # Find the closest wall pixel and line that passes closest to that wall
+        # pixel (preferably line that goes through the wall pixel)
+        closest_wall = utils.closest_wall_pixel(self.map_data, ring_pixel, max_distance=5)
+        if closest_wall is None:
+            return ring_position, None
+        line, distance = closest_line(ring_pixel, closest_wall)
+        if line is None:
+            return ring_position, None
 
-        # Find closest free pixel 
-        closest_free_pixel = utils.nearest_free_pixel(temp_pixel, self.map_data)
-        direction = [closest_free_pixel[0] - temp_pixel[0], closest_free_pixel[1] - temp_pixel[1]]
-
-        # Get vector direction from ring to closest free pixel
-        orientation_parameters = direction
-
-        # Normalize orientation vector
-        normalized_orientation = orientation_parameters / numpy.linalg.norm(orientation_parameters)
+        line_direction = line[1] - line[0]
+        orientation = numpy.asarray([line_direction[0], line_direction[1]])
         
-        # Move in this direction for 0.2m => pickup_point
-        pickup_point = Pose()
-        pickup_point.position.x = ring_point.point.x + 0.2 * normalized_orientation[0]
-        pickup_point.position.y = ring_point.point.y + 0.2 * normalized_orientation[1]
-        pickup_point.position.z = ring_point.point.z
-
-        # Move in this direction for 0.5m => get_close_point
-        get_close_point = Pose()
-        get_close_point.position.x = ring_point.point.x + 0.5 * normalized_orientation[0]
-        get_close_point.position.y = ring_point.point.y + 0.5 * normalized_orientation[1]
-        get_close_point.position.z = 0
-
-        # Orientation for get_close_point should be towards the wall
-        get_close_orientation_parameters = normalized_orientation #* (-1)
-        get_close_orientation = math.atan2(get_close_orientation_parameters[1], get_close_orientation_parameters[0])
-        get_close_quaternion = quaternion_from_euler(0, 0, get_close_orientation)
-        get_close_quaternion = Quaternion(*get_close_quaternion)
-
-
-        # Orientation of the ring is the direction, rotated 90 degrees to the right
-        # This will only work correctly, if ring detections are accurate and close to the wall
+        # move in the direction of the normal and check if we land on free space or inside the box
+        # If we land inside the box, multiply orianetation with -1
+        
+        normalized_orientation = orientation / numpy.linalg.norm(orientation)
+        normalized_orientation = normalized_orientation.astype(int)
 
         # rotate 90 degrees to the right
         point = [normalized_orientation[0], normalized_orientation[1]]
         rotated = []
-        rotated.append(-math.sin(-math.radians(90)) * point[1]) # the cosinus part is == 0
-        rotated.append(math.sin(-math.radians(90)) * point[0]) # the cosinus part is == 0
+        rotated.append(int(-math.sin(-math.radians(90)) * point[1])) # the cosinus part is == 0
+        rotated.append(int(math.sin(-math.radians(90)) * point[0])) # the cosinus part is == 0
 
-        # convert to quaternion
-        orientation = math.atan2(rotated[1], rotated[0])
+        # if the neighbouing pixel on the normal to the wall is grey, we are looking in the wrong direction
+        test_pixel = line[0] + rotated
+        if self.map_data[test_pixel[1], test_pixel[0]] != 0:
+            rotated[0] = - rotated[0]
+            rotated[1] = - rotated[1]
+
+        approaching_point = Pose()
+        approaching_point.position.x = ring_point.point.x + 0.4 * rotated[0]
+        approaching_point.position.y = ring_point.point.y + 0.4 * rotated[1]
+
+        approaching_point_orientation = [0, 0]
+        approaching_point_orientation[0] = -rotated[0]
+        approaching_point_orientation[1] = -rotated[1]
+
+        orientation = math.atan2(approaching_point_orientation[1], approaching_point_orientation[0])
         orientation_quaternion = quaternion_from_euler(0, 0, orientation)
         orientation_quaternion = Quaternion(*orientation_quaternion)
 
-        # set get_close_point
         approaching_pose = PoseStamped()
         approaching_pose.header = ring_position.header
         approaching_pose.header.frame_id = 'map'
-        approaching_pose.pose.position.x = get_close_point.position.x
-        approaching_pose.pose.position.y = get_close_point.position.y
+        approaching_pose.pose.position.x = approaching_point.position.x  # ring_position.pose.position.x
+        approaching_pose.pose.position.y = approaching_point.position.y  # ring_position.pose.position.y
         approaching_pose.pose.position.z = 0
-        approaching_pose.pose.orientation = get_close_quaternion
-
-        # # set pickup_point
-        # ring_position.pose.position.x = pickup_point.position.x
-        # ring_position.pose.position.y = pickup_point.position.y
-        # #ring_position.pose.position.z = 0  # pickup_point.position.z
-        # ring_position.pose.orientation = orientation_quaternion
+        approaching_pose.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
 
