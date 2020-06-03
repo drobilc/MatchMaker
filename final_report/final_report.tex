@@ -19,6 +19,8 @@
 \begin{document}
 	
 	\maketitle
+
+	\tableofcontents
 	
 	\section{Introduction}
 	In this report we will explain how our robot by the name of Erazem performs the task of a skilled match maker. He was hired by Gargamel, who wanted to find love and get married as quick as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usualy his clients also cared about the looks, he also wanted to find out about this kind of preferences. \\
@@ -27,18 +29,18 @@
 
 	He was scanning the place for the women. For each face he saw, he quickly filled his mental checklist with Gargamel preferences. "Such easy criteria", he thought to himself, "but so little matches..." When he finally came across a woman that matched Gargamel's preferences, he fixed his tie, took a deep breath, and approached her. She seemed interested in meeting Gargamel but was very secretive. When Erasem asked her to tell him something about herself, she only told him her favourite colour. Erazem firmly remembered this little detail and after some chit-chat said goodbye to her. He was happy to have finally found a potential suitor but at the same time a little worried about the lack of information he had about her. \\
 	
-	Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erasem told him all he knew about that woman. It was up to Gargamel to decide wheteher she seemed promising or no. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite color and toss a coin in it while also saying the wish for Gargamel and the woman to marrs and live happily ever after. \\
+	Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erasem told him all he knew about that woman. It was up to Gargamel to decide wheteher she seemed promising or not. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite color and toss a coin in it while also saying the wish for Gargamel and the woman to marry and live happily ever after. \\
 
 	Erazem searched through his memory whether he has already seen the well in this colour. If he could remeber, he would have definitely known where to go. After some time, he found the right wishing well, tossed the coin and said the wish. Now he went about to find a perfect ring. Of course, it had to be in the woman's favourite colour since Gargamel didn't have musch opinion on which colours he liked. He picked it up and brought it to the woman. \\
 	
 	This was the moment of truth. Will she agree to mary Gargamel, having received such thoughtfull gift? If she agrees, Erazem's work here is done. But what if she isn't impressed? Well, then Erazem will find another potential suitor and charge Gargamel some extra money, for the inconvenience. \\
 
-	He knew that his job was very impactfull. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after.
+	He knew that his job was very impactfull. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after. \\
 
-	% shema stanj robota
+	In the following sections, we explain the magic behind Erazem's matchmaking skills.
 	
 	\section{Methods} \label{methods}
-	In this section, the algorithms and methods we have used in our system are presented.
+	Here we present the algorithms and the methods that were used in our system.
 
 	% Dodaj nek dictionary pojmov
 	% To lahk anardimo v vsaki sekciji, kjer je smiselno, al pa sam na začetku. Sam po mojem si je lažje zapomnat in je manj overwhelming, če je mal pa po mal, torej v vsaki sekciji sproti, kar se rabi.
@@ -228,7 +230,7 @@
 
 	We do this by searching for the nearest pixel to the starting position (located on the wall) that is not occupied by a wall. By subtracting the starting position pixel from the pixel we just found, we get a vector that points from the ring to our soon to be approaching point. This vector is then normalized so it can be used in further computation. \\
 
-	Now we move along the calculated direction vector for 0.15 meters and set this position as the position of the approaching point. Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
+	Now we move along the calculated direction vector for 0.2 meters and set this position as the position of the approaching point. Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
 
 	\subsubsection{Ring colour detection}
 	The ring colour is computed using the mask that we have calculated in section \ref{ring_detection}. The colour  image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
@@ -258,7 +260,7 @@
 	\subsubsection{Cylinder approaching point computation}
 	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on the line connecting the robot and the cylinder. \\
 	
-	A point that lies 0.5 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
+	A point that lies 0.3 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
 	
 	\subsection{Robustification} \label{robustification}
 	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might compute the distance inaccurately, or the robot may not have been localized. Detectors might return false positives and so on. \\
@@ -308,9 +310,12 @@
 
 	\begin{figure}[h]
 		\centering
+		\includegraphics[height=4cm]{images/before}
+		\includegraphics[height=4cm]{images/after}
 		\caption{\texttt{Delaunay triangulation} and exploration goals before (left) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (right)}
 		\label{fig:exploration_goals}
 	\end{figure}
+
 	
 	\subsection{Fine movement} \label{fine_movement}
 	Fine movement is a special way in which our robot can move. It is used when the default movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
@@ -323,8 +328,7 @@
 	
 	Because the robot must be able to visit the ring from specific direction (ring orientation), we used a modified version of \texttt{A*} algorithm, that not only finds the shortest path between two points, but also uses the starting and ending robot orientation. \\
 	
-	Because the world is flat\footnote{Does this make us flat-earthers? Nah. Does this make our robot a flat-earther? Maybe.} and the robot can only rotate along one axis, any robot pose can be represented using a tuple $(x, y, \varphi)$, where $\varphi$ is the orientation along the vertical axis. In theory, the $\varphi$ can be any real number, but in our case, the robot will only have a finite number of possible orientations (the first one being $[0, \frac{2\pi}{n}]$, where $n$ is the number of all orientations). In our final task, we found that $n = 8$ or $n = 16$ works best. \\
-	% končno število rotacij zato, da je problem rešljiv. Rešitev se da najt tudi samo z 8 ali 16 različnimi orientacijami. Treba je še dodati, da če imamo 8 možnih rotacij, mora A* kr naenkrat preiskat 8*height*width pixlov (trojic x,y,fi) in že to kr poveča kompleksnost.
+	Because the world is flat\footnote{Does this make us flat-earthers? Nah. Does this make our robot a flat-earther? Maybe.} and the robot can only rotate along one axis, any robot pose can be represented using a tuple $(x, y, \varphi)$, where $\varphi$ is the orientation along the vertical axis. In theory, the $\varphi$ can be any real number, but in our case - to simplyfy the problem, the robot will only have a finite number of possible orientations (the first one being $[0, \frac{2\pi}{n}]$, where $n$ is the number of all orientations). In our final task, we found that $n = 8$ or $n = 16$ works best. If $n = 8$, the \texttt{A*} algorithm has to search $8 \times h \times w$ pixels, where $h$ and $w$ represent the dimensions of the map in pixels, and the bigger the $n$, the bigger is the time complexity of this computation.  \\
 	% n=8 pomeni 45-stopinjske obrate
 
 	The algorithm will use map to access environment information, so the $x$ and $y$ represent pixel coordinate in map coordinate system. \\
@@ -356,10 +360,8 @@
 		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i + \frac{2\pi}{n})$$
 	\end{enumerate}
 	
-	Where $\alpha$ is the step size (to move 1 pixel forward, $\alpha = 1.5$). Each state is only possible if the map does not contain a wall at pixel $(x_{i+1}, y_{i+1})$. Because the orientations are cyclical, if the robot orientation is less than $0$ or more than $2\pi$, the orientation is wrapped around to be inside $[0, 2\pi]$ range. \\
-	% zakaj je alfa 1,5: dodaj slikico al pa razloži, da zato, ker če je 1, lahka gremo sam gor dol levo desno, ne pa tud diagonalno.
+	Where $\alpha$ is the step size (to move 1 pixel forward, $\alpha = 1.5$). $\alpha$ has to be $>1$, otherwise robot could only reach the direct neighbouring pixels (up, down, left, right) but not the diagonal ones. Each state is only possible if the map does not contain a wall at pixel $(x_{i+1}, y_{i+1})$ (the pixel that our step leads us to). Because the orientations are cyclical, if the robot orientation is less than $0$ or more than $2\pi$, the orientation is wrapped around to be inside $[0, 2\pi]$ range. \\
 	% "Each state" ali "Each step"?
-	% "not contain a wall at pixel $(x_{i+1}, y_{i+1})$" dodaj, da je to pixel, na kerga se želimo prestavit/na kerga nas pripelje korak
 	
 	The figure \ref{fig:next_robot_states} represents a robot at some coordinates $(x, y, \varphi)$. The robot is oriented in the direction of the arrow. In the example, the orientation is $\varphi = \frac{\pi}{4}$. The next possible states are numbered as defined above with numbers 1, 2 and 3 respectively. In this case, the number of possible orientations $n = 8$. \\
 	
@@ -484,5 +486,11 @@
 	% We should only write what each of us did here and add that the professor should compute percentages himself.
 	
 	\section{Conclusion}	
+	% add comment that it is bad that we have this task so late in the semester as we can't study for other subjects
+	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
+
+	% we had the most problems with variable ring detections
+
+	% the fun part was that the robot was speaking
 	
 \end{document}

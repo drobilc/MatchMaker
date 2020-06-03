@@ -61,7 +61,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = False
+        self.enabled = True
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Color classification service
@@ -124,7 +124,7 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=3):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=10):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
@@ -255,7 +255,8 @@ class RingDetector(object):
         # Construct a ray from camera center to pixel on image, then stretch
         # it, so its length is the distance from camera to point in 3d space
         center_x, center_y = keypoint.pt
-        ray = camera_model.projectPixelTo3dRay((center_x, center_y))
+        rectified_center = camera_model.rectifyPoint((center_x, center_y))
+        ray = camera_model.projectPixelTo3dRay(rectified_center)
         point = (ray[0] * average_distance, ray[1] * average_distance, ray[2] * average_distance)
         
         # Convert 3d point from camera frame to world frame and publish it
@@ -263,7 +264,7 @@ class RingDetector(object):
         ring_camera.pose.position.x = point[0]
         ring_camera.pose.position.y = point[1]
         ring_camera.pose.position.z = point[2]
-        ring_camera.header.frame_id = "camera_rgb_optical_frame"
+        ring_camera.header.frame_id = "camera_depth_optical_frame"
         ring_camera.header.stamp = timestamp
 
         try:
@@ -375,11 +376,11 @@ class RingDetector(object):
         approaching_pose.pose.position.z = 0
         approaching_pose.pose.orientation = get_close_quaternion
 
-        # set pickup_point
-        ring_position.pose.position.x = pickup_point.position.x
-        ring_position.pose.position.y = pickup_point.position.y
-        #ring_position.pose.position.z = 0  # pickup_point.position.z
-        ring_position.pose.orientation = orientation_quaternion
+        # # set pickup_point
+        # ring_position.pose.position.x = pickup_point.position.x
+        # ring_position.pose.position.y = pickup_point.position.y
+        # #ring_position.pose.position.z = 0  # pickup_point.position.z
+        # ring_position.pose.orientation = orientation_quaternion
 
         return ring_position, approaching_pose
 

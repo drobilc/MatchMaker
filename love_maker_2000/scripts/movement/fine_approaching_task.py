@@ -3,6 +3,7 @@
 from __future__ import print_function
 import rospy
 import numpy
+import math
 
 from task import MovementTask
 
@@ -19,10 +20,10 @@ import utils
 
 class FineApproachingTask(MovementTask):
 
-    def __init__(self, movement_controller, callback, action_client, object_detection):
+    def __init__(self, movement_controller, callback, object_detection, goal):
         super(FineApproachingTask, self).__init__(movement_controller, callback)
-        self.action_client = action_client
         self.object_detection = object_detection
+        self.goal = goal
 
         # Transformation buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
@@ -45,9 +46,9 @@ class FineApproachingTask(MovementTask):
             return
 
         # Visit the current goal using twist messages
-        self.move_towards_goal(map_position, self.object_detection.object_pose)
+        self.move_towards_goal(map_position, self.goal)
     
-    def move_towards_goal(self, map_position, current_goal, rotation_threshold=0.08, distance_threshold=0.2):
+    def move_towards_goal(self, map_position, current_goal, rotation_threshold=0.08, distance_threshold=0.1):  # 0.8 -> 15 degrees
         """Move the robot to current_goal using twist messages"""
         # First, get the positions of the robot in map coordinate frame
         robot_position = numpy.asarray([map_position.pose.position.x, map_position.pose.position.y])
@@ -63,18 +64,28 @@ class FineApproachingTask(MovementTask):
         distance_to_goal = numpy.linalg.norm(orientation)
 
         twist = Twist()
+        # RABIMO MANJSI ANGULAR Z, DA SE POCASNEJE OBRACA
         if distance_to_goal <= distance_threshold:
             # Rotate until the robot is rotated in the detected object orientation    
             goal_orientation = (utils.orientation_to_angle(current_goal) + (2 * numpy.pi)) % (2 * numpy.pi)
             if abs(current_orientation - goal_orientation) <= rotation_threshold:
+                # close enough and in the right direction
+                rospy.logwarn("YAY, WE MADE IT!")
                 self.velocity_publisher.publish(twist)
                 self.finish()
                 return
             else:
-                twist.angular.z = (current_orientation - goal_orientation) * 0.5
+                # close enough but not rotated correctly
+                rospy.logwarn("ALMOST THERE, JUST LET ME SPIN A BIT MORE")
+                twist.linear.x = 0
+                twist.linear.y = 0
+                twist.linear.z = 0
+                twist.angular.z = (goal_orientation - current_orientation) * 0.5
                 self.velocity_publisher.publish(twist)
         else:
+            # not close enough, proceed forward
             rotation = orientation_to_goal - current_orientation
+            rotation = rotation * 0.5 # times constant to make it better (presumably)
             if abs(rotation) > rotation_threshold:
                 twist.angular.z = rotation * 0.5 * 2
                 self.velocity_publisher.publish(twist)
@@ -92,6 +103,7 @@ class FineApproachingTask(MovementTask):
         self.odometry_subscriber.unregister()
 
         self.is_finished = True
+        rospy.logwarn("GOAL REACHED")
 
         # Call the callback function
         if self.callback is not None:
