@@ -69,7 +69,7 @@ class ApproachingTask(MovementTask):
                 rospy.logerr('Goal not reached, status: {}. Cancelling.'.format(status))
                 self.finish(status, result)
 
-    def move_approaching_pose_away_from_the_wall(self, detection, minimum_distance=5, maximum_iterations=4):
+    def move_approaching_pose_away_from_the_wall(self, detection, minimum_distance=15, maximum_iterations=4):
         # To compute approaching point do the following. Calculate where the
         # closest wall from the cylinder approaching point. If there is no wall,
         # the approaching point is ok. Otherwise, move in the opposite direction
