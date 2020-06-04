@@ -267,10 +267,9 @@ class Brain(object):
             return color
 
     def in_accordance_with_preferences(self, woman):
-        if self.preferences is None or woman.label == self.GARGAMEL_LABEL:
+        if self.preferences is None or woman.face_label == self.GARGAMEL_LABEL:
             return False
         else:
-            # return True
             if woman.face_label is not None:
                 woman_face_details = FACE_DETAILS[woman.face_label]
                 return woman_face_details == self.preferences
