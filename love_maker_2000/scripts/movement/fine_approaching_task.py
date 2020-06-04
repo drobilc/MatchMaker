@@ -25,6 +25,8 @@ class FineApproachingTask(MovementTask):
         self.object_detection = object_detection
         self.goal = goal
 
+        self.almost_there = False
+
         # Transformation buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -72,11 +74,14 @@ class FineApproachingTask(MovementTask):
                 # close enough and in the right direction
                 rospy.logwarn("YAY, WE MADE IT!")
                 self.velocity_publisher.publish(twist)
+                self.almost_there = False
                 self.finish()
                 return
             else:
                 # close enough but not rotated correctly
-                rospy.logwarn("ALMOST THERE, JUST LET ME SPIN A BIT MORE")
+                if not self.almost_there:
+                    rospy.logwarn("ALMOST THERE, JUST LET ME SPIN A BIT MORE")
+                    self.almost_there = True
                 twist.linear.x = 0
                 twist.linear.y = 0
                 twist.linear.z = 0

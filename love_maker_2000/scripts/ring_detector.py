@@ -149,7 +149,7 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=10):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=5):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
@@ -397,10 +397,16 @@ class RingDetector(object):
         middle_point_on_line = []
         middle_point_on_line.append(int((line[0][0] + line[1][0]) * 0.5))
         middle_point_on_line.append(int((line[0][1] + line[1][1]) * 0.5))
-        test_pixel = middle_point_on_line + rotated
+        test_pixel = []
+        test_pixel.append(int(middle_point_on_line[0]) + int(rotated[0]))
+        test_pixel.append(int(middle_point_on_line[1]) + int(rotated[1]))
+        # rospy.logwarn("middle point on line and test pixel:" + str(middle_point_on_line))
+        # rospy.logwarn(test_pixel)
+        # rospy.logwarn("test pixel value: " + str(self.map_data_for_boxes[test_pixel[1], test_pixel[0]]))
         if self.map_data_for_boxes[test_pixel[1], test_pixel[0]] != 100:
             rotated[0] = - rotated[0]
             rotated[1] = - rotated[1]
+            rospy.logwarn("FLIP")
 
         approaching_point = Pose()
         approaching_point.position.x = ring_point.point.x + 0.4 * rotated[0]
