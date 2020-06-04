@@ -62,7 +62,7 @@ class RingDetector(object):
         self.bridge = CvBridge()
 
         # Subscriber to enable or disable ring detector
-        self.enabled = True
+        self.enabled = False
         self.toggle_subscriber = rospy.Subscriber('/ring_detector_toggle', Bool, self.toggle, queue_size=10)
 
         # Color classification service
@@ -149,7 +149,7 @@ class RingDetector(object):
 
         self.detect_circles(depth_image, rgb_image, camera_model, timestamp)
     
-    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=5):
+    def detect_circles(self, depth_image, rgb_image, camera_model, timestamp, circle_padding=5, maximum_distance=2.5, number_of_bins=16, detections_needed=8):
         """Detect circles in depth image and send detections to ring robustifier"""
         # Disparity is computed in meters from the camera center
         disparity = numpy.copy(depth_image)
@@ -427,6 +427,11 @@ class RingDetector(object):
         approaching_pose.pose.position.y = approaching_point.position.y  # ring_position.pose.position.y
         approaching_pose.pose.position.z = 0
         approaching_pose.pose.orientation = orientation_quaternion
+
+        # rospy.logwarn("RING")
+        # rospy.logwarn(ring_position.pose)
+        # rospy.logwarn("APPROACHING")
+        # rospy.logwarn(approaching_pose.pose)
 
         return ring_position, approaching_pose
 
