@@ -152,7 +152,7 @@
 
 	The neural network that we used for our task is a convolutional neural network. It differentiates itself from a ordinary neural network by having convolutional deep layers, which can apply filters to the images, that detect patterns, such as edges and corners and in later layers maybe even specific objects such as eyes or ears. Training of this network is done using triplets. In a single step of the training process, we feed the neural network three images, and thus generate three 128 dimensional encodings. Two images represent faces of the same person, while the third image is a random face, that represents a different person as the one in other two images. Then we tweak the weights in such a way, that encodings of the two faces of the same person get mapped closer together, whereas the third face gets placed farther away. \\
 
-	We could use only one encoding of a certain face, compare it to new faces and still get very good classification results, as was shown in our report for homework 3 with the k-nearest neighbors model for k is 1. However we wanted to make our face recognition more accurate and robust. That is why we trained a seperate support vector machine model on the encodings we obtained from the neural network. \\
+	We could use only one encoding of a certain face, compare it to new faces and still get very good classification results, as was shown in our report for homework 3 with the k-nearest neighbours model for k is 1. However we wanted to make our face recognition more accurate and robust. That is why we trained a separate support vector machine model on the encodings we obtained from the neural network. \\
 
 	% TODO: finish face classification
 	% should we explain how we gathered training data?
@@ -310,8 +310,8 @@
 
 	\begin{figure}[h]
 		\centering
-		\includegraphics[height=4cm]{images/before}
-		\includegraphics[height=4cm]{images/after}
+		% \includegraphics[height=4cm]{images/before}
+		% \includegraphics[height=4cm]{images/after}
 		\caption{\texttt{Delaunay triangulation} and exploration goals before (left) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (right)}
 		\label{fig:exploration_goals}
 	\end{figure}
@@ -326,50 +326,68 @@
 
 	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot manually. \\
 	
-	Because the robot must be able to visit the ring from specific direction (ring orientation), we used a modified version of \texttt{A*} algorithm, that not only finds the shortest path between two points, but also uses the starting and ending robot orientation. \\
-	
-	Because the world is flat\footnote{Does this make us flat-earthers? Nah. Does this make our robot a flat-earther? Maybe.} and the robot can only rotate along one axis, any robot pose can be represented using a tuple $(x, y, \varphi)$, where $\varphi$ is the orientation along the vertical axis. In theory, the $\varphi$ can be any real number, but in our case - to simplyfy the problem, the robot will only have a finite number of possible orientations (the first one being $[0, \frac{2\pi}{n}]$, where $n$ is the number of all orientations). In our final task, we found that $n = 8$ or $n = 16$ works best. If $n = 8$, the \texttt{A*} algorithm has to search $8 \times h \times w$ pixels, where $h$ and $w$ represent the dimensions of the map in pixels, and the bigger the $n$, the bigger is the time complexity of this computation.  \\
-	% n=8 pomeni 45-stopinjske obrate
-
-	The algorithm will use map to access environment information, so the $x$ and $y$ represent pixel coordinate in map coordinate system. \\
-	% razloži kaj dejansko pomenijo te (x, y) koordinate pod imenom pixli. V kaki relaciji so z globalnimi koordinatami/posi od robota?
-	
-	\begin{figure}[H]
-		\centering
-		
-		\begin{tikzpicture}
-		\draw[step=1cm,gray,very thin] (0.1,0.1) grid (3.9,3.9);
-		\draw[thick] (1.5,1.5) circle (0.4cm);
-		\draw [thick, ->] (1.78284271247, 1.78284271247) to (2.13639610307,2.13639610307) node [right] {};
-		\node[] at (2.5,2.5) {1};
-		\node[] at (1.5,2.5) {2};
-		\node[] at (2.5,1.5) {3};
-		\end{tikzpicture}
-		\caption{Next possible robot states}
-		\label{fig:next_robot_states}
+	\begin{figure}[h]
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\begin{tikzpicture}
+			\draw[lightgray, very thin] (-0.5, -0.5) rectangle (4.5, 4.5);
+			% Robot
+			\draw[thick] (1.5, 1) circle (0.4);
+			\draw [->, thick] (1.85951761852, 1.17534845872) to (2.3987940463, 1.43837114679) node [right] {};
+			\fill[black] (1.5, 1) circle (0.025);
+			% Ring
+			\fill[black] (2, 3) circle (0.1);
+			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
+			\end{tikzpicture}
+			\caption{Step 1}
+			%\label{fig:detected_ring}
+		\end{subfigure}
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\begin{tikzpicture}
+			\draw[lightgray, very thin] (-0.5, -0.5) rectangle (4.5, 4.5);
+			% Robot
+			\draw[thick] (1.5, 1) circle (0.4);
+			\draw [->, thick] (1.59701425001, 1.38805700006) to (1.74253562504, 1.97014250015) node [right] {};
+			\fill[black] (1.5, 1) circle (0.025);
+			% Ring
+			\fill[black] (2, 3) circle (0.1);
+			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
+			\end{tikzpicture}
+			\caption{Step 2}
+			%\label{fig:detected_ring_cropped}
+		\end{subfigure}
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\begin{tikzpicture}
+			\draw[lightgray, very thin] (-0.5, -0.5) rectangle (4.5, 4.5);
+			% Robot
+			\draw[thick] (2, 3) circle (0.4);
+			\draw [->, thick] (0.5 + 1.59701425001, 2 + 1.38805700006) to (0.5 + 1.74253562504, 2 + 1.97014250015) node [right] {};
+			% Ring
+			\fill[black] (2, 3) circle (0.1);
+			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
+			\end{tikzpicture}
+			\caption{Step 3}
+			%\label{fig:detected_ring}
+		\end{subfigure}
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\begin{tikzpicture}
+			\draw[lightgray, very thin] (-0.5, -0.5) rectangle (4.5, 4.5);
+			% Robot
+			\draw[thick] (2, 3) circle (0.4);
+			\draw [->, thick] (2 - 0.4, 3) to (0.5 + 2 - 1 - 0.4, 3) node [right] {};
+			% Ring
+			\fill[black] (2, 3) circle (0.1);
+			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
+			\end{tikzpicture}
+			\caption{Step 4}
+			%\label{fig:detected_ring_cropped}
+		\end{subfigure}
+		\caption{Fine movement}
+		\label{fig:fine_movement}
 	\end{figure}
-	
-	If the robot is currently in state $\vec{s_i} = (x_i, y_i, \varphi_i)$, we can define the next states to be:
-	
-	\begin{enumerate}
-		\item Move forward
-		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i)$$
-		\item Rotate left by $\frac{2\pi}{n}$ and move forward
-		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i - \frac{2\pi}{n})$$
-		\item Rotate right by $\frac{2\pi}{n}$ and move forward
-		$$\vec{s_{i+1}} = (x_i + \alpha \cos \varphi_i, y_i + \alpha \sin \varphi_i, \varphi_i + \frac{2\pi}{n})$$
-	\end{enumerate}
-	
-	Where $\alpha$ is the step size (to move 1 pixel forward, $\alpha = 1.5$). $\alpha$ has to be $>1$, otherwise robot could only reach the direct neighbouring pixels (up, down, left, right) but not the diagonal ones. Each state is only possible if the map does not contain a wall at pixel $(x_{i+1}, y_{i+1})$ (the pixel that our step leads us to). Because the orientations are cyclical, if the robot orientation is less than $0$ or more than $2\pi$, the orientation is wrapped around to be inside $[0, 2\pi]$ range. \\
-	% "Each state" ali "Each step"?
-	
-	The figure \ref{fig:next_robot_states} represents a robot at some coordinates $(x, y, \varphi)$. The robot is oriented in the direction of the arrow. In the example, the orientation is $\varphi = \frac{\pi}{4}$. The next possible states are numbered as defined above with numbers 1, 2 and 3 respectively. In this case, the number of possible orientations $n = 8$. \\
-	
-	The heuristic function can be defined as an Euclidean distance between current state and the end state. $$h(s_i) = \sqrt{(x_{end} - x_i)^2 + (y_{end} - y_i)^2 + (\varphi_{end} - \varphi_i)^2}$$. To avoid getting too close to the walls, a penalty is added to the pixels that are too close to the wall. \\
-	
-	The \texttt{A*} algorithm can now be run using states as defined above. We start with initial robot state $(x_0, y_0, \varphi_0)$ and set the goal to the ring position $(x_m, y_m, \varphi_m)$. The closest path between those two states is the path that the robot should follow to get from its current position to the goal position including its orientations. \\
-	
-	After the path is computed, the robot can subscribe to odometry data to get its position and follow the list of poses that the previous algorithm has computed. To move from one pose to another, we wait until next odometry message is received, then rotate until we are oriented in the direction to the next goal and then move until we are close enough to the next pose. \\
 	
 	\subsection{Task solving}
 	
