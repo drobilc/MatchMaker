@@ -35,8 +35,8 @@ class WanderingTask(MovementTask):
 
         # Use MapMaker to generate exploration points
         map_maker = MapMaker()
-        exploration_points = map_maker.generate_points()
-        for point in exploration_points:
+        self.exploration_points = map_maker.generate_points()
+        for point in self.exploration_points:
             self.goals.append(utils.detection_from_point_on_map([point[0], point[1], 0], -2.578))
     
     def feedback(self, data):
@@ -82,7 +82,7 @@ class WanderingTask(MovementTask):
     
     def run(self):
         if len(self.goals) <= 0:
-            self.finish()
+            self.goals.append(self.exploration_points)   # finish()
             return
 
         # Set the closest goal as the current goal
