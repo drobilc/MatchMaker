@@ -146,12 +146,12 @@ class Brain(object):
 
     # TODO: robustify this part
     def get_gargamels_preferences(self):
-        rospy.logerr("Gargamel, what do you like in a woman?")
+        rospy.loginfo("Gargamel, what do you like in a woman?")
         self.greeter.say("Gargamel, what do you like in women?")
         try:
             for i in range(2):
                 pref = self.inquire_preferences()
-                rospy.loginfo("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
+                rospy.logerr("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
                 if pref.hair_color != '' and pref.hair_length != '':
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
@@ -159,7 +159,7 @@ class Brain(object):
             self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             hair_length = raw_input("Hair length (long or short): ")
             hair_color = raw_input("Hair color (dark or bright): ")
-            rospy.logerr("length: {}, color: {}".format(hair_length, hair_color))
+            rospy.loginfo("length: {}, color: {}".format(hair_length, hair_color))
             return FaceDetails(hair_length, hair_color)
         except:
             rospy.logerr("Length preference: {}".format(self.default_preference_hair_length))
@@ -169,7 +169,7 @@ class Brain(object):
     def get_gargamels_affirmation(self, woman):
         # import random
         # return random.uniform(0, 1) < 0.5
-        rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
+        rospy.loginfo("[ROBOT]: Gargamel... do you like this woman?")
         self.greeter.say("Gargamel, do you like this woman?")
         return self.get_affirmation()
     
@@ -318,6 +318,7 @@ class Brain(object):
         for ring in self.rings:
             if ring.color == self.favorite_color:
                 self.start_approaching_ring(ring)
+                rospy.logerr("We already have a ring of color {}".format(ring.color))
                 return
         
         rospy.loginfo("Searching for {} ring".format(self.favorite_color))
