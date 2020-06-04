@@ -147,7 +147,7 @@ class Brain(object):
     # TODO: robustify this part
     def get_gargamels_preferences(self):
         rospy.logerr("Gargamel, what do you like in a woman?")
-        self.greeter.say("Gargamel, what kind of hair style and hair color do you like on a woman?")
+        self.greeter.say("Gargamel, what do you like in women?")
         try:
             for i in range(2):
                 pref = self.inquire_preferences()
