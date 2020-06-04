@@ -21,13 +21,12 @@ import utils
 from random import randint
 
 class Brain(object):
-
-    GARGAMEL_LABEL = 'face19'
     
     def __init__(self, goals):
         rospy.init_node('brain', anonymous=False)
 
         # First setup all necessary objects so we can create publishers and subscribers
+        self.GARGAMEL_LABEL = 'face01'
         self.gargamel = None
         self.current_woman = None
 
@@ -382,7 +381,7 @@ class Brain(object):
 
             # We have found Gargamel, let's approach him now, here face19 for testing because it's 
             # usually the first face we find
-            if face.face_label == 'face19':
+            if face.face_label == self.GARGAMEL_LABEL:
                 rospy.loginfo("Gargamel found!")
                 self.gargamel = face
                 self.start_approaching_gargamel()
