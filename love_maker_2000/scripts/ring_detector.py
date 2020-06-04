@@ -409,8 +409,8 @@ class RingDetector(object):
             rospy.logwarn("FLIP")
 
         approaching_point = Pose()
-        approaching_point.position.x = ring_point.point.x + 0.4 * rotated[0]
-        approaching_point.position.y = ring_point.point.y + 0.4 * rotated[1]
+        approaching_point.position.x = ring_point.point.x + 0.45 * rotated[0]
+        approaching_point.position.y = ring_point.point.y + 0.45 * rotated[1]
 
         approaching_point_orientation = [0, 0]
         approaching_point_orientation[0] = -rotated[0]
