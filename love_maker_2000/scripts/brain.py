@@ -315,6 +315,10 @@ class Brain(object):
         self.start_finding_ring()
 
     def on_start_finding_ring(self):
+        rospy.logerr("We have the following colors of rings here")
+        for ring in self.rings:
+            rospy.logerr("{}".format(ring.color))
+        
         for ring in self.rings:
             if ring.color == self.favorite_color:
                 self.start_approaching_ring(ring)
@@ -397,7 +401,6 @@ class Brain(object):
         # TODO: Update data if this is redetection
         if is_redetection:
             self.update_face_object_detection(face)
-
         else:
             rospy.loginfo('Found new face with label: {}'.format(face.face_label))
 
@@ -411,9 +414,11 @@ class Brain(object):
             # Otherwise it's a woman
             else:
                 self.women.append(face)
-                if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
-                    self.start_approaching_woman(face)
-                    self.current_woman = face
+        
+        # If we got a new and correct label for woman go to her
+        if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
+            self.start_approaching_woman(face)
+            self.current_woman = face
 
     def on_cylinder_detection(self, cylinder, is_redetection=False):
         # TODO: Update data if this is redetection
@@ -421,28 +426,26 @@ class Brain(object):
             for c in self.cylinders:
                 if c.id == cylinder.id:
                     self.update_object_detection(c, cylinder)
-
         else:
             rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
             self.cylinders.append(cylinder)
 
-            # If we are currently looking for a cylinder of this color, approach it
-            if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
-                self.start_approaching_cylinder(cylinder)
+        # If we are currently looking for a cylinder of this color, approach it
+        if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
+            self.start_approaching_cylinder(cylinder)
     
     def on_ring_detection(self, ring, is_redetection=False):
         if is_redetection:
             for r in self.rings:
                 if r.id == ring.id:
                     self.update_object_detection(r, ring)
-
         else:
             rospy.loginfo('New {} ring detected'.format(ring.color))
             self.rings.append(ring)
 
-            # If we are currently looking for a ring of this color, approach it
-            if self.state == 'finding_ring' and ring.color == self.favorite_color:
-                self.start_approaching_ring(ring)
+        # If we are currently looking for a ring of this color, approach it
+        if self.state == 'finding_ring' and ring.color == self.favorite_color:
+            self.start_approaching_ring(ring)
     
     def update_face_object_detection(self, new):
         if self.gargamel is not None and self.gargamel.id == new.id:
