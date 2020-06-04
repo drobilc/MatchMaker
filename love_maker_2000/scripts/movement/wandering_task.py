@@ -83,7 +83,6 @@ class WanderingTask(MovementTask):
     def run(self):
         if len(self.goals) <= 0:
             self.goals.append(self.exploration_points)   # finish()
-            return
 
         # Set the closest goal as the current goal
         closest_goal = self.get_closest_goal()
