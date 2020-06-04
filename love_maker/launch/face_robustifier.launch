@@ -4,7 +4,7 @@
 
   <include file="$(find love_maker)/launch/robustifier.launch">
     <arg name="maximum_distance" value="1.2"/>
-    <arg name="minimum_detections" value="7"/>
+    <arg name="minimum_detections" value="4"/>
     <arg name="raw_detection_topic" value="/face_detections_raw"/>
     <arg name="detection_topic" value="/face_detections"/>
     <arg name="marker_topic" value="/face_markers"/>
