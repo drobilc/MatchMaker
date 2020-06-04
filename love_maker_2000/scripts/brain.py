@@ -346,7 +346,7 @@ class Brain(object):
         approaching_euler = euler_from_quaternion([approaching_quaternion.x, approaching_quaternion.y, approaching_quaternion.z, approaching_quaternion.w])
         rospy.logwarn("approaching_euler:" + str(approaching_euler))
         rotate_90_clockwise = (0.0, 0.0, -math.pi/2)
-        new_euler = approaching_euler * rotate_90_clockwise
+        new_euler = approaching_euler + rotate_90_clockwise
         new_quaternion = quaternion_from_euler(new_euler[0], new_euler[1], new_euler[2])
         new_quaternion = Quaternion(*new_quaternion)
         ring.object_pose.orientation = new_quaternion
