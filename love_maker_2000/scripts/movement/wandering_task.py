@@ -83,7 +83,7 @@ class WanderingTask(MovementTask):
     def run(self):
         if len(self.goals) <= 0:
             for point in self.exploration_points:
-            self.goals.append(utils.detection_from_point_on_map([point[0], point[1], 0], -2.578))
+                self.goals.append(utils.detection_from_point_on_map([point[0], point[1], 0], -2.578))
 
         # Set the closest goal as the current goal
         closest_goal = self.get_closest_goal()
