@@ -8,6 +8,8 @@ from task import MovementTask
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import String
 
+from greeter import Greeter
+
 class ArmTask(MovementTask):
 
     EXTENDED_POSITIONS = [0, 0.3, 1, 0]
@@ -62,6 +64,8 @@ class ArmTask(MovementTask):
 class TossACoinTask(ArmTask):
     
     def __init__(self, movement_controller, callback, duration=2.0):
+        self.greeter = Greeter()
+        self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
         super(TossACoinTask, self).__init__(movement_controller, callback, [[0, 0.5, 0.5, 0.8], ArmTask.RETRACTED_POSITIONS], duration=duration)
 
     def __str__(self):

@@ -6,12 +6,13 @@ from transitions import Machine, State
 from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Quaternion
 
 from movement.controller import MovementController
 from greeter import Greeter
 from utils import FACE_DETAILS, FaceDetails
 from speech_transcription.srv import InquireAffirmation, InquireColor, InquirePreferences
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from zbar_detector.msg import Marker
 
@@ -19,15 +20,15 @@ from actionlib_msgs.msg import GoalStatus
 import utils
 
 from random import randint
+import math
 
 class Brain(object):
-
-    GARGAMEL_LABEL = 'face19'
     
     def __init__(self, goals):
         rospy.init_node('brain', anonymous=False)
 
         # First setup all necessary objects so we can create publishers and subscribers
+        self.GARGAMEL_LABEL = 'face01'
         self.gargamel = None
         self.current_woman = None
 
@@ -145,18 +146,20 @@ class Brain(object):
 
     # TODO: robustify this part
     def get_gargamels_preferences(self):
-        rospy.logerr("Gargamel, what do you like in a woman?")
+        rospy.loginfo("Gargamel, what do you like in a woman?")
+        self.greeter.say("Gargamel, what do you like in women?")
         try:
             for i in range(2):
                 pref = self.inquire_preferences()
-                rospy.loginfo("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
+                rospy.logerr("Length = {}, color = {}".format(pref.hair_length, pref.hair_color))
                 if pref.hair_color != '' and pref.hair_length != '':
                     return FaceDetails(pref.hair_length, pref.hair_color)
 
             rospy.logerr("Speech recognition failed, please provide the preferences manually...")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             hair_length = raw_input("Hair length (long or short): ")
             hair_color = raw_input("Hair color (dark or bright): ")
-            rospy.logerr("length: {}, color: {}".format(hair_length, hair_color))
+            rospy.loginfo("length: {}, color: {}".format(hair_length, hair_color))
             return FaceDetails(hair_length, hair_color)
         except:
             rospy.logerr("Length preference: {}".format(self.default_preference_hair_length))
@@ -166,7 +169,8 @@ class Brain(object):
     def get_gargamels_affirmation(self, woman):
         # import random
         # return random.uniform(0, 1) < 0.5
-        rospy.logerr("[ROBOT]: Gargamel... do you like this woman?")
+        rospy.loginfo("[ROBOT]: Gargamel... do you like this woman?")
+        self.greeter.say("Gargamel, do you like this woman?")
         return self.get_affirmation()
     
     def get_affirmation(self):
@@ -179,6 +183,7 @@ class Brain(object):
             
             # If above fails get affirmation manually
             rospy.logerr("Speech recognition failed, please provide the answer manually.. beep bop:")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             affirmation = raw_input("(yes or no): ")
             print(affirmation)
             return affirmation == 'yes'
@@ -213,18 +218,22 @@ class Brain(object):
             self.favorite_color = self.get_womans_favorite_color()
             self.start_approaching_gargamel()
             rospy.loginfo("This woman's favorite color is {}".format(self.favorite_color))
+            say_this = "O, you like {}! That's a delightful color.".format(self.favorite_color)
+            self.greeter.say(say_this)
         
         # This is the second time we are here, propose
         else:
-            rospy.loginfo("Hey will you marry Gargamel?")
+            rospy.loginfo("Hello again, beautiful. Will you marry Gargamel?")
             accepts_proposal = self.get_womans_affirmation()
 
             if accepts_proposal:
                 rospy.loginfo("They lived happily ever after")
+                self.greeter.say("Yay, she said YES! My work here is done. May they live the happiest ever after!")
                 # TODO: add final node
             
             else:
                 rospy.loginfo("She said no.. ugh, now I have to find a new one")
+                self.greeter.say("She said no.. ugh, now I have to find a new one")
                 self.women.remove(self.current_woman)
                 self.favorite_color = None
                 self.start_finding_woman()
@@ -233,6 +242,7 @@ class Brain(object):
         # import random
         # return random.uniform(0, 1) < 0.5
         rospy.logerr("[ROBOT]: {}... Will you marry Gargamel?".format(self.current_woman.face_label))
+        self.greeter.say("Hello again, beautiful. Will you marry Gargamel?")
         return self.get_affirmation()
 
     # TODO: robustify all speech recognition parts
@@ -240,11 +250,13 @@ class Brain(object):
         try:
             for i in range(2):
                 rospy.logerr("M'lady, what is your favorite color?")
+                self.greeter.say("M'lady, what is your favorite color?")
                 color = self.inquire_color().color
                 if color in self.default_color_selection:
                     return color
 
             rospy.logerr("Speech recognition failed, please provide the color manually...")
+            self.greeter.say("Sorry, I didn't understand that. Can you please type it in for me?")
             color = raw_input("{}: ".format(self.default_color_selection))
             rospy.logerr(color)
             return color
@@ -255,10 +267,9 @@ class Brain(object):
             return color
 
     def in_accordance_with_preferences(self, woman):
-        if self.preferences is None:
+        if self.preferences is None or woman.face_label == self.GARGAMEL_LABEL:
             return False
         else:
-            # return True
             if woman.face_label is not None:
                 woman_face_details = FACE_DETAILS[woman.face_label]
                 return woman_face_details == self.preferences
@@ -278,19 +289,39 @@ class Brain(object):
     def on_start_approaching_cylinder(self, cylinder):
         rospy.loginfo("Approaching {} cylinder".format(cylinder.color))
         self.wandering_task.cancel()
-        task = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached)
-        self.movement_controller.add_to_queue(task)
+        # set cylinder's object_position to halfway between the approachng point and the cylinder
+        cylinder = self.get_toss_a_coin_position(cylinder)
+
+        approach, fine_approach, reverse = self.movement_controller.approach(cylinder, callback=self.on_cylinder_approached, fine=True)
+
+        self.movement_controller.add_to_queue(approach)
+        self.movement_controller.add_to_queue(fine_approach)
         self.movement_controller.add_to_queue(self.movement_controller.toss_a_coin(duration=5.0))
+        # self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
+        self.movement_controller.add_to_queue(reverse)
+
+    def get_toss_a_coin_position(self, cylinder):
+        cylinder.object_pose.position.x = (cylinder.object_pose.position.x + cylinder.approaching_point_pose.position.x) / 2
+        cylinder.object_pose.position.y = (cylinder.object_pose.position.y + cylinder.approaching_point_pose.position.y) / 2 
+        cylinder.object_pose.orientation = cylinder.approaching_point_pose.orientation
+        rospy.logwarn("New position: " + str(cylinder.object_pose.position))    
+        return cylinder
     
     # TODO: throw an imaginary coin into the well or make a wish
     def on_cylinder_approached(self, detection, goal_status, goal_result):
         rospy.logwarn("Let's find you two a ring now!")
+        self.greeter.say("Let's find you two a ring now!")
         self.start_finding_ring()
 
     def on_start_finding_ring(self):
+        rospy.logerr("We have the following colors of rings here")
+        for ring in self.rings:
+            rospy.logerr("{}".format(ring.color))
+        
         for ring in self.rings:
             if ring.color == self.favorite_color:
                 self.start_approaching_ring(ring)
+                rospy.logerr("We already have a ring of color {}".format(ring.color))
                 return
         
         rospy.loginfo("Searching for {} ring".format(self.favorite_color))
@@ -301,6 +332,9 @@ class Brain(object):
         rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
 
+        # set pickup point halfway from approaching point to detection
+        ring = self.get_pick_up_position(ring)
+
         approach, fine_approach, reverse = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
 
         self.movement_controller.add_to_queue(approach)
@@ -308,6 +342,26 @@ class Brain(object):
         self.movement_controller.add_to_queue(self.movement_controller.pick_up_ring(duration=6.0))
         self.movement_controller.add_to_queue(reverse)
     
+    def get_pick_up_position(self, ring):
+        ring.object_pose.position.x = (ring.object_pose.position.x + ring.approaching_point_pose.position.x) / 2
+        ring.object_pose.position.y = (ring.object_pose.position.y + ring.approaching_point_pose.position.y) / 2
+        ring.object_pose.position.z = 0
+        approaching_quaternion = ring.approaching_point_pose.orientation
+        approaching_euler = euler_from_quaternion([approaching_quaternion.x, approaching_quaternion.y, approaching_quaternion.z, approaching_quaternion.w])
+        rospy.logwarn("approaching_euler:" + str(approaching_euler))
+        rotate_90_clockwise = (0.0, 0.0, math.pi/2)
+        new_euler = []
+        new_euler.append(approaching_euler[0])
+        new_euler.append(approaching_euler[1])
+        new_euler.append(int((approaching_euler[2] + rotate_90_clockwise[2] + 2*math.pi) % (2*math.pi)))
+        # new_euler = approaching_euler + rotate_90_clockwise
+        rospy.logwarn("new_euler: " + str(new_euler))
+        new_quaternion = quaternion_from_euler(new_euler[0], new_euler[1], new_euler[2])
+        new_quaternion = Quaternion(*new_quaternion)
+        ring.object_pose.orientation = new_quaternion
+
+        return ring
+
     # TODO: first grab the ring with the robotic arm
     def on_ring_approached(self, detection, goal_status, goal_result):
         self.start_approaching_woman(self.current_woman)
@@ -350,47 +404,68 @@ class Brain(object):
     def on_face_detection(self, face, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
-            return
-
-        rospy.loginfo('Found new face with label: {}'.format(face.face_label))
-
-        # We have found Gargamel, let's approach him now, here face19 for testing because it's 
-        # usually the first face we find
-        if face.face_label == 'face19':
-            rospy.loginfo("Gargamel found!")
-            self.gargamel = face
-            self.start_approaching_gargamel()
-            
-        # Otherwise it's a woman
+            self.update_face_object_detection(face)
         else:
-            self.women.append(face)
-            if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
-                self.start_approaching_woman(face)
-                self.current_woman = face
+            rospy.loginfo('Found new face with label: {}'.format(face.face_label))
+
+            # We have found Gargamel, let's approach him now, here face19 for testing because it's 
+            # usually the first face we find
+            if face.face_label == self.GARGAMEL_LABEL:
+                rospy.loginfo("Gargamel found!")
+                self.gargamel = face
+                self.start_approaching_gargamel()
+
+            # Otherwise it's a woman
+            else:
+                self.women.append(face)
+        
+        # If we got a new and correct label for woman go to her
+        if self.in_accordance_with_preferences(face) and self.state == 'finding_woman':
+            self.start_approaching_woman(face)
+            self.current_woman = face
 
     def on_cylinder_detection(self, cylinder, is_redetection=False):
         # TODO: Update data if this is redetection
         if is_redetection:
-            return
-        
-        rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
-        self.cylinders.append(cylinder)
+            for c in self.cylinders:
+                if c.id == cylinder.id:
+                    self.update_object_detection(c, cylinder)
+        else:
+            rospy.loginfo('New {} cylinder detected'.format(cylinder.color))
+            self.cylinders.append(cylinder)
 
         # If we are currently looking for a cylinder of this color, approach it
         if self.state == 'finding_cylinder' and cylinder.color == self.favorite_color:
             self.start_approaching_cylinder(cylinder)
     
     def on_ring_detection(self, ring, is_redetection=False):
-        # TODO: Update data if this is redetection
         if is_redetection:
-            return
-
-        rospy.loginfo('New {} ring detected'.format(ring.color))
-        self.rings.append(ring)
+            for r in self.rings:
+                if r.id == ring.id:
+                    self.update_object_detection(r, ring)
+        else:
+            rospy.loginfo('New {} ring detected'.format(ring.color))
+            self.rings.append(ring)
 
         # If we are currently looking for a ring of this color, approach it
         if self.state == 'finding_ring' and ring.color == self.favorite_color:
             self.start_approaching_ring(ring)
+    
+    def update_face_object_detection(self, new):
+        if self.gargamel is not None and self.gargamel.id == new.id:
+            self.update_object_detection(self.gargamel, new)
+        else:
+            for w in self.women:
+                if w.id == new.id:
+                    self.update_object_detection(w, new)
+
+    def update_object_detection(self, obj, new):
+        obj.image = new.image
+        obj.object_pose = new.object_pose
+        obj.approaching_point_pose = new.approaching_point_pose
+        obj.color = new.color
+        obj.face_label = new.face_label
+        obj.barcode_data = new.barcode_data
 
 if __name__ == '__main__':
     controller = Brain([])

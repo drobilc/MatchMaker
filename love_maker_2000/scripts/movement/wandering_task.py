@@ -25,6 +25,7 @@ class WanderingTask(MovementTask):
         self.action_client = action_client
 
         self.goals = []
+        self.is_first_goal = True
 
         # Transformation buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
@@ -35,8 +36,8 @@ class WanderingTask(MovementTask):
 
         # Use MapMaker to generate exploration points
         map_maker = MapMaker()
-        exploration_points = map_maker.generate_points()
-        for point in exploration_points:
+        self.exploration_points = map_maker.generate_points()
+        for point in self.exploration_points:
             self.goals.append(utils.detection_from_point_on_map([point[0], point[1], 0], -2.578))
     
     def feedback(self, data):
@@ -62,6 +63,13 @@ class WanderingTask(MovementTask):
             self.current_robot_pose = None
     
     def get_closest_goal(self):
+        # If this is the first goal that we are approaching, select a random one
+        if self.is_first_goal:
+            self.is_first_goal = False
+            from random import choice
+            random_first_goal = choice(self.goals)
+            return random_first_goal
+
         # goals are ObjectDetection objects
         # their position can be obtained as detection.object_pose.position
 
@@ -82,8 +90,8 @@ class WanderingTask(MovementTask):
     
     def run(self):
         if len(self.goals) <= 0:
-            self.finish()
-            return
+            for point in self.exploration_points:
+                self.goals.append(utils.detection_from_point_on_map([point[0], point[1], 0], -2.578))
 
         # Set the closest goal as the current goal
         closest_goal = self.get_closest_goal()

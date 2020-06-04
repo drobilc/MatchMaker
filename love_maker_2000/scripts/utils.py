@@ -88,7 +88,7 @@ def nearest_free_pixel(pixel, map_data):
 
     while not frontier.empty():
         current = frontier.get()
-        if map_data[current[1], current[0]] != 255 and i > 0:
+        if map_data[current[1], current[0]] == 0 and i > 0:
             return current
         for next in neighbors_all(current):
             if not visited[next[1], next[0]]:

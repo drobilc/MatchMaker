@@ -297,11 +297,11 @@ void find_cylinders(pcl::PointCloud<PointT>::Ptr cloud, pcl::PointCloud<pcl::Nor
     dz /= norm;
 
     // Now that vector components have been initialized, we can multiply them by
-    // 0.3 to get a point 0.3m away from the cylinder centroid. The approaching
-    // point is then at point_map + v * 0.3
-    double approachingPointX = point_map.point.x + dx * 0.3;
-    double approachingPointY = point_map.point.y + dy * 0.3;
-    double approachingPointZ = point_map.point.z + dz * 0.3;
+    // 0.5 to get a point 0.5m away from the cylinder centroid. The approaching
+    // point is then at point_map + v * 0.5
+    double approachingPointX = point_map.point.x + dx * 0.6;
+    double approachingPointY = point_map.point.y + dy * 0.6;
+    double approachingPointZ = point_map.point.z + dz * 0.6;
 
     // Get the orientation of the approaching point
     tf2::Quaternion approachingPointOrientation;
