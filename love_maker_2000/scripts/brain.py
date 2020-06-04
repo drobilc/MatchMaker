@@ -6,12 +6,13 @@ from transitions import Machine, State
 from std_msgs.msg import Bool
 from object_detection_msgs.msg import ObjectDetection
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Quaternion
 
 from movement.controller import MovementController
 from greeter import Greeter
 from utils import FACE_DETAILS, FaceDetails
 from speech_transcription.srv import InquireAffirmation, InquireColor, InquirePreferences
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 from zbar_detector.msg import Marker
 
@@ -19,6 +20,7 @@ from actionlib_msgs.msg import GoalStatus
 import utils
 
 from random import randint
+import math
 
 class Brain(object):
     
@@ -296,12 +298,13 @@ class Brain(object):
         self.movement_controller.add_to_queue(approach)
         self.movement_controller.add_to_queue(fine_approach)
         self.movement_controller.add_to_queue(self.movement_controller.toss_a_coin(duration=5.0))
-        self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
+        # self.greeter.say("I wish for Gargamel and his chosen one to fall in love, get married and be happy.")
         self.movement_controller.add_to_queue(reverse)
 
     def get_toss_a_coin_position(self, cylinder):
         cylinder.object_pose.position.x = (cylinder.object_pose.position.x + cylinder.approaching_point_pose.position.x) / 2
-        cylinder.object_pose.position.y = (cylinder.object_pose.position.y + cylinder.approaching_point_pose.position.y) / 2  
+        cylinder.object_pose.position.y = (cylinder.object_pose.position.y + cylinder.approaching_point_pose.position.y) / 2 
+        cylinder.object_pose.orientation = cylinder.approaching_point_pose.orientation
         rospy.logwarn("New position: " + str(cylinder.object_pose.position))    
         return cylinder
     
@@ -325,6 +328,9 @@ class Brain(object):
         rospy.loginfo("Approaching {} ring".format(self.favorite_color))
         self.wandering_task.cancel()
 
+        # set pickup point halfway from approaching point to detection
+        ring = self.get_pick_up_position(ring)
+
         approach, fine_approach, reverse = self.movement_controller.approach(ring, callback=self.on_ring_approached, fine=True)
 
         self.movement_controller.add_to_queue(approach)
@@ -332,6 +338,21 @@ class Brain(object):
         self.movement_controller.add_to_queue(self.movement_controller.pick_up_ring(duration=6.0))
         self.movement_controller.add_to_queue(reverse)
     
+    def get_pick_up_position(self, ring):
+        ring.object_pose.position.x = (ring.object_pose.position.x + ring.approaching_point_pose.position.x) / 2
+        ring.object_pose.position.y = (ring.object_pose.position.y + ring.approaching_point_pose.position.y) / 2
+        ring.object_pose.position.z = 0
+        approaching_quaternion = ring.approaching_point_pose.orientation
+        approaching_euler = euler_from_quaternion([approaching_quaternion.x, approaching_quaternion.y, approaching_quaternion.z, approaching_quaternion.w])
+        rospy.logwarn("approaching_euler:" + str(approaching_euler))
+        rotate_90_clockwise = (0.0, 0.0, -math.pi/2)
+        new_euler = approaching_euler * rotate_90_clockwise
+        new_quaternion = quaternion_from_euler(new_euler[0], new_euler[1], new_euler[2])
+        new_quaternion = Quaternion(*new_quaternion)
+        ring.object_pose.orientation = new_quaternion
+
+        return ring
+
     # TODO: first grab the ring with the robotic arm
     def on_ring_approached(self, detection, goal_status, goal_result):
         self.start_approaching_woman(self.current_woman)
