@@ -25,6 +25,7 @@ class WanderingTask(MovementTask):
         self.action_client = action_client
 
         self.goals = []
+        self.is_first_goal = True
 
         # Transformation buffer and listener
         self.tf_buffer = tf2_ros.Buffer()
@@ -62,6 +63,13 @@ class WanderingTask(MovementTask):
             self.current_robot_pose = None
     
     def get_closest_goal(self):
+        # If this is the first goal that we are approaching, select a random one
+        if self.is_first_goal:
+            self.is_first_goal = False
+            from random import choice
+            random_first_goal = choice(self.goals)
+            return random_first_goal
+
         # goals are ObjectDetection objects
         # their position can be obtained as detection.object_pose.position
 
