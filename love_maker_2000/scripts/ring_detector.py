@@ -6,6 +6,7 @@ import rospy
 import cv2
 import numpy, math
 import message_filters
+from copy import deepcopy
 
 import utils
 
@@ -95,9 +96,7 @@ class RingDetector(object):
         # rospy.logwarn(my_dict)
 
         # Get map data from map server
-        rospy.wait_for_service('static_map')
-        get_map = rospy.ServiceProxy('static_map', GetMap)
-        self.occupancy_grid_for_boxes = get_map().map
+        self.occupancy_grid_for_boxes = deepcopy(self.occupancy_grid)
         width, height = self.occupancy_grid_for_boxes.info.width, self.occupancy_grid_for_boxes.info.height
         self.map_resolution_for_boxes = self.occupancy_grid_for_boxes.info.resolution
         self.map_origin_for_boxes = self.occupancy_grid_for_boxes.info.origin.position
