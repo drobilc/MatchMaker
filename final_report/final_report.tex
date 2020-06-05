@@ -226,11 +226,45 @@
 	The distance to the ring is computed as the average of distances to each pixel in the masked distance image. The ring position in world frame is computed using as explained in section \ref{pixel_to_world}. \\
 
 	\subsubsection{Ring approaching point computation}
-	Computation of approaching points for rings takes advantage of the static map. First we check whether the detected ring position is above the wall or not. If it is, we use it's position as our starting position. If it isn't, we find the closest pixel occupied by the wall and use it as our starting position. Next, we need to find the direction in which we'll set the approaching point. \\
+	Computation of approaching points for rings takes advantage of the static map, which provides information about the location of the walls, the unknown space (outside of the map and closed areas inside the map, such as boxes) and the free space, the space through which the robot can move. Using this information and the location of the ring detection we can find the closest wall and move approaching point away from it, in the direction of the normal. \\
 
-	We do this by searching for the nearest pixel to the starting position (located on the wall) that is not occupied by a wall. By subtracting the starting position pixel from the pixel we just found, we get a vector that points from the ring to our soon to be approaching point. This vector is then normalized so it can be used in further computation. \\
+	First we have to find the wall closest to our detection. We can do this by searching for the closest straight line (edge) using \texttt{Hough Transform} algorithm. \texttt{Hough Transform} takes an edge image as the input. \textbf{Edge image} is usualy a binary image where one of the binary values 0 and 1 marks the pixels that contain the edge and the other value marks everything else. This kind of image can be obtained by various edge detectors that detect edges by looking for drastic changes in intensity in the original image. \\
+	
+	Each line from the edge image can then be represented with an equation of the form $y = ax + b$ and mapped to a point $(a, b)$ in the \texttt{Hough Space}. Because this system cannot represent the vertical lines since $a = \infty$, the line is rather represented as $\rho = x\cos(\theta) + y\sin(\theta)$ and mapped to a point $(\theta, \rho)$. Each point from the line therefore produces a cosine curve in \texttt{Hough Space}. If two points lay on the same line, their cosine curves in the \texttt{Hough Space} intersect in one $(\theta, \rho)$ point. The \texttt{Hough Transform} algorithm detects lines by searching for the $(\theta, \rho)$ pairs that record more than some $threshold$ number of intersections. \\
 
-	Now we move along the calculated direction vector for 0.2 meters and set this position as the position of the approaching point. Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
+	For each detection we search the area around it for the lines and then find the one that is the closest to the detection. This line is represented with two points, both ends of the line. If we subtract one point from another, we get a vector parallel to the wall. By rotating it by 90 degrees we get a normal $n$ that is perpendicular to the wall. We use static map information to determine whether the neighbouring pixel of the line midpoint in the direction of the $n$ lies in the space accesible to the robot or not. If yes, we take $n$ as our direction vector for setting the approaching point. If not, we take $-n$. \\
+
+	Figure \ref{fig:ring_approaching_point_computation} shows the free space (white) and the inaccessible space (light gray) separated by the wall and the two normals to the wall. Depending on wheteher the location of the ring is detected correctly (black dot) or incorrectly (red dot) our normal may be either one of the two shown in the Figure \ref{fig:ring_approaching_point_computation}. For setting the approaching point we want a normal to point towards the free space as does $n$ in the figure below.
+
+	\definecolor{verylightgray}{gray}{0.90}
+	\begin{figure}[h]
+		\centering
+		\begin{tikzpicture}
+			%non-free space
+			\fill[verylightgray] (0,4) rectangle (5.5,5.4);
+
+			% grid
+			\draw[step=0.5cm,lightgray,very thin] (0.1,2.1) grid (5.4,5.4);
+
+			%wall
+			\fill[darkgray] (0,3.5) rectangle (5.5,4);
+
+			% correct ring detection
+			\fill[black] (3.25,2.75) circle (0.15);
+			%\node[] at (3.5,2.5) {$(x, y)$};
+
+			% incorrect ring detection
+			\fill[red] (3.25,4.75) circle (0.15);
+
+			\draw [->] (1.75,3.75) to (1.75,2.75) node [right] {$\vec{n}$};
+			\draw [->] (1.75,3.75) to (1.75,4.75) node [right] {$-\vec{n}$};
+			\draw[very thick, black] (-0.5,3.75) -- (6,3.75);
+		\end{tikzpicture}
+		\caption{Computing approachin point for ring}
+		\label{fig:ring_approaching_point_computation}
+	\end{figure}
+
+	Now we move along the calculated direction vector for 0.45 meters and set this position as the position of the approaching point. Orientation for the approaching point should point towards the line so we just invert the direction vector by multiplying it by $-1$ and set this as the orientation of our approaching point.
 
 	\subsubsection{Ring colour detection}
 	The ring colour is computed using the mask that we have calculated in section \ref{ring_detection}. The colour  image is filtered so that only ring is left and then the colour is averaged. The average colour is then classified using the algorithm explained in section \ref{colour_classification}.
@@ -310,8 +344,8 @@
 
 	\begin{figure}[h]
 		\centering
-		% \includegraphics[height=4cm]{images/before}
-		% \includegraphics[height=4cm]{images/after}
+		\includegraphics[height=4cm]{images/before}
+		\includegraphics[height=4cm]{images/after}
 		\caption{\texttt{Delaunay triangulation} and exploration goals before (left) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (right)}
 		\label{fig:exploration_goals}
 	\end{figure}
@@ -388,6 +422,10 @@
 		\caption{Fine movement}
 		\label{fig:fine_movement}
 	\end{figure}
+
+	% chapter about setting the additional approaching points before using fine movement
+	% RINGS:
+	% Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
 	
 	\subsection{Task solving}
 	
@@ -504,7 +542,7 @@
 	% We should only write what each of us did here and add that the professor should compute percentages himself.
 	
 	\section{Conclusion}
-	After countless hours, Erazem was finnaly able to perform the task. We encoutered a bunch of problems on the way, the biggest being inaccurate ring detections.
+	After countless hours, Erazem was finnaly able to perform the task. We encoutered a bunch of problems on the way, the biggest one being inaccurate ring detections.
 	% more abut this
 	
 	% add comment that it is bad that we have this task so late in the semester as we can't study for other subjects
