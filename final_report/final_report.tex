@@ -447,7 +447,7 @@
 	Pick-up-the-ring approaching point is a point near the ring from which the ring can be picked up by the robotic mar mounted on top of the robot. This point is located halfway between the ring approaching point and the detected ring location. Orientation of this point is set to such that the robot is below the ring, having it's right side next to the wall to which the ring is "attached". This means the orientation of the ring approaching ponint should be rotated 90 degrees counter clockwise (to the robot's left).
 	% refer to this when explaining why the red ring couldn't be approached.
 	
-	\subsection{Task solving}
+	\subsection{Robot behavior}
 	
 	\begin{figure}[H]
 		\centering
@@ -484,9 +484,31 @@
   			\path (AW2) edge[] node {Woman not willing \\ to marry Gargamel} (FW);
   			
 		\end{tikzpicture}
-		\caption{Finite state automata}
+		\caption{Finite state automaton}
 		\label{fig:finite_state_automata}
 	\end{figure}
+
+	In this part, the robot's behavior and decision making will be explained. In order to make robot's artificial intelligence implementation easily understandable and straightforward we decided to use finite state automata. We defined ten states, that can be seen in the figure above, most of them having only one outgoing edge excpet for two nodes that have two outgoing edges. \\
+
+	Finding Gargamel: In this initial state of the automaton the robot travels around the map and memorizes any objects of interest that detects, until it finds Gargamel. Then the robot transitions into the second state. \\
+
+	Approaching Gargamel: Here we first instruct the robot to approach Gargamel. When the specified approaching point is reached, the robot asks Gargamel about his preferences about women. Then the robot listens for the answer, if it fails to understand us twice, it prompts us to input the preferences manually through the terminal. Once Gargamel's preferences are received, the robots transitions to the next state. \\
+
+	Finding woman: In this state, the robot has to find a woman that matches Gargamel's preferences. We first check if we have already detected any women with such characteristics and if so, we choose the first one and proceed to the next state, in which we approach the woman. Otherwise we instruct the robot to explore the map until it finds a suitable woman. \\
+
+	Approaching woman: In this state, the robot approaches the woman, that we found in the previous state. After it reaches the approaching point, it inquires about her favorite color. The logic of handling speech recognition is the same as in "Approaching Gargamel" state. \\
+
+	Approaching Gargamel 2: With this newly collected information about the woman's favorite color, the robot returns back to Gargamel. Woman's picture is shown in rviz while the robot waits for Gargamel's response, if he likes this woman or not. Based on the received information, we have two possible transitions. If Gargamel likes this woman, we proceed to next state, if he doesn't like her, we return to the "Finding woman" state, where we search for a new woman with characteristics that Gargamel likes. \\
+
+	Finding cylinder: Robot's next task is to find a cylinder of the woman's favorite color. Here we have two options, if a cylinder of specified color has already been detected, we proceed to the next state, otherwise the robot is instructed to explore the map until it finds a sutiable cylinder. \\
+
+	Approaching cylinder: After an appropriate cylinder has been found, the robot's next step is to approach it and extend the mechanical arm, which represents tossing a coin into a well. This is achieved in the following manner. The robot first approaches the cylinder, then it has to get closer to the cylinder, using fine movement. When it is close enough and facing in the right direction it extends finally extends the arm. After that the robot returns to the approaching point and continues to the next state. \\
+
+	Finding ring: This next task is very similar to the one in the "Finding cylinder" state, except that the robot is searching for a ring of a specified color. When approprate ring is found, we continue to the next state. \\
+
+	Approaching ring: After a suitable ring has been found, the robot has to approach it and extend it's arm towards it. This is achieved in by approaching the ring, getting into the right position using fine movement and extending the arm towards the ring, similarly as in the "Approaching cylinder" state. Once the robot reaches the ring, it returns to the approaching point and continues to the next state. \\
+
+	Approaching woman 2: This is the accepting state of this automaton. The robot's job is to approach the chosen woman again and ask her if she is willing to marry Gargamel. If her answer is yes, the robot has finished his task. If her answer is no, the robot returns back to the "Finding woman" state and searches for a new woman with desired characteristics. \\
 	
 	\section{Implementation and integration}
 	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at the same time. \\ % tale zadnji stavek bi se dalo še mal boljš ubesedit
