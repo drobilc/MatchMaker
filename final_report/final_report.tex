@@ -12,6 +12,7 @@
 \usepackage{pgfplots}
 \usetikzlibrary{arrows,automata}
 \usepackage[bottom]{footmisc}
+\usepackage{dirtytalk}
 
 \author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
 \title{Final report}
@@ -365,9 +366,15 @@
 	
 	The most common reason for failure is that the goal is too close to any wall in our world. The robot builds a costmap of its environment, where the closer the position is to the wall, the highest cost it has. This way a robot can avoid obstacles and plan the path from point A to point B. The robot builds a costmap in a way that it makes sure not to bump into anything, which means it also takes into account all possible errors in data from its detectors. This means that some of the points that the robot can reach in reality unfortunately fall into the high-cost area and so the normal movement cannot get us there because the risk of bumping into something is too high. \\
 
-	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall and get very close to the cylinders so that it could reacha bove it and toss a coin. Both required positions are so close to the obstacle/wall, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot manually. \\
+	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall and get very close to the cylinders so that it could reacha bove it and toss a coin. Both required positions are so close to the obstacle/wall, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot "manually". \\
+
+	Fine movement that we implemented works as follows. In the first step we obtain the current position of the robot and calculate it's distance to the goal and difference in the robot's orientation and the direction that would point from the robot's position to the position of the goal; let's call it \textbf{direction to goal}. Then we check whether the robot is already near enough to the position of the goal. There is a certain threshold set and if the distance between the robot and the goal is below this threshold, we consider the robot to have reached the position of the goal. This helps in case goal is too close to the wall for the center of the robot to reach it without crashing into any obstacles. \\
 	
-	\begin{figure}[h]
+	If we are not close enough, we send a \texttt{Twist} message to move the robot in the direction to goal and then repeat the first step. If we are close enough, we check the difference between the robot's current orientation and orientation of the goal. If it is below a certain threshold set for orientation, we assume the orientation is correct and the robot has successfully reached the goal, so we can move on to perform other tasks. If the orientation is not as desired, we send a \texttt{Twist} message with the linear components equal to 0 so that the robot does not move forward but only spins around on the spot and the angular components set such that the difference in robot's orientation and that of a goal reduces. \\
+
+	This behaviour is shown in the figure \ref{fig:fine_movement_figure} below. Step 1 shows the robot and the goal at the start. In the step 2 we can see that the robot has turned towards the goal and will proceed forward in this direction. Step 3 shows the robot in the moment it reaches the position of the goal and in step 4 we can see the robot turning to match the orientation of the goal. In step 4, the goal is successfully reached. \\
+	
+	\begin{figure}[H]
 		\begin{subfigure}{.5\textwidth}
 			\centering
 			\begin{tikzpicture}
@@ -381,7 +388,6 @@
 			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
 			\end{tikzpicture}
 			\caption{Step 1}
-			%\label{fig:detected_ring}
 		\end{subfigure}
 		\begin{subfigure}{.5\textwidth}
 			\centering
@@ -396,7 +402,6 @@
 			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
 			\end{tikzpicture}
 			\caption{Step 2}
-			%\label{fig:detected_ring_cropped}
 		\end{subfigure}
 		\begin{subfigure}{.5\textwidth}
 			\centering
@@ -410,7 +415,6 @@
 			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
 			\end{tikzpicture}
 			\caption{Step 3}
-			%\label{fig:detected_ring}
 		\end{subfigure}
 		\begin{subfigure}{.5\textwidth}
 			\centering
@@ -424,15 +428,24 @@
 			\draw [->] (2, 3) to (2 - 0.3, 3) node [right] {};
 			\end{tikzpicture}
 			\caption{Step 4}
-			%\label{fig:detected_ring_cropped}
 		\end{subfigure}
 		\caption{Fine movement}
-		\label{fig:fine_movement}
+		\label{fig:fine_movement_figure}
 	\end{figure}
 
-	% chapter about setting the additional approaching points before using fine movement
-	% RINGS:
-	% Orientation for the approaching point is obtained by rotating the direction vector 90 degrees to the right. This sets the orientation vector as it would be passing through the centre of the ring in such direction, that the robot's right side (with robotic arm) would be right next to the wall to which the ring is attached.
+	At first we implemented fine movement that included more advanced path planning with \texttt{A*} algorithm. We realized that it would be very slow to travel far with fine movement so we set up approaching points for the objects that needed approaching with fine movement (cylinders and rings). These points enabled our robot to quickly get close to the goal with the standard version of the movement and then switch to the fine movement to precisely and carefully approach the object of interest. Having these approaching points, there was no need for such complex path planning so we replaced the initial algorithm with the simpler one, as described above. \\
+	
+	Note that this implementation assume there is a clear view of the goal from the point at which the fine movement begins - there should bo no obstacles in the line connecting the starting point and the goal and int the area of the robot's radius to the both sides of this line. \\
+
+	Even though fine movement allows us to reach the points close to the wall or obstacles, it does not, howewer, allow us to reach the points that are closer to a wall or an obstacle than the size of the robot's radius. For this reason, we defined two additional types of approaching points specifically for the fine movement. Both Toss-a-coin approaching point and Pick-up-the-ring approachin point are computed in the \texttt{Brain} component.
+
+	\subsubsection{Toss-a-coin approaching point} \label{toss-a-coin-point}
+	Toss-a-coin approaching point is a point near the cylinder and orientated towards the cylinder form which we can reach above the cylinder with the robotic arm on top of the robot and simulate tossing a coin into the wishing well. The point is set halfway from the cylinder approaching point and the detected center of the cylinder. Orientation for this point is set equal to that of the cylinder approaching point.
+	% refer to this when explaining why the red cylinder couldn't be approached in the presentation of the final task
+
+	\subsubsection{Pick-up-the-ring approaching point} \label{pick-up-the-ring-point}
+	Pick-up-the-ring approaching point is a point near the ring from which the ring can be picked up by the robotic mar mounted on top of the robot. This point is located halfway between the ring approaching point and the detected ring location. Orientation of this point is set to such that the robot is below the ring, having it's right side next to the wall to which the ring is "attached". This means the orientation of the ring approaching ponint should be rotated 90 degrees counter clockwise (to the robot's left).
+	% refer to this when explaining why the red ring couldn't be approached.
 	
 	\subsection{Task solving}
 	
@@ -544,6 +557,11 @@
 	Greeter is a node that uses \texttt{SoundClient} for speech syntesis. It is used whenever we want robot to say something out loud
 	
 	\section{Results}
+
+	% refer to toss-a-coin-point when explaining why the red cylinder couldn't be approached in the presentation of the final task
+
+	% refer to pick-up-the-ring-point when explaining why the red ring couldn't be approached in the presentation of the final task
+
 	\section{Division of work}
 	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it than explaining everything to the person who initially built the node and wait for them to make the changes the next time they sit at their computer. For these reasons the division of the work is not very clean and straightforward. Below we state which team member did most of the work for each of the robot's abilities.
 	% We should only write what each of us did here and add that the professor should compute percentages himself.
@@ -571,10 +589,20 @@
 
 	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some preoblems which would be difficult to resolve otherwise without knowing the cause. \\
 
-	Final thought: We wish ROS had better documentation or at least a debugger.
+	Final thought: We wish ROS had better documentation or at least a debugger. \\
 
 	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
 
 	% the fun part was that the robot was speaking
+	Below are some of the Erazem's funniest quotes: 
+	\begin{itemize}
+		\item \say{How the job gets done?} - Erazem on his first day as the matchmaker
+		\item \say{Who runs the world? Gazebo.} - Erazem modifying the lyrics from the song
+		\item \say{If you liked it then you should've put a ring on it.} -Erazem to Gargamel when the woman said no to marrying Gargamel
+		\item \say{All around me are familliar faces.} - Erazem after recognizing a couple of faces
+		\item \say{Beam me up Scotty! Pew pew!} - Erazem casting rays to calculate 3d position of the object from the 2d image
+		\item \say{I don't know where I'm going, I don't even know where I am.} - Erazem, about the importance of the odometry
+		\item \say{What does the robot say?} - Erazem modifying the lyrics again, this time singing the song from Ylvis brothers 
+	\end{itemize}
 	
 \end{document}
