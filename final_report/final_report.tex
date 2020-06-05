@@ -343,10 +343,19 @@
 	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
 
 	\begin{figure}[h]
-		\centering
-		\includegraphics[height=4cm]{images/before}
-		\includegraphics[height=4cm]{images/after}
-		\caption{\texttt{Delaunay triangulation} and exploration goals before (left) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (right)}
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\includegraphics[height=5cm]{images/before}
+			\caption{Before processing}
+			\label{fig:before_clustering}
+		\end{subfigure}
+		\begin{subfigure}{.5\textwidth}
+			\centering
+			\includegraphics[height=5cm]{images/after}
+			\caption{After processing}
+			\label{fig:after_clustering}
+		\end{subfigure}
+		\caption{\texttt{Delaunay triangulation} and exploration goals before (a) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (b).}
 		\label{fig:exploration_goals}
 	\end{figure}
 
