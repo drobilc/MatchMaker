@@ -294,7 +294,7 @@
 	\subsubsection{Cylinder approaching point computation}
 	The cylinder approaching point computation is not as difficult as the one for faces. If cylinder has been detected from current robot position, that means that the robot must have a clear view of the cylinder. Because of that, the approaching point can be computed as a point on the line connecting the robot and the cylinder. \\
 	
-	A point that lies 0.3 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
+	A point that lies 0.6 metres from the centroid of the cylinder on this line is selected as the approaching point. If the point can't be reached (that is, if it is too close to the wall), approaching point is repositioned so that there is enough space for the robot to visit the point. This is done by finding the closest wall on the map and then moving the point in the opposite direction. This is repeated until there is no wall too close to the point. \\
 	
 	\subsection{Robustification} \label{robustification}
 	The sensors are not 100\% accurate, so we have to take into account some deviation. For example, when an object is detected, the depth sensor might compute the distance inaccurately, or the robot may not have been localized. Detectors might return false positives and so on. \\
@@ -340,7 +340,6 @@
 	This step can sometimes also solve the first problem. To be sure that the robot can reach all of the exploration goals, we check if any goal is too close to any wall and if so, move it into the opposite direction, away from the wall, if possible. \\
 
 	In the figure below, we can see the \texttt{Delaunay triangulation} of our map in green and the centroids in red. The points in blue represent the exploration goals after \texttt{hierarhical clustering} and moving points away from the walls.
-	% slikici before - after clustering (before naj ma še trikotnike, da se vidi triangualcija - lahka je pa tud posebi slikica sam za trikotnike)
 
 	\begin{figure}[h]
 		\begin{subfigure}{.5\textwidth}
@@ -358,7 +357,6 @@
 		\caption{\texttt{Delaunay triangulation} and exploration goals before (a) and after the \texttt{hierarhical clustering} and moving unreachable ones to reachable position (b).}
 		\label{fig:exploration_goals}
 	\end{figure}
-
 	
 	\subsection{Fine movement} \label{fine_movement}
 	Fine movement is a special way in which our robot can move. It is used when the default movement wouldn't be able to get us to the goal even though the goal is reachable.  \\
@@ -367,7 +365,7 @@
 	
 	The most common reason for failure is that the goal is too close to any wall in our world. The robot builds a costmap of its environment, where the closer the position is to the wall, the highest cost it has. This way a robot can avoid obstacles and plan the path from point A to point B. The robot builds a costmap in a way that it makes sure not to bump into anything, which means it also takes into account all possible errors in data from its detectors. This means that some of the points that the robot can reach in reality unfortunately fall into the high-cost area and so the normal movement cannot get us there because the risk of bumping into something is too high. \\
 
-	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall. So close actually, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot manually. \\
+	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall and get very close to the cylinders so that it could reacha bove it and toss a coin. Both required positions are so close to the obstacle/wall, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot manually. \\
 	
 	\begin{figure}[h]
 		\begin{subfigure}{.5\textwidth}
@@ -491,7 +489,7 @@
 	\subsection{Object detectors}
 	There are three different nodes responsible for object detections. Face and ring detectors are using \texttt{rgb} and depth images and the cylinder detector is using point cloud and \texttt{rgb} image to detect object in our world. \\
 	
-	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. 
+	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. The robustification process is also the reason why we felt the need for and created the \texttt{ObjectDetection} message type.
 	
 	\subsubsection{ObjectDetection message}
 	The object detection message contains the following information
@@ -503,15 +501,13 @@
 		\item \texttt{Image image}, which is an image of the object
 		\item \texttt{ColorRGBA color} color and \texttt{string classified\_color} which represent the object average colour in \texttt{RGBA} format and the colour label that the colour classifier computed
 	\end{enumerate}
-
-	% Why have we decided that we needed object detection message. Because of our robustification process.
 	
 	\subsubsection{Face detector node}
 	The face detector is responsible for detecting and localizing faces. To do that, it fist synchronizes received \texttt{rgb} and depth images using the \texttt{Time Synchronizer} class in \texttt{message\_filters} package. \\
 
 	After both, the \texttt{rgb} and depth images are received, it uses the Haar cascade algorithm explained in section \ref{face_detection_algorithm} to detect faces. If face has been found, it tries to compute its world position. This is done using raycasting from camera center, through the face center pixel in the image plane as explained in section \ref{pixel_to_world}. \\
 
-	After face is localized, \texttt{Approaching point} is computed. \texttt{Approaching point} is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_orientation_computation}. The \texttt{Approaching point} is positioned 0.5 metres from the face position in the direction of the face orientation. \\
+	After face is localized, \texttt{Approaching point} is computed. \texttt{Approaching point} is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_orientation_computation}. The \texttt{Approaching point} is positioned 0.6 metres from the face position in the direction of the face orientation. \\
 
 	\subsubsection{Ring detector node}
 	Ring detector is a node that is responsible for ring detection and localization. It works similarly to the face detector node. First, it synchronizes depth and \texttt{rgb} images. Then it uses the ring detection algorithm as explained in section \ref{ring_detection}. Ring localization is done using the algorithm explained in section \ref{pixel_to_world}. \\
@@ -545,19 +541,39 @@
 	The \texttt{movement controller} uses an ordered list of tasks. If the \texttt{brain} component chooses, it can cancel current task, reorder its task and insert new task to be executed either after all tasks have finished or right at this moment. \\ 
 	
 	\subsection{Greeter}
+	Greeter is a node that uses \texttt{SoundClient} for speech syntesis. It is used whenever we want robot to say something out loud
 	
 	\section{Results}
 	\section{Division of work}
+	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it than explaining everything to the person who initially built the node and wait for them to make the changes the next time they sit at their computer. For these reasons the division of the work is not very clean and straightforward. Below we state which team member did most of the work for each of the robot's abilities.
 	% We should only write what each of us did here and add that the professor should compute percentages himself.
+
+	% Do we write a list of tasks and who did them or do we write a list of teammembers and what they did?
+	% -------------------
+	% cylinder detection: Martin
+	% face detection: Niki
+	% approaching points for rings: Ajda
+	% ...
+	% --------------------
+	% OR
+	% --------------------
+	% Niki: face detection, bla bla bla
+	% Martin: cylinder detection, bla bla bla
+	% Ajda: approaching points for rings, ...
+	% --------------------
 	
 	\section{Conclusion}
-	After countless hours, Erazem was finnaly able to perform the task. We encoutered a bunch of problems on the way, the biggest one being inaccurate ring detections.
-	% more abut this
-	
-	% add comment that it is bad that we have this task so late in the semester as we can't study for other subjects
-	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
+	After countless hours, Erazem was finnaly able to perform the task. We encoutered a bunch of problems on the way, the biggest one being the task of aprroaching the rings. We spent at least a week trying to reliably set the approaching points for the rings, wrote many (four i think) different algorithms (and additional variations of them) for this task, tried improving ring detection in several ways, change how the fine movement works multiple times, set up various robustification processes for both detections and approaching points, and even even setup a two layer robustification process. But all that with no definite sucess. In the presentation of the last task our robot did not set the points correctly for all of the rings and consequently couldn't approach some of them correctly. \\
 
-	% we had the most problems with variable ring detections
+	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressfull. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done it the last week befor the final task presentation. \\
+	
+	This course was very(the most?) time intensive. Not just becuse a lot of things had to be implemented but also beacuse they sometimes required a lot of research as ROS doesn't have everything well documented and it's difficult to find example usage for some modules. \\
+
+	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some preoblems which would be difficult to resolve otherwise without knowing the cause. \\
+
+	Final thought: We wish ROS had better documentation or at least a debugger.
+
+	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
 
 	% the fun part was that the robot was speaking
 	
