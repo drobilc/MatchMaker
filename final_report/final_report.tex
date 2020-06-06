@@ -276,7 +276,7 @@
 		\label{fig:masked_colour_ring}
 	\end{figure}
 		
-	\subsection{Cylinder detection}
+	\subsection{Cylinder detection} \label{cylinder_detection}
 	In this section the algorithm for cylinder detection from point clouds using RANSAC is presented. In short, we first had to remove all larger planes from the point cloud and fit the remaining points to a cylinder model. But first we had to do some preprocessing on the input point cloud data before our algorithm could be run. Namely, making the point cloud sparser in order to reduce the execution time of the algorithm and filtering out points beyond some distance from the robot in order to avoid errors in model fitting, because of the point cloud being too sparse. \\
 
 	The backbone of our cylinder detection algorithm is fitting a point cloud to a certain model using RANdom SAmple Consesus (RANSAC). This is an iterative method that is used to estimate parameters of a mathematical model from a set of data containing outliers. In every iteration RANSAC selects a random subsample of the input data. These points are then considered inliers and the hypotesis is tested in a few steps. First the model is fitted to the inliers, then all data points are tested against the fitted model and, if they fit well they are also considered inliers. After that the model is reestimated from the original and new inliers and finally, it is evaluated by estimating the error of the inliers relative to the model. After a fixed number of iterations, the best model is chosen. \\
@@ -537,6 +537,7 @@
 	Ring orientation is determined using similar algorithm as explained in section \ref{face_orientation_computation}, but instead of finding the normal of the wall, its direction is chosen as ring orientation. \\ % tu bi blo mogoč boljše vseen še enkrat povzet, kk deluje, ker če ne more bralec it pogledat nazaj gor, kje zamenjamo to normalo
 	
 	\subsubsection{Cylinder detector node}
+	Cylinder detector is a node that is responsible for detecting and localizing the cylinders. It first synchronizes depth and rgb images. Then it uses the cylinder detection algorithm that is explained in section \ref{cylinder_detection}.
 
 	\subsection{Robustifier}
 	For each object detector, a new \texttt{Robustifier} node is created. So each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the \texttt{threshold} value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
