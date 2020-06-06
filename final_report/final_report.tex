@@ -140,9 +140,6 @@
 	The neural network that we used for our task is a convolutional neural network. It differentiates itself from an ordinary neural network by having convolutional deep layers, which can apply filters to the images, that detect patterns, such as edges and corners and in later layers maybe even specific objects such as eyes or ears. Training of this network is done using triplets. In a single step of the training process, we feed the neural network three images, and thus generate three 128 dimensional encodings. Two images represent faces of the same person, while the third image is a random face, that represents a different person as the one in other two images. Then we tweak the weights in such a way, that encodings of the two faces of the same person get mapped closer together, whereas the third face gets placed farther away. \\
 
 	We could use only one encoding of a certain face, compare it to new faces and still get very good classification results, as was shown in our report for homework 3 with the k-nearest neighbours model for k is 1. However we wanted to make our face recognition more accurate and robust. That is why we trained a separate support vector machine model on the encodings we obtained from the neural network. \\
-
-	% TODO: finish face classification
-	% should we explain how we gathered training data?
 	
 	\subsection{Colour classification} \label{colour_classification}
 	The robot must be able to detect the colour of the rings and cylinders. There are six possible classes: black, white, red, green, blue and yellow. \\
@@ -265,7 +262,7 @@
 		\label{fig:masked_colour_ring}
 	\end{figure}
 		
-	\subsection{Cylinder detection}
+	\subsection{Cylinder detection} \label{cylinder_detection}
 	In this section the algorithm for cylinder detection from point clouds using \texttt{RANSAC} is presented. In short, we first had to remove all larger planes from the point cloud and fit the remaining points to a cylinder model. But first we had to do some preprocessing on the input point cloud data before our algorithm could be run. Namely, making the point cloud sparser in order to reduce the execution time of the algorithm, and then filtering out points beyond some distance from the robot in order to avoid errors in model fitting, caused by the point cloud being too sparse. The points that are far away from the robot are already not very reliable, and by reducing the number of points representing each section we further reduce their accuracy and reliability. \\
 
 	The backbone of our cylinder detection algorithm is fitting a point cloud to a certain model using \texttt{RANdom SAmple Consesus} (\texttt{RANSAC}). This is an iterative method that is used to estimate parameters of a mathematical model from a set of data containing outliers. In every iteration, \texttt{RANSAC} selects a random subsample of the input data. These points are then considered inliers and the hypotesis is tested in a few steps. First the model is fitted to the inliers, then all data points are tested against the fitted model, and if they fit well, they are also considered inliers. After that the model is reestimated from the original and new inliers and finally, it is evaluated by estimating the error of the inliers relative to the model. After a fixed number of iterations, the best model is chosen. \\
@@ -541,9 +538,12 @@
 	Ring orientation is determined using similar algorithm as explained in section \ref{face_approaching_points}, but instead of finding the normal of the wall, its direction is chosen as ring the orientation. \\
 	
 	\subsubsection{Cylinder detector node}
+	Cylinder detector is a node that is responsible for detecting and localizing the cylinders. It first synchronizes depth and rgb images. Then it uses the cylinder detection algorithm that is explained in section \ref{cylinder_detection}.
 
 	\subsection{Robustifier}
 	For each object detector, a new \texttt{Robustifier} node is created. Each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the $threshold$ value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
+	
+	But this is not the end of the robustification process. For each new detection, average positions are calculated again, and updated results are sent to the \texttt{Brain} node as well as and used to update the positions of the markers in \texttt{rviz} as well. \\
 	
 	\subsection{Brain}
 	\texttt{Brain} is a node that is responsible for solving the main part of the task. It subscribes to robustified object detections and uses them to solve the task. \\
@@ -596,13 +596,17 @@
 	% Martin: cylinder detection, bla bla bla
 	% Ajda: approaching points for rings, ...
 	% --------------------
+	\textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
+	% A take stvari tud? first version of approaching points for faces (used only in the 1st task) 
+	% A collaboratione tud?
+	% Kolk se hočemo razpisat?
 	
 	\section{Conclusion}
-	Building Erazem was a difficult journey. We faced many challenges and solved some of them more successfully than the others. The task was far from easy, but nevertheless we also had fun at times. We especially enjoed composing the sentences that the robot would then say out loud and answering its questions. \\
+	Building Erazem was a difficult journey. We faced many challenges and solved some of them more successfully than the others. The task was far from easy, but nevertheless we also had fun at times. We especially enjoyed composing the sentences that the robot would then say out loud and answering its questions. \\
 
 	This course was very time intensive. Not just becuse a lot of things had to be implemented but also beacuse they sometimes required a lot of research as ROS doesn't have everything well documented and it's difficult to find example usage for some modules. \\
 
-	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressfull. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done it the last week befor the final task presentation. \\
+	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressfull. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week befor the final task presentation. \\
 	
 	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some preoblems which would be difficult to resolve otherwise without knowing the cause. \\
 
