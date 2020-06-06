@@ -140,9 +140,6 @@
 	The neural network that we used for our task is a convolutional neural network. It differentiates itself from an ordinary neural network by having convolutional deep layers, which can apply filters to the images, that detect patterns, such as edges and corners and in later layers maybe even specific objects such as eyes or ears. Training of this network is done using triplets. In a single step of the training process, we feed the neural network three images, and thus generate three 128 dimensional encodings. Two images represent faces of the same person, while the third image is a random face, that represents a different person as the one in other two images. Then we tweak the weights in such a way, that encodings of the two faces of the same person get mapped closer together, whereas the third face gets placed farther away. \\
 
 	We could use only one encoding of a certain face, compare it to new faces and still get very good classification results, as was shown in our report for homework 3 with the k-nearest neighbours model for k is 1. However we wanted to make our face recognition more accurate and robust. That is why we trained a separate support vector machine model on the encodings we obtained from the neural network. \\
-
-	% TODO: finish face classification
-	% should we explain how we gathered training data?
 	
 	\subsection{Colour classification} \label{colour_classification}
 	The robot must be able to detect the colour of the rings and cylinders. There are six possible classes: black, white, red, green, blue and yellow. \\
