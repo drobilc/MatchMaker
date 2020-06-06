@@ -499,7 +499,7 @@
 	\texttt{Approaching woman 2}: This is the accepting state of this automaton. The robot's job is to approach the chosen woman again and ask her if she is willing to marry Gargamel. If her answer is yes, the robot has finished his task. If her answer is no, the robot returns back to the \texttt{Finding woman} state and searches for a new woman with desired characteristics. \\
 	
 	\section{Implementation and integration}
-	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at the same time. \\ % tale zadnji stavek bi se dalo še mal boljš ubesedit
+	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture, presented in figure \ref{fig:final_architecture}, was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at once. \\
 	
 	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the arhitecture had to be changed in order to solve them. \\ 
 	
@@ -510,23 +510,26 @@
 	\end{figure}
 	
 	\subsection{Object detectors}
-	There are three different nodes responsible for object detections. Face and ring detectors are using \texttt{rgb} and depth images and the cylinder detector is using point cloud and \texttt{rgb} image to detect object in our world. \\
+	There are three different nodes responsible for object detections. Face and ring detectors are using rgb and depth images and the cylinder detector is using point cloud and rgb image to detect objects in our world. \\
 	
 	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. The robustification process is also the reason why we felt the need for and created the \texttt{ObjectDetection} message type. \\
 	
 	\subsubsection{ObjectDetection message}
-	The object detection message contains the following information
+	The object detection message contains the following information.
 	\begin{enumerate}
-		\item \texttt{Header header}, which contains the timestamp of the detection and other metadata
-		\item \texttt{string type}, which represents the type of the detected object (it can be either \texttt{"face"}, \texttt{"ring"} or \texttt{"cylinder"})
-		\item \texttt{Pose object\_pose}, which represents the object position in world coordinate frame
-		\item \texttt{Pose approaching\_point\_pose}, which is a point that the robot has to visit in order to complete the task
-		\item \texttt{Image image}, which is an image of the object
-		\item \texttt{ColorRGBA color} color and \texttt{string classified\_color} which represent the object average colour in \texttt{RGBA} format and the colour label that the colour classifier computed
+		\item \texttt{Header header}, which contains the timestamp of the detection and other metadata.
+		\item \texttt{string id}, which is a unique number used to identify the detection.
+		\item \texttt{Image image}, whichis an image of the object.
+		\item \texttt{Pose object\_pose}, which represents the object position in world coordinate frame.
+		\item \texttt{Pose approaching\_point\_pose}, which is a point that the robot has to visit in order to complete the task.
+		\item \texttt{string color}, which represent the object's average colour label that the colour classifier computed.
+		\item \texttt{string face\_label}, which carries the label of the face that our face classifier recognized.
+		\item \texttt{string type}, which represents the type of the detected object (it can be either \texttt{"face"}, \texttt{"ring"} or \texttt{"cylinder"}).
+		\item \texttt{string barcode\_data}, which carries the features of the detected face (hair length, hair color). It is named barcode\_data because it was first introduced when we were using qr codes to get the information about the faces in the process of writing the code for the final task and did not change the name afterwards.
 	\end{enumerate}
 	
 	\subsubsection{Face detector node}
-	The face detector is responsible for detecting and localizing faces. To do that, it fist synchronizes received \texttt{rgb} and depth images using the \texttt{Time Synchronizer} class in \texttt{message\_filters} package. \\
+	The face detector is responsible for detecting and localizing faces. To do that, it fist synchronizes received rgb and depth images using the \texttt{Time Synchronizer} class in \texttt{message\_filters} package. \\
 
 	After both, the \texttt{rgb} and depth images are received, it uses the Haar cascade algorithm explained in section \ref{face_detection_algorithm} to detect faces. If face has been found, it tries to compute its world position. This is done using raycasting from camera center, through the face center pixel in the image plane as explained in section \ref{pixel_to_world}. \\
 
