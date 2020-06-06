@@ -511,7 +511,7 @@
 	
 	All three object detectors are publishing a custom \texttt{ObjectDetection} message type. The \texttt{Robustifier} component subscribes to this type of message and tries to minimize the number of false positives. The robustification process is also the reason why we felt the need for and created the \texttt{ObjectDetection} message type. \\
 	
-	\subsubsection{ObjectDetection message}
+	\subsubsection{ObjectDetection message} \label{objectDetection}
 	The object detection message contains the following information.
 	\begin{enumerate}
 		\item \texttt{Header header}, which contains the timestamp of the detection and other metadata.
@@ -573,11 +573,21 @@
 	\section{Results}
 
 	After countless hours, Erazem was finally able to perform the task. We encoutered a bunch of problems on the way, the biggest one being the task of aprroaching the rings. We spent at least a week trying to reliably set the approaching points for the rings, wrote many different algorithms for this task, tried improving ring detection in several ways, changed how the fine movement works multiple times, set up various robustification processes for both detections and approaching points, and even even setup a two layer robustification process. But all that with no definite sucess. In the presentation of the last task our robot did not set the points correctly for all of the rings and consequently couldn't approach some of them correctly. \\
-	% explain what went wrong on the final task presentation and why
 
-	% refer to toss-a-coin-point when explaining why the red cylinder couldn't be approached in the presentation of the final task
+	In the final presentation some things didn't go as planned:
+	\begin{itemize}
+		\item Erazem took forever to toss a coin into the red cylinder, the second one that we had to approach. What went wrong was the robot wasn't able to reach the desired orientation on a Toss-a-coin approaching point and as we didn't implement a timeout for this task, it got stuck there. Toss-a-coin approaching point is set as the midpoint of the line connecting the center of the cylinder and its approaching point (see section \ref{toss-a-coin-point}). \\
+		Since cylinder detections are not always accurate the robustifier averages them. The problem here was, that robustifier also updates the presumed cylinder position for every detection it receives, and in this case the \say{true positive} for the red cylinder was not accurate. The Toss-a-coin approaching point ended up a bit too close to the cylinder, as the robot was able to reach it's position but was unable to turn into the right direction.
+		\item Because of the error above, Erazem didn't have a chance to fail at picking up the red ring but it certainly would've had as the approaching point for the ring wasn't set correctly. Our first implementation of the fine approaching could handle exapmles like this one, but it wasn't very practical as it was slow, so we replaced it with a simpler version that uses approaching points and then assumes the way in the direction straight to the Pick-up-the-ring approaching point is free (see sections \ref{fine_movement} and \ref{pick-up-the-ring-point}). \\
+		As the approaching point was not set correctly, this path was not free and the robot would have bumped into the wall and messed up his odometry. The reason for the incorrect position of the approaching point are inaccurate detections of the red ring's position (which occur when the robot is moving or rotating fast). Because of this, some approaching points were positioned in the wrong direction and as they were averaged in the robustification process, the calculated position of the approaching point was not in the right place.
+		\item We also forgot that we had to show the image of the woman to Gargamel before asking him if he liked her or not. This was not an error in the code but just something we forgot to implement. Our arhitecure was ready to perform this task (see section \ref{objectDetection}) but at the end we forgot to show the image.
+		\item At one point our robot needed a bit longer to set it's new goal as the goal it was trying to set was not reachable. The reason is, one of the points our smart space exploration algorithm sets was positioned near the green cylinder. This algorithm uses only the shape of the map as the robot cannot know the positions of the cylinders in advance. Howewer, cylinders take up some space and in this case robot's calculated that the point was too close to the obstacle to be reached. \\
+		This error was something we have foreseen so we handled such situations as follows. If the path to the goal cannot be found, try again. If you already tried three times, move this goal to the end of the queue and proceed with finding path to the next goal in the queue. This meant our robot stopped for about 5 seconds but then proceeded with the tash as if nothing had happened.
+	\end{itemize}
 
-	% refer to pick-up-the-ring-point when explaining why the red ring couldn't be approached in the presentation of the final task
+	% A bi mogli dodat še, da nismo razpoznavali frizur?
+
+	On the presentation of the final task we could see that Erazem was an excellent match maker and was able to perform every part of his job. But since he is still somewhat of a newbie, he made some rookie mistakes and didn't always know how to best handle the situation when things didn't go as planned.
 
 	\section{Division of work}
 	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. Below we state which team member did most of the work for each of the robot's abilities. \\
