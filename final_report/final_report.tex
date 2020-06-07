@@ -429,7 +429,7 @@
 	\subsubsection{Pick-up-the-ring approaching point} \label{pick-up-the-ring-point}
 	Pick-up-the-ring approaching point is a point near the ring from which the ring can be picked up by the robotic arm that is mounted on top of the robot. This point is located halfway between the ring approaching point and the detected ring location. Orientation of this point is set to such that the robot is below the ring, having its right side next to the wall to which the ring is \say{attached}. This means the orientation of the ring approaching point should be rotated 90 degrees counter clockwise (to the robot's left). \\
 	
-	\subsection{Robot's behaviour}
+	\subsection{Robot's behaviour} \label{robot_behaviour}
 	
 	\begin{figure}[H]
 		\centering
@@ -568,7 +568,7 @@
 	\subsection{Brain}
 	\texttt{Brain} is a node that is responsible for solving the main part of the task. \\
 	
-	It is the main node of our project that brings all other functionalities into one complete whole. It subscribes to robustified object detections and saves them. Then it uses these detections and the behavior logic to complete the task. \\
+	It is the main node of our project that brings all other functionalities into one complete whole. It implements the logic for solving the task with a final state automaton described in section \ref{robot_behaviour}. This node subscribes to robustified object detections and saves them. Detections are then used to instruc the robot to move to the correct position and perform a specific part of the task via \texttt{Movement controller}. \\
 	
 	\subsection{Movement controller}
 	\texttt{Movement controller} is an object, that allows our robot to interact with its environment. It allows it to move and explore the space and use its robotic arm to grab items. It works using a series of tasks, which the robot executes one by one. When the task is finished, a callback function is used to notify the robot that the action is completed. \\
