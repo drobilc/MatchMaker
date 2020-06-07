@@ -558,7 +558,7 @@
 	Ring orientation is determined using similar algorithm as explained in section \ref{face_approaching_points}, but instead of finding the normal of the wall, its direction is chosen as ring the orientation. \\
 	
 	\subsubsection{Cylinder detector node}
-	Cylinder detector is a node that is responsible for detecting and localizing the cylinders. It first synchronizes depth and rgb images. Then it uses the cylinder detection algorithm that is explained in section \ref{cylinder_detection}.
+	Cylinder detector is a node that is responsible for detecting and localizing the cylinders. It first synchronizes depth and rgb images. Then it uses the cylinder detection algorithm that is explained in section \ref{cylinder_detection}. \\
 
 	\subsection{Robustifier}
 	For each object detector, a new \texttt{Robustifier} node is created. Each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the threshold value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
