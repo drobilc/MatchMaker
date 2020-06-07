@@ -656,11 +656,43 @@
 	Based on these results, we decided to use \texttt{Haar cascade} detector form \texttt{opencv} as the face detector for our robot. \\
 
 	\subsection{Colour classifier}
+	In homework2 we were trying to find the best colour classifier to use on our robot. We tested several different classifiers on three different colour spaces, \texttt{RGB}, \texttt{HSV} and \texttt{LAB}. We tested on two different datasets, results can be seen below. \\
+	
+	\begin{center}
+		\begin{tabular}{|c|c|c|c||c|c|c|}
+			\hline
+			Training set & \multicolumn{3}{c||}{\textbf{Circles}} & \multicolumn{3}{c|}{\textbf{Cylinders}} \\
+			\hline
+			\hline 
+			\textbf{Classifier} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} & \texttt{RGB} & \texttt{HSV} & \texttt{LAB} \\
+			\hline \hline
+			\textbf{knn}, \small k = 3 & 0.82 & 0.50 & 0.83 & 0.81 & 0.54 & \textbf{0.87} \\
+			\textbf{knn}, \small k = 5 & 0.82 & 0.49 & 0.84 & 0.81 & 0.54 & \textbf{0.87} \\
+			\textbf{knn}, \small k = 7 & 0.83 & 0.48 & 0.85 & 0.81 & 0.52 & \textbf{0.87} \\
+			\hline \hline
+			\textbf{decision tree}, \small gini & 0.75 & 0.80 & 0.78 & 0.70 & 0.84 & \textbf{0.88} \\
+			\textbf{decision tree}, \small entropy & 0.76 & 0.74 & 0.78 & 0.74 & 0.83 & \textbf{0.88} \\
+			\hline \hline
+			\textbf{random forest}, \small gini & 0.79 & 0.78 & 0.82 & 0.78 & 0.78 & \textbf{0.89} \\
+			\textbf{random forest}, \small entropy & 0.78 & 0.77 & 0.80 & 0.81 & 0.75 & \textbf{0.89} \\
+			\hline \hline
+			\textbf{naive bayes} & 0.75 & \textbf{0.92} & 0.91 & 0.72 & 0.70 & 0.84 \\
+			\hline \hline
+			\textbf{svm}, \small kernel=linear, c=0.025 & 0.85 & 0.72 & 0.86 & 0.89 & 0.60 & \textbf{0.90} \\
+			\textbf{svm}, \small kernel=rbf, c=0.025 & 0.17 & \textbf{0.37} & 0.19 & 0.17 & 0.36 & 0.26 \\
+			\textbf{svm}, \small kernel=linear, c=0.05 & 0.85 & 0.73 & 0.87 & 0.88 & 0.64 & \textbf{0.90} \\
+			\textbf{svm}, \small kernel=linear, c=0.1 & 0.85 & 0.73 & 0.87 & 0.89 & 0.65 & \textbf{0.90} \\
+			\textbf{svm}, \small kernel=linear, c=0.2 & 0.84 & 0.72 & 0.87 & 0.89 & 0.67 & \textbf{0.90} \\
+			\hline
+		\end{tabular} \\
+	\end{center}
+
+	Based on these accuracies we intitially chose \texttt{naive bayes} in cobination with \texttt{HSV} colour space, but it soon turned out that this wasn't the best choice. The world our robot lives in is not exactly the same as the one we live in and in this case, this made all the difference. The cobination that worked best in the \texttt{Gazebo} simulator was the \texttt{knn} classifier with \texttt{RGB} colour space. This cobination already had good results in our tests, but it was not the best.
 
 	\subsection{Face classifier}
 
 	\section{Division of work}
-	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. There is a also a lot of work that is invisible as it includes algorithms and nodes that end up not being used as we find better solutions, and also a lot of debugging, bug fixes, minor functionality changes and testing. Below we state which team member did most of the work for each of the robot's abilities. \\
+	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. There is a also a lot of work that is invisible as it includes algorithms and nodes that end up not being used as we find better solutions, and also a lot of debugging, bug fixes, minor functionality changes and testing. Owerall, we each spent roughly the same amount of time for this project. Below we state which team member did most of the work for each of the robot's abilities. \\
 	
 	\begin{itemize}
 		\item \textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
