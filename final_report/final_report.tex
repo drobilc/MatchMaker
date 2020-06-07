@@ -612,6 +612,48 @@
 	On the presentation of the final task we could see that Erazem was an excellent match maker and was able to perform every part of his job. But since he is still somewhat of a newbie, he made some rookie mistakes and didn't always know how to best handle the situation when things didn't go as planned.
 
 	\subsection{Face detector}
+	We tested perfomance of different face detectors in homework1. We compared \texttt{Haar Cascade} from \texttt{opencv} and \texttt{HOG} and \texttt{CNN} detectors from \texttt{dlib}. We focused on two factors: how many frames from the video can detector process and how many faces can it detect while processing the frames, knowing that each frame of ideo contains exactly one face. \\ 
+	
+	\texttt{CNN} proved to be too slow as it processed at best 3\% of the frames and did not detect any face, regardless of how small we made the resolution of each frame, so we eliminated it from further testing. Results for the smallest of the resolutions that we tested, can be seen in table below. \\
+
+	\begin{center}
+		\begin{tabular}{|c|c|c|c|}
+			\hline 
+			Detector & Frame size & Processed frames & Face detections \\ 
+			\hline
+			dlib HOG & 1920 x 1080 & 22 / 130 & 9 \\
+			dlib HOG & 960 x 540 & 69 / 130 & 18 \\
+			dlib HOG & 480 x 270 & 130 / 130 & 18 \\
+			dlib CNN & 1920 x 1080 & 1 / 130 & 0 \\
+			dlib CNN & 960 x 540 & 1 / 130 & 0 \\
+			dlib CNN & 480 x 270 & 4 / 130 & 0 \\
+			opencv haar cascade & 1920 x 1080 & 8 / 130 & 8 \\
+			opencv haar cascade & 960 x 540 & 26 / 130 & 18 \\
+			opencv haar cascade & 480 x 270 & 90 / 130 & 29 \\
+			\hline 
+		\end{tabular} \\
+	\end{center}
+
+	Next, we tested the remaining two detectors on the videos taken at a different angles to the face (0, 30, 45 and 60 degrees). The accuracy was as follows. \\
+
+	\begin{center}
+		\begin{tabular}{|c|c|c|}
+			\hline 
+			Video & HOG detector score & Haar detector score \\
+			\hline
+			\texttt{face01\_0deg} & 0.32 & 0.62 \\
+			\texttt{face01\_30deg} & 0.3 & 0.61 \\
+			\texttt{face01\_45deg} & 0.0 & 0.54 \\
+			\texttt{face01\_60deg} & 0.26 & 0.2 \\
+			\texttt{face02\_0deg} & 0.25 & 0.61 \\
+			\texttt{face02\_30deg} & 0.29 & 0.6 \\
+			\texttt{face02\_45deg} & 0.24 & 0.38 \\
+			\texttt{face02\_60deg} & 0.09 & 0.18 \\
+			\hline 
+		\end{tabular} \\
+	\end{center}
+
+	Based on these results, we decided to use \texttt{Haar cascade} detector form \texttt{opencv} as the face detector for our robot. \\
 
 	\subsection{Colour classifier}
 
