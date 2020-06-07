@@ -566,10 +566,9 @@
 	But this is not the end of the robustification process. For each new detection, average positions are calculated again, and updated results are sent to the \texttt{Brain} node as well as and used to update the positions of the markers in \texttt{rviz} as well. \\
 	
 	\subsection{Brain}
-	\texttt{Brain} is a node that is responsible for solving the main part of the task. It subscribes to robustified object detections and uses them to solve the task. \\
-	% Main part of the task?
+	\texttt{Brain} is a node that is responsible for solving the main part of the task. \\
 	
-	% Manjka, ker se ne vemo kako bo delalo
+	It is the main node of our project that brings all other functionalities into one complete whole. It subscribes to robustified object detections and saves them. Then it uses these detections and the behavior logic to complete the task. \\
 	
 	\subsection{Movement controller}
 	\texttt{Movement controller} is an object, that allows our robot to interact with its environment. It allows it to move and explore the space and use its robotic arm to grab items. It works using a series of tasks, which the robot executes one by one. When the task is finished, a callback function is used to notify the robot that the action is completed. \\
