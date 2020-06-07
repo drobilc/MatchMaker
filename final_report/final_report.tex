@@ -595,31 +595,17 @@
 
 	\section{Division of work}
 	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. Below we state which team member did most of the work for each of the robot's abilities. \\
-	% We should only write what each of us did here and add that the professor should compute percentages himself.
-
-	% Do we write a list of tasks and who did them or do we write a list of teammembers and what they did?
-	% -------------------
-	% cylinder detection: Martin
-	% face detection: Niki
-	% approaching points for rings: Ajda
-	% ...
-	% --------------------
-	% OR
-	% --------------------
-	% Niki: face detection, bla bla bla
-	% Martin: cylinder detection, bla bla bla
-	% Ajda: approaching points for rings, ...
-	% --------------------
-	\textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
-	\textbf{Martin}: speech synthesis, speech recognition, face classification, ring and cylinder detection, fsa implementation for robot behavior
-	% A take stvari tud? first version of approaching points for faces (used only in the 1st task) 
-	% A collaboratione tud?
-	% Kolk se hočemo razpisat?
+	
+	\begin{itemize}
+		\item \textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
+		\item \textbf{Martin}: speech synthesis, speech recognition, face classification, ring and cylinder detection, fsa implementation for robot behaviour
+		\item \textbf{Niki}: face detection, face and ring world point computation, robustification, colour classification, robot movement tasks 
+	\end{itemize}
 	
 	\section{Conclusion}
 	Building Erazem was a difficult journey. We faced many challenges and solved some of them more successfully than the others. The task was far from easy, but nevertheless we also had fun at times. We especially enjoyed composing the sentences that the robot would then say out loud and answering its questions. \\
 
-	This course was very time intensive. Not just because a lot of things had to be implemented but also because they sometimes required a lot of research as ROS doesn't have everything well documented and it's difficult to find example usage for some modules. \\
+	This course was very time intensive. Not just because a lot of things had to be implemented but also because they sometimes required a lot of research as \texttt{ROS} doesn't have everything well documented and it's difficult to find example usage for some modules. The documentation is insufficient for a system of this scope. The documentation of some packages is so bad that it is better to just look at the code or write it yourself. \\
 
 	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressful. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week before the final task presentation. \\
 	
