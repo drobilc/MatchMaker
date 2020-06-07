@@ -24,19 +24,19 @@
 	\tableofcontents
 	
 	\section{Introduction}
-	In this report we will explain how our robot by the name of Erazem performs the task of a skilled match maker. He was hired by Gargamel, who wanted to find love and get married as quick as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usualy his clients also cared about the looks, he also wanted to find out about this kind of preferences. \\
+	In this report we will explain how our robot by the name of Erazem performs the task of a skilled match maker. He was hired by Gargamel, who wanted to find love and get married as quick as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences. \\
 	
-	When Gargamel suprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook of this thought since he had had much stranger clients before and started searching right away. \\
+	When Gargamel surprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook of this thought since he had had much stranger clients before and started searching right away. \\
 
-	He was scanning the place for the women. For each face he saw, he quickly filled his mental checklist with Gargamel preferences. "Such easy criteria", he thought to himself, "but so little matches..." When he finally came across a woman that matched Gargamel's preferences, he fixed his tie, took a deep breath, and approached her. She seemed interested in meeting Gargamel but was very secretive. When Erasem asked her to tell him something about herself, she only told him her favourite colour. Erazem firmly remembered this little detail and after some chit-chat said goodbye to her. He was happy to have finally found a potential suitor but at the same time a little worried about the lack of information he had about her. \\
+	He was scanning the place for the women. For each face he saw, he quickly filled his mental checklist with Gargamel preferences. "Such easy criteria", he thought to himself, "but so little matches..." When he finally came across a woman that matched Gargamel's preferences, he fixed his tie, took a deep breath, and approached her. She seemed interested in meeting Gargamel but was very secretive. When Erazem asked her to tell him something about herself, she only told him her favourite colour. Erazem firmly remembered this little detail and after some chit-chat said goodbye to her. He was happy to have finally found a potential suitor but at the same time a little worried about the lack of information he had about her. \\
 	
-	Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erasem told him all he knew about that woman. It was up to Gargamel to decide wheteher she seemed promising or not. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite colour and toss a coin in it while also saying the wish for Gargamel and the woman to marry and live happily ever after. \\
+	Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erazem told him all he knew about that woman. It was up to Gargamel to decide whether she seemed promising or not. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite colour and toss a coin in it while also saying the wish for Gargamel and the woman to marry and live happily ever after. \\
 
-	Erazem searched through his memory whether he has already seen the well in this colour. If he could remeber, he would have definitely known where to go. After some time, he found the right wishing well, tossed the coin and said the wish. Now he went about to find a perfect ring. Of course, it had to be in the woman's favourite colour since Gargamel didn't have musch opinion on which colours he liked. He picked it up and brought it to the woman. \\
+	Erazem searched through his memory whether he has already seen the well in this colour. If he could remember, he would have definitely known where to go. After some time, he found the right wishing well, tossed the coin and said the wish. Now he went about to find a perfect ring. Of course, it had to be in the woman's favourite colour since Gargamel didn't have much opinion on which colours he liked. He picked it up and brought it to the woman. \\
 	
-	This was the moment of truth. Will she agree to mary Gargamel, having received such thoughtfull gift? If she agrees, Erazem's work here is done. But what if she isn't impressed? Well, then Erazem will find another potential suitor and charge Gargamel some extra money, for the inconvenience. \\
+	This was the moment of truth. Will she agree to marry Gargamel, having received such thoughtful gift? If she agrees, Erazem's work here is done. But what if she isn't impressed? Well, then Erazem will find another potential suitor and charge Gargamel some extra money, for the inconvenience. \\
 
-	He knew that his job was very impactfull. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after. \\
+	He knew that his job was very impactful. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after. \\
 
 	In the following sections, we explain the magic behind Erazem's matchmaking skills. \\
 	
@@ -55,7 +55,7 @@
 		\label{fig:non_synchronized_raw_detection}
 	\end{figure}
 
-	Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the center of camera coordinate system to image plane. The image format gives us information about width and height of the camera sensor. The camera also has additional information about its position in the world (namely, its position and rotation). \\
+	Using camera calibration matrix, focal length and image format can be obtained. Focal length is the distance from the centre of camera coordinate system to image plane. The image format gives us information about width and height of the camera sensor. The camera also has additional information about its position in the world (namely, its position and rotation). \\
 
 	\begin{figure}[h]
 		\centering
@@ -64,10 +64,7 @@
 		\label{fig:pinhole_camera_model}
 	\end{figure}
 	
-	% Damo neko podobno sliko kot na naslednji povezavi
-	% https://alicevision.readthedocs.io/en/latest/_images/pinholeCamera.png
-	
-	Assuming that the camera is using pinhole camera model (and the camera calibration matrix is known), a ray can be cast from the center of the camera coordinate system $C$ to the pixel on image plane, where the object was detected, marked with $x$. This can be seen in the figure \ref{fig:pinhole_camera_model}. Using depth image information and known distance from $C$ to $x$, we can obtain the distance from the center of the camera $C$ to the detected object in space $X$. Using the computed ray and the distance to the object, we can compute object's position in a three-dimensional space in camera's coordinate system. \\
+	Assuming that the camera is using pinhole camera model (and the camera calibration matrix is known), a ray can be cast from the centre of the camera coordinate system $C$ to the pixel on image plane, where the object was detected, marked with $x$. This can be seen in the figure \ref{fig:pinhole_camera_model}. Using the computed ray and the distance to the object (namely, vector from camera centre $C$ and the object position $X$), we can compute object's position in a three-dimensional space in camera's coordinate system. \\
 	
 	After that, we can use a transformation matrix to finally convert the position of the detected object from the camera's coordinate system to the world coordinate system. \\ 
 	
@@ -90,12 +87,12 @@
 		\caption{An example of a good Haar feature}
 		\label{fig:haar_features}
 	\end{figure}
-
-	An example Haar feature is displyed in figure \ref{fig:haar_features}. The grey region represents the face region (which fits well in a square). The black and white region is a Haar feature. This specific feature performs well in human eye region detection. It detects the transition from eyes to forehead. \\
 	
 	The face images are first cropped to the same size and aligned so that the eyes approximately match. Then, a set of Haar features is generated. Each feature is defined at certain position in the face rectangle and consists of black and white regions (see figure \ref{fig:haar_features}). The value of the feature is computed as as difference between the sum of pixel intensities in the dark regions and the sum of pixel intensities in the light regions. \\
 	
-	Then, for each feature, a simple and fast binary classifier is trained on the training data that can recognize if it is looking at a face or not. Not all features prove to be very good at this task, so the features are ranked by their classification accuracy. With a boosting machine learning algorithm, many weak classifiers (as described above) are used to improve face detection accuracy. A cascade of weak detectors is created such that we start with the most accurate classifier and continue with less accurate ones. This gives the \texttt{Haar cascade} algorithm its real-time ability. For some regions, the first few classifiers detect that there is definitely not a face and the detection can stop. This way, the most processing power is given to the areas that most likely contain a face. \\
+	An example Haar feature is displayed in figure \ref{fig:haar_features}. The grey region represents the face region (which fits well in a square). The black and white region is a Haar feature. This specific feature performs well in human eye region detection. It detects the transition from eyes to forehead. \\
+	
+	Then, for each feature, a simple and fast binary classifier is trained on the training data that can recognize if it is looking at a face or not. Not all features prove to be very good at this task, so the features are ranked by their classification accuracy. With a boosting machine learning algorithm, many weak classifiers (as described above) are used to improve face detection accuracy. A cascade of weak detectors is created such that we start with the most accurate classifier and continue with less accurate ones. This gives the Haar cascade algorithm its real-time ability. For some regions, the first few classifiers detect that there is definitely not a face and the detection can stop. This way, the most processing power is given to the areas that most likely contain a face. \\
 	
 	The detection is then done with a sliding window method. This simply means that we are evaluating every possible rectangle area in the image. If we want to detect faces of different scales, the image must be resized and the entire algorithm is repeated. So the cascade is crucial for speed here. \\
 	
@@ -209,18 +206,18 @@
 
 	The mask is then applied to both, the distance image and the colour image. In figure \ref{fig:masked_colour_ring}, we can see the result of filtering of the \texttt{rgb} colour image using the mask obtained in the previous step. \\
 
-	The distance to the ring is computed as the average of the distances to each pixel in the masked distance image. The ring position in world coordinate system is computed using as explained in section \ref{pixel_to_world}. \\
+	The distance to the ring is computed as the average of the distances to each pixel in the masked distance image. The algorithm to compute the ring position in world coordinate system is explained in section \ref{pixel_to_world}. \\
 
 	\subsubsection{Ring approaching point computation}
 	Computation of approaching points for rings takes advantage of the static map, which provides information about the location of the walls, the unknown space (outside of the map and closed areas inside the map, such as boxes) and the free space, the space through which the robot can move. Using this information and the location of the ring detection we can find the closest wall and move approaching point away from it, in the direction of the normal to the wall. \\
 
-	First we have to find the wall closest to our detection. We can do this by searching for the closest straight line (edge) using \texttt{Hough Transform} algorithm. \texttt{Hough Transform} takes an edge image as the input. \textbf{Edge image} is usualy a binary image where one of the binary values 0 and 1 marks the pixels that contain the edge and the other value marks everything else. This kind of image can be obtained by various edge detectors that detect edges by looking for drastic changes in intensity in the original image. \\
+	First we have to find the wall closest to our detection. We can do this by searching for the closest straight line (edge) using \texttt{Hough Transform} algorithm. \texttt{Hough Transform} takes an edge image as the input. \textbf{Edge image} is usually a binary image where one of the binary values 0 and 1 marks the pixels that contain the edge and the other value marks everything else. This kind of image can be obtained by various edge detectors that detect edges by looking for drastic changes in intensity in the original image. \\
 	
 	Each line from the edge image can then be represented with an equation of the form $y = ax + b$ and mapped to a point $(a, b)$ in \texttt{Hough Space}. Because this system cannot represent the vertical lines since $a$ would be equal to $\infty$, the line is rather represented as $\rho = x\cos(\theta) + y\sin(\theta)$ and mapped to a point $(\theta, \rho)$. Each point from the line therefore produces a cosine curve in \texttt{Hough Space}. If two points lay on the same line, their cosine curves in the \texttt{Hough Space} intersect in one $(\theta, \rho)$ point. The \texttt{Hough Transform} algorithm detects lines by searching for the $(\theta, \rho)$ pairs that record more than some $threshold$ number of intersections. \\
 
-	For each detection we search the area around it for the lines and then find the one that is the closest to the detection. This line is represented with two points, both ends of the line. If we subtract one point from another, we get a vector parallel to the wall. By rotating it by 90 degrees we get a normal $n$ that is perpendicular to the wall. We use static map information to determine whether the neighbouring pixel of the line midpoint in the direction of the $n$ lies in the space accesible to the robot or not. If yes, we take $n$ as our direction vector for setting the approaching point. If not, we take $-n$. \\
+	For each detection we search the area around it for the lines and then find the one that is the closest to the detection. This line is represented with two points, both ends of the line. If we subtract one point from another, we get a vector parallel to the wall. By rotating it by 90 degrees we get a normal $n$ that is perpendicular to the wall. We use static map information to determine whether the neighbouring pixel of the line midpoint in the direction of the $n$ lies in the space accessible to the robot or not. If yes, we take $n$ as our direction vector for setting the approaching point. If not, we take $-n$. \\
 
-	Figure \ref{fig:ring_approaching_point_computation} shows the free space (white) and the inaccessible space (light gray) separated by the wall and the two normals to the wall. Depending on wheteher the location of the ring is detected correctly (black dot) or incorrectly (red dot) our normal may be either one of the two shown in the Figure \ref{fig:ring_approaching_point_computation}. For setting the approaching point we want a normal to point towards the free space as does $n$ in the figure below. \\
+	Figure \ref{fig:ring_approaching_point_computation} shows the free space (white) and the inaccessible space (light grey) separated by the wall and the two normals to the wall. Depending on whether the location of the ring is detected correctly (black dot) or incorrectly (red dot) our normal may be either one of the two shown in the Figure \ref{fig:ring_approaching_point_computation}. For setting the approaching point we want a normal to point towards the free space as does $n$ in the figure below. \\
 
 	\definecolor{verylightgray}{gray}{0.90}
 	\begin{figure}[H]
@@ -246,7 +243,7 @@
 			\draw [->] (1.75,3.75) to (1.75,4.75) node [right] {$-\vec{n}$};
 			\draw[very thick, black] (-0.5,3.75) -- (6,3.75);
 		\end{tikzpicture}
-		\caption{Computing approachin point for ring}
+		\caption{Computing approaching point for ring}
 		\label{fig:ring_approaching_point_computation}
 	\end{figure}
 
@@ -265,15 +262,15 @@
 	\subsection{Cylinder detection} \label{cylinder_detection}
 	In this section the algorithm for cylinder detection from point clouds using \texttt{RANSAC} is presented. In short, we first had to remove all larger planes from the point cloud and fit the remaining points to a cylinder model. But first we had to do some preprocessing on the input point cloud data before our algorithm could be run. Namely, making the point cloud sparser in order to reduce the execution time of the algorithm, and then filtering out points beyond some distance from the robot in order to avoid errors in model fitting, caused by the point cloud being too sparse. The points that are far away from the robot are already not very reliable, and by reducing the number of points representing each section we further reduce their accuracy and reliability. \\
 
-	The backbone of our cylinder detection algorithm is fitting a point cloud to a certain model using \texttt{RANdom SAmple Consesus} (\texttt{RANSAC}). This is an iterative method that is used to estimate parameters of a mathematical model from a set of data containing outliers. In every iteration, \texttt{RANSAC} selects a random subsample of the input data. These points are then considered inliers and the hypotesis is tested in a few steps. First the model is fitted to the inliers, then all data points are tested against the fitted model, and if they fit well, they are also considered inliers. After that the model is reestimated from the original and new inliers and finally, it is evaluated by estimating the error of the inliers relative to the model. After a fixed number of iterations, the best model is chosen. \\
+	The backbone of our cylinder detection algorithm is fitting a point cloud to a certain model using \texttt{RANdom SAmple Consesus} (\texttt{RANSAC}). This is an iterative method that is used to estimate parameters of a mathematical model from a set of data containing outliers. In every iteration, \texttt{RANSAC} selects a random subsample of the input data. These points are then considered inliers and the hypothesis is tested in a few steps. First the model is fitted to the inliers, then all data points are tested against the fitted model, and if they fit well, they are also considered inliers. After that the model is re-estimated from the original and new inliers and finally, it is evaluated by estimating the error of the inliers relative to the model. After a fixed number of iterations, the best model is chosen. \\
 	
 	\subsubsection{Removal of planes}
-	To be able to detect cylinders efficiently and robustly, we first need to remove all planes from the point cloud in order to reduce the computational load and avoid many flat surfaces and corners from being detected as cylinders. We do this by iteratively fitting the point cloud to a plane model with \texttt{RANSAC}, as explained above, and then removing all the inliers from the point cloud. This way we remove all large planes in the point cloud that have more inliers than some empirically set $threshold$. \\
+	To be able to detect cylinders efficiently and robustly, we first need to remove all planes from the point cloud in order to reduce the computational load and avoid many flat surfaces and corners from being detected as cylinders. We do this by iteratively fitting the point cloud to a plane model with \texttt{RANSAC}, as explained above, and then removing all the inliers from the point cloud. This way we remove all large planes in the point cloud that have more inliers than some empirically set threshold. \\
 	
-	A $threshold$ is used so that the points that are part of the cylinders are retained, because a small enough area of the cylinder might be considered a plane, and thus be removed from the point cloud. This parameter had to be fine tuned in order to remove as many planes from the point cloud, but also keep the cylinder inliers. \\
+	A threshold is used so that the points that are part of the cylinders are retained, because a small enough area of the cylinder might be considered a plane, and thus be removed from the point cloud. This parameter had to be fine tuned in order to remove as many planes from the point cloud, but also keep the cylinder inliers. \\
 
 	\subsubsection{Cylinder detection}
-	After all or most of the planes have been removed from the point cloud, we can detect cylinders. The method for this is very similar to the one used for detecting planes, but instead of fitting a point cloud to a plane, we fit it to a cylinder. This is trickier, because cylinders are more complex objects with more paramateres and thus, it is harder to fit the points to the model. The parameters for this method had to be carefully chosen in order to accurately detect cylinders and avoid incorrect detections such as corners. \\
+	After all or most of the planes have been removed from the point cloud, we can detect cylinders. The method for this is very similar to the one used for detecting planes, but instead of fitting a point cloud to a plane, we fit it to a cylinder. This is trickier, because cylinders are more complex objects with more parameters and thus, it is harder to fit the points to the model. The parameters for this method had to be carefully chosen in order to accurately detect cylinders and avoid incorrect detections such as corners. \\
 
 	We chose to only detect one cylinder in a point cloud. Firstly, because usually they are relatively far apart, so there is no fear that we could miss one, and secondly, because the farther the object is from the robot, the sparser is the point cloud and consequently more errors are present, such as mistaking a cylinder for a plane or vice versa. \\
 	
@@ -293,7 +290,7 @@
 		\item There is at least a \texttt{minimum distance} meters distance between this detection and every other previous true positive.
 	\end{enumerate}
 
-	If two detections are close enough (the distance between them is less than \texttt{minimum distance}), they are considered the same object. The positions of those two detections in the world are then averaged, so the calculated object position is closer to its actual position in space. \\
+	If two detections are close enough (the distance between them is less than \texttt{minimum distance}), they are considered the same object. The positions of those two detections in the world are then averaged, so the calculated object position is closer to its actual position in space. The object colour is also chosen as the most frequent detected colour. \\
 	
 	\begin{figure}[h]
 		\centering
@@ -307,25 +304,25 @@
 	It should also be noted that similar process is applied to the approaching points. Approaching point is computed for each face detection and as positions of the face detections are averaged, approaching points are averaged as well. In figure \ref{fig:inaccurate_detections}, this point is yellow. \\
 		
 	\subsection{Smart exploration of space} \label{smart_exploration}
-	There are two ways to determine some goals for space exploration. Either you hardcode a list of goals or you create a system that automatically sets the goals based on the shape of the map. Hardcoding is almost never a good idea, se we went with the latter. \\
+	There are two ways to determine some goals for space exploration. Either you hard-code a list of goals or you create a system that automatically sets the goals based on the shape of the map. Hard-coding is almost never a good idea, se we went with the latter. \\
 
 	Our algorithm uses static map as the input. First, the contrast between the walls or unknown space, and the space where robot can move, is amplified. After that a morphological operation of closing is performed to smooth out the corners which robot can't reach because of its circular shape. \\
 	
-	The part containing the relevant map is cropped out of the whole image as the other empty parts are not needed for rest of the process. We then find the corners with \texttt{Harris corner detector} and then apply the \texttt{non maxima suppresion} to only keep the actual corners. The corners are corners in the walls and obstacles and also the ends of the walls. \\
+	The part containing the relevant map is cropped out of the whole image as the other empty parts are not needed for rest of the process. We then find the corners with \texttt{Harris corner detector} and then apply the \texttt{non maxima suppression} to only keep the actual corners. The corners are corners in the walls and obstacles and also the ends of the walls. \\
 	
-	An edge is a sudden change in brightness and a corner is the point where two edges meet. Corners are the points, where gradient change is big in all directions. Harris corner detector works on a grayscale image, smoothed by a \texttt{Gaussian filter} (removes any noise). For each pixel in the image, it considers a 3x3 window around it and uses derivatives to computes a \texttt{Harris value} for it. \texttt{Harris value} is a score which tells how likely does the pixel contain a corner. \texttt{Non maxima suppression} is used to only declare corners in the pixels, whose score is the local maximum of the certain window and also exceed some $threshold$ value. \\
+	An edge is a sudden change in brightness and a corner is the point where two edges meet. Corners are the points, where gradient change is big in all directions. Harris corner detector works on a grey-scale image, smoothed by a \texttt{Gaussian filter} (removes any noise). For each pixel in the image, it considers a 3x3 window around it and uses derivatives to computes a \texttt{Harris value} for it. \texttt{Harris value} is a score which tells how likely does the pixel contain a corner. \texttt{Non maxima suppression} is used to only declare corners in the pixels, whose score is the local maximum of the certain window and also exceed some threshold value. \\
 
-	With the list of corners in the map ready, we can perform \texttt{Delaunay triangulation} to split the space without obstacles into triangles. \texttt{Delaunay triangulation} is a special kind of triangulation, where no point from the set on which the triangulation is performed is inside the circumcircle of any triangle in the trinagulation. Another property of the \texttt{Delaunay triangulation} is that it maximizes the minimum angle in the triangles and thus create more even distribution of the area. \\
+	With the list of corners in the map ready, we can perform \texttt{Delaunay triangulation} to split the space without obstacles into triangles. \texttt{Delaunay triangulation} is a special kind of triangulation, where no point from the set on which the triangulation is performed is inside the circumcircle of any triangle in the triangulation. Another property of the \texttt{Delaunay triangulation} is that it maximizes the minimum angle in the triangles and thus create more even distribution of the area. \\
 
-	For each triangle, our algorithm find its centroid - the center of the circumcircle. If we were to connect the centroids, we would obtain a so called \texttt{Voronoi diagram}, a special partition of the plane into regions. Each region contains all of the points that are closer to the seed inside this region, in our case a corner, than to any other seed (corner). The points from the \texttt{Delaunay triangulation} (centroids) are therefore as far away from all walls as possible. This makes them great points for space exploration as they are far from the obstacles and somewhat evenly distributed across the map. \\
+	For each triangle, our algorithm find its centroid - the centre of the circumcircle. If we were to connect the centroids, we would obtain a so called \texttt{Voronoi diagram}, a special partition of the plane into regions. Each region contains all of the points that are closer to the seed inside this region, in our case a corner, than to any other seed (corner). The points from the \texttt{Delaunay triangulation} (centroids) are therefore as far away from all walls as possible. This makes them great points for space exploration as they are far from the obstacles and somewhat evenly distributed across the map. \\
 
 	We have to be careful as centroids from the \texttt{Delaunay triangulation} will also be set in narrow passageways to which robot may not have access. And sometimes, two points might end up very close together, which isn't ideal for the exploration. \\
 	
-	To eliminate the second problem, we use \texttt{hierarhical clustering} with the minimum distance as the stopping criteria. This merges any points that are too close together into one, their average. It does so hierarhically, in each iteration it merges only the two points that are the closest. \\
+	To eliminate the second problem, we use \texttt{hierarchical clustering} with the minimum distance as the stopping criteria. This merges any points that are too close together into one, their average. It does so hierarchically, in each iteration it merges only the two points that are the closest. \\
 	
 	This step can sometimes also solve the first problem. To be sure that the robot can reach all of the exploration goals, we check if any goal is too close to any wall and if so, move it into the opposite direction, away from the wall, if possible. \\
 
-	In the figure below, we can see the \texttt{Delaunay triangulation} of our map in green and the centroids in red. The points in blue represent the exploration goals after \texttt{hierarhical clustering} and moving points away from the walls. \\
+	In the figure below, we can see the \texttt{Delaunay triangulation} of our map in green and the centroids in red. The points in blue represent the exploration goals after \texttt{hierarchical clustering} and moving points away from the walls. \\
 
 	\begin{figure}[h]
 		\begin{subfigure}{.5\textwidth}
@@ -340,7 +337,7 @@
 			\caption{After processing}
 			\label{fig:after_clustering}
 		\end{subfigure}
-		\caption{\texttt{Delaunay triangulation} and exploration goals before (a) and after the \texttt{hierarhical clustering} and moving unreachable goals to reachable position (b).}
+		\caption{\texttt{Delaunay triangulation} and exploration goals before (a) and after the \texttt{hierarchical clustering} and moving unreachable goals to reachable position (b).}
 		\label{fig:exploration_goals}
 	\end{figure}
 	
@@ -353,7 +350,7 @@
 
 	In our final task, the robot had to be able to pick up rings that are positioned very close to the wall and get very close to the cylinders so that it could reach above it and toss a coin. Both required positions are so close to the obstacle/wall, that the default movement component is unable to reach the goal. To do that, odometry data must be used and combined with \texttt{Twist} messages to move the robot \say{manually}. \\
 
-	Fine movement that we implemented works as follows. In the first step we obtain the current position of the robot and calculate its distance to the goal. Then we calculate the difference between the robot's orientation and the direction that would point from the robot's position to the position of the goal; let's call it \textbf{direction to goal}. Then we check whether the robot is already near enough to the position of the goal. There is a certain $threshold$ set and if the distance between the robot and the goal is below this $threshold$, we consider the robot to have reached the position of the goal. This helps in case a goal is too close to the wall for the center of the robot to reach it without crashing into any obstacles. \\
+	Fine movement that we implemented works as follows. In the first step we obtain the current position of the robot and calculate its distance to the goal. Then we calculate the difference between the robot's orientation and the direction that would point from the robot's position to the position of the goal; let's call it \textbf{direction to goal}. Then we check whether the robot is already near enough to the position of the goal. There is a certain threshold set and if the distance between the robot and the goal is below this threshold, we consider the robot to have reached the position of the goal. This helps in case a goal is too close to the wall for the centre of the robot to reach it without crashing into any obstacles. \\
 	
 	If we are not close enough, we send a \texttt{Twist} message to move the robot in the direction to goal and then repeat the first step. \\
 	
@@ -424,19 +421,19 @@
 	
 	Note that this implementation assumes that there is a clear view of the goal from the point at which the fine movement begins - there should be no obstacles on the line connecting the starting point and the goal and in the area of the robot's radius to the both sides of this line. \\
 
-	Even though fine movement allows us to reach the points close to the wall or obstacles, it does not, howewer, allow us to reach the points that are closer to a wall or an obstacle than the size of the robot's radius. For this reason, we defined two additional types of approaching points specifically for the fine movement. Both Toss-a-coin approaching point and Pick-up-the-ring approachin point are computed in the \texttt{Brain} component. \\
+	Even though fine movement allows us to reach the points close to the wall or obstacles, it does not, however, allow us to reach the points that are closer to a wall or an obstacle than the size of the robot's radius. For this reason, we defined two additional types of approaching points specifically for the fine movement. Both Toss-a-coin approaching point and Pick-up-the-ring approaching point are computed in the \texttt{Brain} component. \\
 
 	\subsubsection{Toss-a-coin approaching point} \label{toss-a-coin-point}
-	Toss-a-coin approaching point is a point near the cylinder and orientated towards the cylinder from which we can reach above the cylinder with the robotic arm and simulate tossing a coin into the wishing well. The point is set halfway from the cylinder approaching point to the detected center of the cylinder. Orientation for this point is set equal to that of the cylinder approaching point. \\
+	Toss-a-coin approaching point is a point near the cylinder and orientated towards the cylinder from which we can reach above the cylinder with the robotic arm and simulate tossing a coin into the wishing well. The point is set halfway from the cylinder approaching point to the detected centre of the cylinder. Orientation for this point is set equal to that of the cylinder approaching point. \\
 
 	\subsubsection{Pick-up-the-ring approaching point} \label{pick-up-the-ring-point}
-	Pick-up-the-ring approaching point is a point near the ring from which the ring can be picked up by the robotic arm that is mounted on top of the robot. This point is located halfway between the ring approaching point and the detected ring location. Orientation of this point is set to such that the robot is below the ring, having its right side next to the wall to which the ring is \say{attached}. This means the orientation of the ring approaching ponint should be rotated 90 degrees counter clockwise (to the robot's left). \\
+	Pick-up-the-ring approaching point is a point near the ring from which the ring can be picked up by the robotic arm that is mounted on top of the robot. This point is located halfway between the ring approaching point and the detected ring location. Orientation of this point is set to such that the robot is below the ring, having its right side next to the wall to which the ring is \say{attached}. This means the orientation of the ring approaching point should be rotated 90 degrees counter clockwise (to the robot's left). \\
 	
-	\subsection{Robot's behavior}
+	\subsection{Robot's behaviour}
 	
 	\begin{figure}[H]
 		\centering
-		\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=5cm, scale=0.6, 
+		\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=5cm, scale=0.5, 
 		transform shape, align=center, state/.style={circle, draw, minimum size=2.3cm}]
 		
 			\tikzset{every edge/.append style={font=\footnotesize}}
@@ -473,7 +470,7 @@
 		\label{fig:finite_state_automaton}
 	\end{figure}
 
-	In this part, the robot's behavior and decision making will be explained. In order to make robot's artificial intelligence implementation easily understandable and straightforward, we decided to use finite state automata. We defined ten states, that can be seen in the figure \ref{fig:finite_state_automaton} above, most of them having only one outgoing edge excpet for the two nodes that have two outgoing edges. \\
+	In this part, the robot's behaviour and decision making will be explained. In order to make robot's artificial intelligence implementation easily understandable and straightforward, we decided to use finite state automata. We defined ten states, that can be seen in the figure \ref{fig:finite_state_automaton}, most of them having only one outgoing edge except for the two nodes that have two outgoing edges. \\
 
 	\texttt{Finding Gargamel}: In this initial state of the automaton, the robot travels around the map and memorizes any objects of interest that it detects, until it finds Gargamel. Then the robot transitions into the second state. \\
 
@@ -481,11 +478,11 @@
 
 	\texttt{Finding woman}: In this state, the robot has to find a woman that matches Gargamel's preferences. We first check if we have already detected any women with such characteristics and if so, we choose the first one and proceed to the next state, in which we approach the woman. Otherwise we instruct the robot to explore the map until it finds a suitable woman. \\
 
-	\texttt{Approaching woman}: In this state, the robot approaches the woman we found in the previous state. After it reaches the approaching point, it inquires about her favorite colour. The logic of handling speech recognition is the same as in \texttt{Approaching Gargamel} state. \\
+	\texttt{Approaching woman}: In this state, the robot approaches the woman we found in the previous state. After it reaches the approaching point, it inquires about her favourite colour. The logic of handling speech recognition is the same as in \texttt{Approaching Gargamel} state. \\
 
-	\texttt{Approaching Gargamel 2}: With this newly collected information about the woman's favorite colour, the robot returns to Gargamel. Woman's picture is shown in \texttt{rviz} while the robot waits for Gargamel's response, whether he likes this woman or not. Based on the received information, we have two possible transitions. If Gargamel likes this woman, we proceed to next state, if he doesn't like her, we return to the \texttt{Finding woman} state, where we search for a new woman with characteristics that Gargamel likes. \\
+	\texttt{Approaching Gargamel 2}: With this newly collected information about the woman's favourite colour, the robot returns to Gargamel. Woman's picture is shown in \texttt{rviz} while the robot waits for Gargamel's response, whether he likes this woman or not. Based on the received information, we have two possible transitions. If Gargamel likes this woman, we proceed to next state, if he doesn't like her, we return to the \texttt{Finding woman} state, where we search for a new woman with characteristics that Gargamel likes. \\
 
-	\texttt{Finding cylinder}: Robot's next task is to find a cylinder in the woman's favorite colour. Here we have two options, if a cylinder of the specified colour has already been detected, we proceed to the next state, otherwise the robot is instructed to explore the map until it finds a sutiable cylinder. \\
+	\texttt{Finding cylinder}: Robot's next task is to find a cylinder in the woman's favourite colour. Here we have two options, if a cylinder of the specified colour has already been detected, we proceed to the next state, otherwise the robot is instructed to explore the map until it finds a suitable cylinder. \\
 
 	\texttt{Approaching cylinder}: After an appropriate cylinder has been found, the robot's next step is to approach it and extend the mechanical arm, which represents tossing a coin into a wishing well. This is achieved in the following manner. The robot first approaches the cylinder, then it has to get closer to the cylinder, using fine movement. When it is close enough and facing the cylinder, it finally extends the arm. After that, the robot returns to the approaching point and continues to the next state. \\
 
@@ -498,7 +495,7 @@
 	\section{Implementation and integration}
 	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture, presented in figure \ref{fig:final_architecture}, was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at once. \\
 	
-	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the arhitecture had to be changed in order to solve them. \\ 
+	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the architecture had to be changed in order to solve them. \\ 
 	
 	\begin{figure}[h]
 		\centering
@@ -514,21 +511,21 @@
 	\subsubsection{ObjectDetection message} \label{objectDetection}
 	The object detection message contains the following information.
 	\begin{enumerate}
-		\item \texttt{Header header}, which contains the timestamp of the detection and other metadata.
+		\item \texttt{Header header}, which contains the time stamp of the detection and other metadata.
 		\item \texttt{string id}, which is a unique number used to identify the detection.
-		\item \texttt{Image image}, whichis an image of the object.
+		\item \texttt{Image image}, which is an image of the object.
 		\item \texttt{Pose object\_pose}, which represents the object position in world coordinate frame.
 		\item \texttt{Pose approaching\_point\_pose}, which is a point that the robot has to visit in order to complete the task.
 		\item \texttt{string color}, which represent the object's average colour label that the colour classifier computed.
 		\item \texttt{string face\_label}, which carries the label of the face that our face classifier recognized.
 		\item \texttt{string type}, which represents the type of the detected object (it can be either \texttt{"face"}, \texttt{"ring"} or \texttt{"cylinder"}).
-		\item \texttt{string barcode\_data}, which carries the features of the detected face (hair length, hair colour). It is named barcode\_data because it was first introduced when we were using qr codes to get the information about the faces in the process of writing the code for the final task and did not change the name afterwards.
+		\item \texttt{string barcode\_data}, which carries the url that the QR code contained. It was introduced when we were using QR codes to get information about faces, but it became unnecessary after the face classifier was implemented.
 	\end{enumerate}
 	
 	\subsubsection{Face detector node}
 	The face detector is responsible for detecting and localizing faces. To do that, it first synchronizes received rgb and depth images using the \texttt{Time Synchronizer} class in \texttt{message\_filters} package. \\
 
-	After both, rgb and depth images are received, it uses the \texttt{Haar cascade} algorithm explained in section \ref{face_detection_algorithm} to detect faces. If a face has been found, it tries to compute its world position. This is done using raycasting from the camera center, through the face center pixel in the image plane as explained in section \ref{pixel_to_world}. \\
+	After both, rgb and depth images are received, it uses the \texttt{Haar cascade} algorithm explained in section \ref{face_detection_algorithm} to detect faces. If a face has been found, it tries to compute its world position. This is done using ray casting from the camera centre, through the face centre pixel in the image plane as explained in section \ref{pixel_to_world}. \\
 
 	After the face is localized, Approaching point is computed. Approaching point is a point that is positioned directly in front of the face. Because the faces are positioned on the walls, the closest wall to the face is found. Then, the wall normal is computed as explained in section \ref{face_approaching_points}. The Approaching point is positioned 0.6 metres from the face position in the direction of the face orientation. \\
 
@@ -541,7 +538,7 @@
 	Cylinder detector is a node that is responsible for detecting and localizing the cylinders. It first synchronizes depth and rgb images. Then it uses the cylinder detection algorithm that is explained in section \ref{cylinder_detection}.
 
 	\subsection{Robustifier}
-	For each object detector, a new \texttt{Robustifier} node is created. Each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the $threshold$ value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
+	For each object detector, a new \texttt{Robustifier} node is created. Each \texttt{Robustifier} node is listening for different object detections. The detections are then grouped together using the algorithm as explained in section \ref{robustification}. When number of detections sent to the \texttt{Robustifier} node exceeds the threshold value, the detection is considered a true positive and is sent to the \texttt{Brain} node. \\
 	
 	But this is not the end of the robustification process. For each new detection, average positions are calculated again, and updated results are sent to the \texttt{Brain} node as well as and used to update the positions of the markers in \texttt{rviz} as well. \\
 	
@@ -559,30 +556,34 @@
 
 	\begin{enumerate}
 		\item \texttt{Localization task} is a task that is run at the beginning. The robot knows its approximate location in the space, but before it can move around the environment, it must pinpoint its exact location. This task rotates the robot around its vertical axis for one full rotation using odometry information. The robot uses depth information to localize itself using adaptive Monte Carlo localization algorithm.
-		\item \texttt{Approaching task} is a task that drives the robout around its environment using the standard \texttt{move\_base} package.
-		\item \texttt{Fine approaching task} is a task similar to the \texttt{Approaching task} except it uses our fine movement algorithm as explained in section \ref{fine_movement}. This task is always performed to move the robot between the position reached by apporaching task and one of the special approaching points, \texttt{Toss-a-coin approaching poin} and \texttt{Pick-up-the-ring approaching point}.
+		\item \texttt{Approaching task} is a task that drives the robot around its environment using the standard \texttt{move\_base} package.
+		\item \texttt{Fine approaching task} is a task similar to the \texttt{Approaching task} except it uses our fine movement algorithm as explained in section \ref{fine_movement}. This task is always performed to move the robot between the position reached by approaching task and one of the special approaching points, \texttt{Toss-a-coin approaching point} and \texttt{Pick-up-the-ring approaching point}.
 		\item \texttt{Wandering task} is a task where the robot is exploring its environment, searching for faces, rings and cylinders. It uses the points generated by the algorithm for smart exploration of space, described in the section \ref{smart_exploration}. This task can be cancelled at any time so the robot can visit detected objects, if needed.
 		\item \texttt{Arm task} is a task where the robot uses its pincher arm that is mounted on top of it. This task is used to toss a coin into a wishing well (moving the robot arm above a cylinder) or pick up a ring that is floating above the ground.
 	\end{enumerate}
 
-	The \texttt{movement controller} uses an ordered list of tasks. If the \texttt{brain} component chooses, it can cancel the current task, reorder its task and insert new task to be executed either after all tasks have finished or right at this moment. \\ 
+	The \texttt{movement controller} uses an ordered list of tasks. If the \texttt{brain} component chooses, it can cancel the current task, reorder its task and insert new task to be executed either after all tasks have finished or right at this moment. \\
 	
 	\subsection{Greeter}
-	Greeter is a node that uses \texttt{SoundClient} for speech syntesis. It is used whenever we want robot to say something out loud. \\
+	Greeter is a node that uses \texttt{SoundClient} for speech synthesis. It is used whenever we want robot to say something out loud. \\
 	
 	\section{Results}
 
-	After countless hours, Erazem was finally able to perform the task. We encoutered a bunch of problems on the way, the biggest one being the task of aprroaching the rings. We spent at least a week trying to reliably set the approaching points for the rings, wrote many different algorithms for this task, tried improving ring detection in several ways, changed how the fine movement works multiple times, set up various robustification processes for both detections and approaching points, and even even setup a two layer robustification process. But all that with no definite sucess. In the presentation of the last task our robot did not set the points correctly for all of the rings and consequently couldn't approach some of them correctly. \\
+	After countless hours, Erazem was finally able to perform the task. We encountered a bunch of problems on the way, the biggest one being the task of approaching the rings. We spent at least a week trying to reliably set the approaching points for the rings, wrote many different algorithms for this task, tried improving ring detection in several ways, changed how the fine movement works multiple times, set up various robustification processes for both detections and approaching points, and even even set up a two layer robustification process. But all that with no definite success. In the presentation of the last task our robot did not set the points correctly for all of the rings and consequently couldn't approach some of them correctly. \\
 
 	In the final presentation some things didn't go as planned:
 	\begin{itemize}
-		\item Erazem took forever to toss a coin into the red cylinder, the second one that we had to approach. What went wrong was the robot wasn't able to reach the desired orientation on a Toss-a-coin approaching point and as we didn't implement a timeout for this task, it got stuck there. Toss-a-coin approaching point is set as the midpoint of the line connecting the center of the cylinder and its approaching point (see section \ref{toss-a-coin-point}). \\
-		Since cylinder detections are not always accurate the robustifier averages them. The problem here was, that robustifier also updates the presumed cylinder position for every detection it receives, and in this case the \say{true positive} for the red cylinder was not accurate. The Toss-a-coin approaching point ended up a bit too close to the cylinder, as the robot was able to reach it's position but was unable to turn into the right direction.
-		\item Because of the error above, Erazem didn't have a chance to fail at picking up the red ring but it certainly would've had as the approaching point for the ring wasn't set correctly. Our first implementation of the fine approaching could handle exapmles like this one, but it wasn't very practical as it was slow, so we replaced it with a simpler version that uses approaching points and then assumes the way in the direction straight to the Pick-up-the-ring approaching point is free (see sections \ref{fine_movement} and \ref{pick-up-the-ring-point}). \\
+		
+		\item Erazem took forever to toss a coin into the red cylinder, the second one that we had to approach. What went wrong was the robot wasn't able to reach the desired orientation on a Toss-a-coin approaching point and as we didn't implement a time-out for this task, it got stuck there. Toss-a-coin approaching point is set as the midpoint of the line connecting the centre of the cylinder and its approaching point (see section \ref{toss-a-coin-point}). \\
+		Since cylinder detections are not always accurate the robustifier averages them. The problem here was, that robustifier also updates the presumed cylinder position for every detection it receives, and in this case the \say{true positive} for the red cylinder was not accurate. The Toss-a-coin approaching point ended up a bit too close to the cylinder, as the robot was able to reach it's position but was unable to turn into the right direction. \\
+		
+		\item Because of the error above, Erazem didn't have a chance to fail at picking up the red ring but it certainly would've had as the approaching point for the ring wasn't set correctly. Our first implementation of the fine approaching could handle examples like this one, but it wasn't very practical as it was slow, so we replaced it with a simpler version that uses approaching points and then assumes the way in the direction straight to the Pick-up-the-ring approaching point is free (see sections \ref{fine_movement} and \ref{pick-up-the-ring-point}). \\
 		As the approaching point was not set correctly, this path was not free and the robot would have bumped into the wall and messed up his odometry. The reason for the incorrect position of the approaching point are inaccurate detections of the red ring's position (which occur when the robot is moving or rotating fast). Because of this, some approaching points were positioned in the wrong direction and as they were averaged in the robustification process, the calculated position of the approaching point was not in the right place.
-		\item We also forgot that we had to show the image of the woman to Gargamel before asking him if he liked her or not. This was not an error in the code but just something we forgot to implement. Our arhitecure was ready to perform this task (see section \ref{objectDetection}) but at the end we forgot to show the image.
-		\item At one point our robot needed a bit longer to set it's new goal as the goal it was trying to set was not reachable. The reason is, one of the points our smart space exploration algorithm sets was positioned near the green cylinder. This algorithm uses only the shape of the map as the robot cannot know the positions of the cylinders in advance. Howewer, cylinders take up some space and in this case robot's calculated that the point was too close to the obstacle to be reached. \\
-		This error was something we have foreseen so we handled such situations as follows. If the path to the goal cannot be found, try again. If you already tried three times, move this goal to the end of the queue and proceed with finding path to the next goal in the queue. This meant our robot stopped for about 5 seconds but then proceeded with the tash as if nothing had happened.
+		
+		\item We also forgot that we had to show the image of the woman to Gargamel before asking him if he liked her or not. This was not an error in the code but just something we forgot to implement. Our architecture was ready to perform this task (see section \ref{objectDetection}) but at the end we forgot to show the image.
+		
+		\item At one point our robot needed a bit longer to set it's new goal as the goal it was trying to set was not reachable. The reason is, one of the points our smart space exploration algorithm sets was positioned near the green cylinder. This algorithm uses only the shape of the map as the robot cannot know the positions of the cylinders in advance. However, cylinders take up some space and in this case robot's calculated that the point was too close to the obstacle to be reached. \\
+		This error was something we have foreseen so we handled such situations as follows. If the path to the goal cannot be found, try again. If you already tried three times, move this goal to the end of the queue and proceed with finding path to the next goal in the queue. This meant our robot stopped for about 5 seconds but then proceeded with the task as if nothing had happened.
 	\end{itemize}
 
 	% A bi mogli dodat še, da nismo razpoznavali frizur?
@@ -607,6 +608,7 @@
 	% Ajda: approaching points for rings, ...
 	% --------------------
 	\textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
+	\textbf{Martin}: speech synthesis, speech recognition, face classification, ring and cylinder detection, fsa implementation for robot behavior
 	% A take stvari tud? first version of approaching points for faces (used only in the 1st task) 
 	% A collaboratione tud?
 	% Kolk se hočemo razpisat?
@@ -614,13 +616,13 @@
 	\section{Conclusion}
 	Building Erazem was a difficult journey. We faced many challenges and solved some of them more successfully than the others. The task was far from easy, but nevertheless we also had fun at times. We especially enjoyed composing the sentences that the robot would then say out loud and answering its questions. \\
 
-	This course was very time intensive. Not just becuse a lot of things had to be implemented but also beacuse they sometimes required a lot of research as ROS doesn't have everything well documented and it's difficult to find example usage for some modules. \\
+	This course was very time intensive. Not just because a lot of things had to be implemented but also because they sometimes required a lot of research as ROS doesn't have everything well documented and it's difficult to find example usage for some modules. \\
 
-	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressfull. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week befor the final task presentation. \\
+	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to "choose" between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressful. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week before the final task presentation. \\
 	
-	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some preoblems which would be difficult to resolve otherwise without knowing the cause. \\
+	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some problems which would be difficult to resolve otherwise without knowing the cause. \\
 
-	Final thought: We wish ROS had better documentation or at least a debugger. \\
+	Final thought: We wish \texttt{ROS} had better documentation or at least a debugger. \\
 
 	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
 
@@ -630,7 +632,7 @@
 		\item \say{How the job gets done?} - Erazem on his first day as the matchmaker
 		\item \say{Who runs the world? Gazebo.} - Erazem modifying the lyrics from the song
 		\item \say{If you liked it then you should've put a ring on it.} -Erazem to Gargamel when the woman said no to marrying Gargamel
-		\item \say{All around me are familliar faces.} - Erazem after recognizing a couple of faces
+		\item \say{All around me are familiar faces.} - Erazem after recognizing a couple of faces
 		\item \say{Beam me up Scotty! Pew pew!} - Erazem casting rays to calculate 3d position of the object from the 2d image
 		\item \say{I don't know where I'm going, I don't even know where I am.} - Erazem, about the importance of the odometry
 		\item \say{What does the robot say?} - Erazem modifying the lyrics again, this time singing the song from Ylvis brothers 
