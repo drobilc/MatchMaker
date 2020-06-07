@@ -499,8 +499,28 @@
 	
 	\begin{figure}[h]
 		\centering
-		\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=5cm, scale=0.6, transform shape, align=center, state/.style={circle, draw, minimum size=2.3cm}]
+		\begin{tikzpicture}[->, >=stealth', shorten >=1pt, auto, node distance=4cm, scale=0.6, transform shape, align=center, state/.style={circle, draw, minimum size=2.3cm}]
+			\node[state] 	(FD) {Face \\ Detector};
+			\node[state] 	(RD) [below of=FD]{Ring \\ Detector};
+			\node[state] 	(CD) [below of=RD]{Cylinder \\ Detector};
+			\node[state] 	(FR) [right of=FD] {Robustifier};
+			\node[state]	(RR) [right of=RD] {Robustifier};
+			\node[state] 	(CR) [right of=CD] {Robustifier};
+			\node[state, accepting] 	(BR) [right of=RR] {Brain};
+			\node[state] 	(GR) [above right of=BR] {Greeter};
+			\node[state] 	(MC) [below right of=BR] {Movement \\ Controller};
 
+			\path (FD) edge (FR);
+			\path (RD) edge (RR);
+			\path (CD) edge (CR);
+			\path (FR) edge (BR);
+			\path (RR) edge (BR);
+			\path (CR) edge (BR);
+			\path (BR) edge (MC);
+			\path (MC) edge (BR);
+			\path (BR) edge (GR);
+			\path (GR) edge (BR);
+			
 		\end{tikzpicture}
 		\caption{Final architecture}
 		\label{fig:final_architecture}
