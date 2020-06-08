@@ -690,7 +690,7 @@
 	Based on these accuracies we intitially chose \texttt{naive bayes} in cobination with \texttt{HSV} colour space, but it soon turned out that this wasn't the best choice. The world our robot lives in is not exactly the same as the one we live in and in this case, this made all the difference. The cobination that worked best in the \texttt{Gazebo} simulator was the \texttt{knn} classifier with \texttt{RGB} colour space. This cobination already had good results in our tests, but it was not the best. \\
 
 	\subsection{Face classifier}
-	In homework3 we had to train a model that could correctly classify twenty-one given faces. To solve this problem we decided to use a neural network that transforms images into encodings, putting them into embedding space. We used images of faces taken in the gazebo simulator. Then we trained different classifiers on the obtained encodings. Below are the results of our testing. \\
+	In homework3 we had to train a model that could correctly classify twenty-one given faces. To solve this problem we decided to use a neural network that transforms images into encodings, putting them into embedding space. We used images of faces taken in the \texttt{Gazebo} simulator. Then we trained different classifiers on the obtained encodings. Below are the results of our testing. \\
 
 	\begin{center}
 		\begin{tabular}{|c|c|}
@@ -712,7 +712,7 @@
 		\end{tabular} \\
 	\end{center}
 
-	As we can see most of the classifiers perform really well. For erazem we decided to use the svm model with a linear kernel and parameter c equal to 0.05. Our classifier performed really well in the gazebo simulator as well. \\
+	As we can see most of the classifiers perform really well. For Erazem we decided to use the \texttt{svm} model with a linear kernel and parameter $c$ equal to $0.05$. Our classifier performed really well in the \texttt{Gazebo} simulator as well. \\
 
 	\section{Division of work}
 	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. There is a also a lot of work that is invisible as it includes algorithms and nodes that end up not being used as we find better solutions, and also a lot of debugging, bug fixes, minor functionality changes and testing. Owerall, we each spent roughly the same amount of time for this project. Below we state which team member did most of the work for each of the robot's abilities. \\
