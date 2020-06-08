@@ -13,15 +13,24 @@
 \usetikzlibrary{arrows,automata}
 \usepackage[bottom]{footmisc}
 \usepackage{dirtytalk}
+\usepackage{titling}
+\renewcommand\maketitlehooka{\null\mbox{}\vfill}
+\renewcommand\maketitlehookd{\vfill\null}
 
 \author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
 \title{Final report}
 \date{}
 \begin{document}
 	
+	\begin{titlingpage}
 	\maketitle
+	\end{titlingpage}
+
+	\pagebreak
 
 	\tableofcontents
+
+	\pagebreak
 	
 	\section{Introduction}
 	In this report we will explain how our robot by the name of Erazem performs the task of a skilled match maker. He was hired by Gargamel, who wanted to find love and get married as quickly as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences. \\
@@ -493,7 +502,7 @@
 	\texttt{Approaching woman 2}: This is the accepting state of this automaton. The robot's job is to approach the chosen woman again and ask her if she is willing to marry Gargamel. If her answer is yes, the robot has finished his task. If her answer is no, the robot returns back to the \texttt{Finding woman} state and searches for a new woman with desired characteristics. \\
 	
 	\section{Implementation and integration}
-	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, the following architecture, presented in figure \ref{fig:final_architecture}, was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at once. \\
+	In this section, the implementation of the algorithms explained in section \ref{methods} will be discussed. To solve our task, architecture, presented in figure \ref{fig:final_architecture}, was designed. We tried to keep the entire project as modular as possible, not only because this is the \texttt{ROS} operating system's philosophy, but also because three different people needed to work on the same project at once. \\
 	
 	This proved to be very difficult because nodes are so interconnected, that if any part of the system didn't work as intended, it seemed as if nothing worked. Some parts of the system were discussed beforehand, but as the tasks became more difficult, the architecture had to be changed in order to solve them. \\ 
 	
@@ -590,6 +599,7 @@
 	Greeter is a node that uses \texttt{SoundClient} for speech synthesis. It is used whenever we want robot to say something out loud. \\
 	
 	\section{Results}
+	In this chapter we discuss how the final presentation went and how our detectors and classifiers performed.
 
 	\subsection{Performance of the robot on the final presentation}
 	After countless hours, Erazem was finally able to perform the task. We encountered a bunch of problems on the way, the biggest one being the task of approaching the rings. We spent at least a week trying to reliably set the approaching points for the rings, wrote many different algorithms for this task, tried improving ring detection in several ways, changed how the fine movement works multiple times, set up various robustification processes for both detections and approaching points, and even even set up a two layer robustification process. But all that with no definite success. In the presentation of the last task our robot did not set the points correctly for all of the rings and consequently couldn't approach some of them correctly. \\
@@ -732,7 +742,7 @@
 
 	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to \say{choose} between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressful. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week before the final task presentation. \\
 	
-	We are good friends and we worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some problems which would be difficult to resolve otherwise without knowing the cause. \\
+	We worked well together as a team which definitely saved us some stress and some additional hours of work. It was good that we discussed changes before implementing them so we could see the changes and their impacts form different viewpoints and in their full extent. This also helped us foreseeing some problems which would be difficult to resolve otherwise without knowing the cause. \\
 
 	Final thought: We wish \texttt{ROS} had better documentation or at least a debugger. \\
 
