@@ -30,13 +30,15 @@ In short, robot autonomously moves around, detects and approaches faces, rings a
 
 All detections are marked: pink spheres mark detected faces, spheres in other colours mark detected rings, and cylinders mark cylinders. Yellow cubes mark the goals for robot to move to.
 
-Details of implementation can be found [here](https://github.com/drobilc/MatchMaker/tree/master/documentation/final_report/final_report.pdf).
+Details of implementation can be found [here](documentation/final_report/final_report.pdf).
 
 Here you can see how all of this looks in action:
 
-![Gazebo simulator screenshot][/documentation/screenshot1.png]
-![RViz vizualization tool screenshot][/documentation/screenshot2.png]
-![Depth image][/documentation/screenshot3.png]
+![Gazebo simulator screenshot](documentation/screenshot1.png)
+
+![RViz vizualization tool screenshot](documentation/screenshot1.png)
+
+![Depth image](documentation/screenshot1.png)
 
 ## Bugs
 
