@@ -54,7 +54,7 @@
         <collision name='classroom_collision'>
           <geometry>
             <mesh>
-              <uri>model://exercise4/meshes/rins_world_blender7.dae</uri>
+              <uri>model://love_maker/meshes/rins_world_blender7.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -75,7 +75,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://exercise4/meshes/rins_world_blender7.dae</uri>
+              <uri>model://love_maker/meshes/rins_world_blender7.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
