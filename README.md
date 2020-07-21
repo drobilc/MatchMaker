@@ -23,23 +23,26 @@ He knew that his job was very impactful. He promised himself not to let Gargamel
 
 ## Features
 
+In short, robot autonomously moves around, detects and approaches faces, rings and cylinders, recognizes faces, synthetizes and recognizes speech.
+
+All detections are marked: pink spheres mark detected faces, spheres in other colours mark detected rings, and cylinders mark cylinders. Yellow cubes mark the goals for robot to move to.
+
+Details of implementation can be found [here](https://github.com/drobilc/MatchMaker/tree/master/documentation/documentation.pdf).
+
+Here you can see how all of this looks in action:
+
+add photos here
+
 ## Bugs
 
-what robot does, what are the markers, screenshots of Rviz and Gazebo here
-- ne rabiš robota, ker vse laufa v simulaciji
 - kaj dela in kaj ne zares (od naše kode)
 - v okviru česa je blo narjeno
 - (avtorji?)
-- dodaj nekam link na ros navoila za zbuildat workspace, linke do rosa, rviza in gazebota 
 - ker node se s čim ukvarja
 - a nardimo tud readmeje za vsak package posebi?
 - zbrisat mormo nerelevantne reameje in nerelevantne pakete
 - kak screenshot našga robotka v akciji
 - kako se menja svet
-
-## Features
-
-## Bugs
 
 ## Installation
 
