@@ -6,6 +6,8 @@
 
 short catchy description here
 
+This project was build as part of the course RInS (Razvoj Inteligentnih sistemov = Development of Inteligent Systems) taught at University of Ljubljana, Faculty of Computer and Information Science (FRI).
+
 ## About
 
 Erazem, a robot with matchking skills even better than Tinder, was hired by Gargamel, who wanted to find love and get married as quickly as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences.
@@ -37,12 +39,9 @@ add photos here
 ## Bugs
 
 - kaj dela in kaj ne zares (od naše kode)
-- v okviru česa je blo narjeno
 - (avtorji?)
 - ker node se s čim ukvarja
 - a nardimo tud readmeje za vsak package posebi?
-- zbrisat mormo nerelevantne reameje in nerelevantne pakete
-- kak screenshot našga robotka v akciji
 - kako se menja svet
 
 ## Installation
