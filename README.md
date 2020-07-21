@@ -7,7 +7,6 @@
 short catchy description here
 
 long descripzion, what robot does, what are the markers, screenshots of Rviz and Gazebo here
-- ne rabiš robota, ker vse laufa v simulaciji
 - kaj dela in kaj ne zares (od naše kode)
 - v okviru česa je blo narjeno
 - (avtorji?)
@@ -17,13 +16,18 @@ long descripzion, what robot does, what are the markers, screenshots of Rviz and
 - zbrisat mormo nerelevantne reameje in nerelevantne pakete
 - kak screenshot našga robotka v akciji
 - kako se menja svet
-- kakega robota rabiš, če hočeš fizično obliko? - Turtlebota s kinectom in robotsko roko
+
+## Features
+
+## Bugs
 
 ## Installation
 
 ### System requirements
 
 You have to have [ROS kinetic](http://wiki.ros.org/kinetic/Installation) and python2 installed, as well as [Gazebo](http://gazebosim.org/) and [Rviz](http://wiki.ros.org/rviz/UserGuide). You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu 16.04, other versions mihght also work but have not been tested with this code.
+
+Since everything runs within a simulation, there is no need for an actual, physical robot. If you really, really want to use a real robot, you'll need a Turtlebot robot with Kinect and a small robotic arm mounted on top (on the right side).
 
 ### Get the code
 
