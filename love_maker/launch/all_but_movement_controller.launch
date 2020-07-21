@@ -8,8 +8,6 @@
         <!-- Set the world file for the gazebo simulator -->
         <arg name="world_file"  value="$(find love_maker)/worlds/rins2.world"/>
         <arg name="gui"  value="false"/>
-        <!-- another world -->
-        <!-- <arg name="world_file"  value="$(find exercise3_quar)/worlds/rins.world"/> -->
     </include>
 
     <!-- Include the amcl simulator -->
