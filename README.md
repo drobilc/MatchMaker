@@ -67,3 +67,5 @@ catkin_make
 ```
 
 ## Running
+
+You can run everything by moving into your ROS workspace folder and using a command `roslaunch love_maker_2000 all.launch`.
