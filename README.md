@@ -6,7 +6,27 @@
 
 short catchy description here
 
-long descripzion, what robot does, what are the markers, screenshots of Rviz and Gazebo here
+## About
+Erazem, a robot with matchking skills even better than Tinder, was hired by Gargamel, who wanted to find love and get married as quickly as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences.
+	
+When Gargamel surprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook off this thought since he had had much stranger clients before and started searching right away.
+
+He was scanning the place for the women. For each face he saw, he quickly filled his mental checklist with Gargamel preferences. "Such easy criteria", he thought to himself, "but only a handful of matches..." When he finally came across a woman that matched Gargamel's preferences, he fixed his tie, took a deep breath, and approached her. She seemed interested in meeting Gargamel but was very secretive. When Erazem asked her to tell him something about herself, she only told him her favourite colour. Erazem firmly remembered this little detail and after some chit-chat said goodbye to her. He was happy to have finally found a potential suitor but at the same time a little worried about the lack of information he had about her.
+
+Erazem thought it is time to report to Gargamel about his findings. They met at Gargamel's and Erazem told him all he knew about that woman. It was up to Gargamel to decide whether she seemed promising or not. If the Gargamel was to decline this suitor, Erazem would have gone out again and found him another one. When Gargamel liked the suitor Erazem suggested, he told him a bit nervously that he believed that tossing a coin into the wishing well and saying a wish makes that wish come true. Excellent matchmaker as Erazem was, he immediately understood. He agreed to find a wishing well in the woman's favourite colour and toss a coin in it while also saying the wish for Gargamel and the woman to marry and live happily ever after.
+
+Erazem searched through his memory whether he has already seen a well of this colour. If he could remember, he would have definitely known where to go. After some time, he found the right wishing well, tossed the coin and said the wish. Now he went about to find a perfect ring. Of course, it had to be in the woman's favourite colour since Gargamel didn't have much opinion on which colours he liked. He picked it up and brought it to the woman.
+
+This was the moment of truth. Will she agree to marry Gargamel, having received such thoughtful gift? If she agrees, Erazem's work here is done. But what if she isn't impressed? Well, then Erazem will find another potential suitor and charge Gargamel some extra money, for the inconvenience.
+
+He knew that his job was very impactful. He promised himself not to let Gargamel down. And the reward at the end will be beautiful. Two lost souls finding each other and living their happy ever after.
+
+## Features
+
+## Bugs
+
+what robot does, what are the markers, screenshots of Rviz and Gazebo here
+- ne rabiš robota, ker vse laufa v simulaciji
 - kaj dela in kaj ne zares (od naše kode)
 - v okviru česa je blo narjeno
 - (avtorji?)
