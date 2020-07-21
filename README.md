@@ -34,10 +34,12 @@ Here you can see how all of this looks in action:
 add photos here
 
 ## Bugs
+  * Erazem can sometimes get stuck and loops infinitely while tossing a coin into a wishing well. This happens because the robot isn't able to reach the desired approaching point This could be solved by implementing a time-out.
+  * If the robot can't get to the approacing point, it can't pick up a ring and the simulation must be restarted.
+  * The robot also sometimes randomly stops. This is due to the fact that some of the exploration points are not reachable. Here, the time-out was implemented, so the robot can continue with its path.
 
 - kaj dela in kaj ne zares (od naše kode)
 - v okviru česa je blo narjeno
-- (avtorji?)
 - ker node se s čim ukvarja
 - a nardimo tud readmeje za vsak package posebi?
 - zbrisat mormo nerelevantne reameje in nerelevantne pakete
