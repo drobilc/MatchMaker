@@ -34,11 +34,12 @@ Details of implementation can be found [here](https://github.com/drobilc/MatchMa
 
 Here you can see how all of this looks in action:
 
-[[/documentation/screenshot1]]
-[[/documentation/screenshot2]]
-[[/documentation/screenshot3]]
+![Gazebo simulator screenshot][/documentation/screenshot1.png]
+![RViz vizualization tool screenshot][/documentation/screenshot2.png]
+![Depth image][/documentation/screenshot3.png]
 
 ## Bugs
+
   * Erazem can sometimes get stuck and loops infinitely while tossing a coin into a wishing well. This happens because the robot isn't able to reach the desired approaching point. This could be solved by implementing a time-out.
   * If the robot can't get to the approacing point, it can't pick up a ring and the simulation must be restarted.
   * The robot also sometimes randomly stops. This is due to the fact that some of the exploration points are not reachable. Here, the time-out was implemented, so the robot can continue with its path.
