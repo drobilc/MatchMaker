@@ -6,7 +6,10 @@
 
 short catchy description here
 
+This project was build as part of the course RInS (Razvoj Inteligentnih sistemov = Development of Inteligent Systems) taught at University of Ljubljana, Faculty of Computer and Information Science (FRI).
+
 ## About
+
 Erazem, a robot with matchking skills even better than Tinder, was hired by Gargamel, who wanted to find love and get married as quickly as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences.
 	
 When Gargamel surprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook off this thought since he had had much stranger clients before and started searching right away.
@@ -23,26 +26,32 @@ He knew that his job was very impactful. He promised himself not to let Gargamel
 
 ## Features
 
-## Bugs
+In short, robot autonomously moves around, detects and approaches faces, rings and cylinders, recognizes faces, synthetizes and recognizes speech.
 
-what robot does, what are the markers, screenshots of Rviz and Gazebo here
-- ne rabiš robota, ker vse laufa v simulaciji
-- kaj dela in kaj ne zares (od naše kode)
-- v okviru česa je blo narjeno
-- (avtorji?)
-- dodaj nekam link na ros navoila za zbuildat workspace, linke do rosa, rviza in gazebota 
+All detections are marked: pink spheres mark detected faces, spheres in other colours mark detected rings, and cylinders mark cylinders. Yellow cubes mark the goals for robot to move to.
+
+Details of implementation can be found [here](https://github.com/drobilc/MatchMaker/tree/master/documentation/final_report/final_report.pdf).
+
+Here you can see how all of this looks in action:
+
+add photos here
+
+## Bugs
+  * Erazem can sometimes get stuck and loops infinitely while tossing a coin into a wishing well. This happens because the robot isn't able to reach the desired approaching point. This could be solved by implementing a time-out.
+  * If the robot can't get to the approacing point, it can't pick up a ring and the simulation must be restarted.
+  * The robot also sometimes randomly stops. This is due to the fact that some of the exploration points are not reachable. Here, the time-out was implemented, so the robot can continue with its path.
+
 - ker node se s čim ukvarja
 - a nardimo tud readmeje za vsak package posebi?
-- zbrisat mormo nerelevantne reameje in nerelevantne pakete
-- kak screenshot našga robotka v akciji
 - kako se menja svet
-- kakega robota rabiš, če hočeš fizično obliko? - Turtlebota s kinectom in robotsko roko
 
 ## Installation
 
 ### System requirements
 
 You have to have [ROS kinetic](http://wiki.ros.org/kinetic/Installation) and python2 installed, as well as [Gazebo](http://gazebosim.org/) and [Rviz](http://wiki.ros.org/rviz/UserGuide). You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu 16.04, other versions mihght also work but have not been tested with this code.
+
+Since everything runs within a simulation, there is no need for an actual, physical robot. If you really, really want to use a real robot, you'll need a Turtlebot robot with Kinect and a small robotic arm mounted on top (on the right side).
 
 ### Get the code
 
@@ -82,3 +91,5 @@ catkin_make
 ```
 
 ## Running
+
+You can run everything by moving into your ROS workspace folder and using a command `roslaunch love_maker_2000 all.launch`.
