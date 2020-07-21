@@ -1,6 +1,8 @@
-# Match Maker
+<p align="center">
+  <img height="150" src="https://github.com/drobilc/MatchMaker/blob/master/documentation/logo.png" alt="MatchMaker logo">
+</p>
 
-logo here
+# Match Maker
 
 short catchy description here
 
