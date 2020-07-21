@@ -93,3 +93,7 @@ catkin_make
 ## Running
 
 You can run everything by moving into your ROS workspace folder and using a command `roslaunch love_maker_2000 all.launch`.
+
+### Change the world
+
+To change the world in which the robot will move, change the name of the `.world` file in `task3/launch/rins_world.launch`.
