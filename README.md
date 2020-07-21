@@ -5,6 +5,17 @@ logo here
 short catchy description here
 
 long descripzion, what robot does, what are the markers, screenshots of Rviz and Gazebo here
+- ne rabiš robota, ker vse laufa v simulaciji
+- kaj dela in kaj ne zares (od naše kode)
+- v okviru česa je blo narjeno
+- (avtorji?)
+- dodaj nekam link na ros navoila za zbuildat workspace, linke do rosa, rviza in gazebota (lahka clickable v prerequisites - lahka preimenujemo v system requirements)
+- ker node se s čim ukvarja
+- a nardimo tud readmeje za vsak package posebi?
+- zbrisat mormo nerelevantne reameje in nerelevantne pakete
+- kak screenshot našga robotka v akciji
+- kako se menja svet
+- kakega robota rabiš, če hočeš fizično obliko? - Turtlebota s kinectom in robotsko roko
 
 ## Installation
 
