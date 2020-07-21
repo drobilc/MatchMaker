@@ -7,6 +7,7 @@
 short catchy description here
 
 ## About
+
 Erazem, a robot with matchking skills even better than Tinder, was hired by Gargamel, who wanted to find love and get married as quickly as possible. Erazem first had to find Gargamel to ask him about his preferences. He already knew that Gargamel was looking for a woman, but since usually his clients also cared about the looks, he also wanted to find out about this kind of preferences.
 	
 When Gargamel surprised him with his simple answer, that he only cared about the hair colour and hairstyle, he couldn't help but think to himself, what a strange man Gargamel was. He shook off this thought since he had had much stranger clients before and started searching right away.
@@ -27,7 +28,7 @@ In short, robot autonomously moves around, detects and approaches faces, rings a
 
 All detections are marked: pink spheres mark detected faces, spheres in other colours mark detected rings, and cylinders mark cylinders. Yellow cubes mark the goals for robot to move to.
 
-Details of implementation can be found [here](https://github.com/drobilc/MatchMaker/tree/master/documentation/documentation.pdf).
+Details of implementation can be found [here](https://github.com/drobilc/MatchMaker/tree/master/documentation/final_report/final_report.pdf).
 
 Here you can see how all of this looks in action:
 
