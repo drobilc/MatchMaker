@@ -9,7 +9,7 @@ long descripzion, what robot does, what are the markers, screenshots of Rviz and
 - kaj dela in kaj ne zares (od naše kode)
 - v okviru česa je blo narjeno
 - (avtorji?)
-- dodaj nekam link na ros navoila za zbuildat workspace, linke do rosa, rviza in gazebota (lahka clickable v prerequisites - lahka preimenujemo v system requirements)
+- dodaj nekam link na ros navoila za zbuildat workspace, linke do rosa, rviza in gazebota 
 - ker node se s čim ukvarja
 - a nardimo tud readmeje za vsak package posebi?
 - zbrisat mormo nerelevantne reameje in nerelevantne pakete
@@ -19,9 +19,9 @@ long descripzion, what robot does, what are the markers, screenshots of Rviz and
 
 ## Installation
 
-### Prerequisites
+### System requirements
 
-You have to have ROS kinetic and python2 installed, as well as Gazebo and Rviz. You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu neki neki, other versions mihght also work but have not been tested with this code.
+You have to have [ROS kinetic](http://wiki.ros.org/kinetic/Installation) and python2 installed, as well as [Gazebo](http://gazebosim.org/) and [Rviz](http://wiki.ros.org/rviz/UserGuide). You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu 16.04, other versions mihght also work but have not been tested with this code.
 
 ### Get the code
 
