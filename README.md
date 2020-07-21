@@ -3,8 +3,7 @@
 </p>
 
 # Match Maker
-
-short catchy description here
+> Tinder, but with very awkward robot
 
 This project was build as part of the course RInS (Razvoj Inteligentnih sistemov = Development of Inteligent Systems) taught at University of Ljubljana, Faculty of Computer and Information Science (FRI).
 
@@ -36,9 +35,9 @@ Here you can see how all of this looks in action:
 
 ![Gazebo simulator screenshot](documentation/screenshot1.png)
 
-![RViz vizualization tool screenshot](documentation/screenshot1.png)
+![RViz vizualization tool screenshot](documentation/screenshot2.png)
 
-![Depth image](documentation/screenshot1.png)
+![Depth image](documentation/screenshot3.png)
 
 ## Bugs
 
