@@ -14,11 +14,12 @@
 \usepackage[bottom]{footmisc}
 \usepackage{dirtytalk}
 \usepackage{titling}
+\usepackage{hyperref} 
 \renewcommand\maketitlehooka{\null\mbox{}\vfill}
 \renewcommand\maketitlehookd{\vfill\null}
 
-\author{Team Gamma \\ {\small Ajda Frankovič, Martin Preradović, Niki Bizjak}}
-\title{Final report}
+\author{Team Gamma \\ {\small \href{https://github.com/ajdafrankovic}{@ajdafrankovic}, \href{https://github.com/akulakul}{@akulakul}, \href{https://github.com/drobilc}{@drobilc}}}
+\title{MatchMaker}
 \date{}
 \begin{document}
 	
@@ -723,22 +724,11 @@
 	\end{center}
 
 	As we can see most of the classifiers perform really well. For Erazem we decided to use the \texttt{svm} model with a linear kernel and parameter $c$ equal to $0.05$. Our classifier performed really well in the \texttt{Gazebo} simulator as well. \\
-
-	\section{Division of work}
-	Since this project is extensive, we tried to build it from several modules to make it more manageable. Despite this, it was impossible to just divide the work exactly by modules as they are still very interconnected. It is also more convenient and fast to fix some error or slightly change an algorithm by yourself as you notice the need for it, than to explain everything to the person, who initially built the node, and wait for them to make the changes the next time they sit at their computer. For these reasons, the division of the work is not very clean and straightforward. There is a also a lot of work that is invisible as it includes algorithms and nodes that end up not being used as we find better solutions, and also a lot of debugging, bug fixes, minor functionality changes and testing. Owerall, we each spent roughly the same amount of time for this project. Below we state which team member did most of the work for each of the robot's abilities. \\
-	
-	\begin{itemize}
-		\item \textbf{Ajda}: smart space exploration, approaching points for rings and cylinders, Pick-up-the-ring and Toss-a-coin approaching points
-		\item \textbf{Martin}: speech synthesis, speech recognition, face classification, ring and cylinder detection, fsa implementation for robot behaviour
-		\item \textbf{Niki}: face detection, face and ring world point computation, robustification, colour classification, robot movement tasks 
-	\end{itemize}
 	
 	\section{Conclusion}
 	Building Erazem was a difficult journey. We faced many challenges and solved some of them more successfully than the others. The task was far from easy, but nevertheless we also had fun at times. We especially enjoyed composing the sentences that the robot would then say out loud and answering its questions. \\
 
 	This course was very time intensive. Not just because a lot of things had to be implemented but also because they sometimes required a lot of research as \texttt{ROS} doesn't have everything well documented and it's difficult to find example usage for some modules. The documentation is insufficient for a system of this scope. The documentation of some packages is so bad that it is better to just look at the code or write it yourself. \\
-
-	The individual work for this course in the course syllabus is estimated to 105 hours per person. We estimate that we spent about 144 hours in total for the homeworks and 504 hours in total for the tasks. This accounts to about 215 hours of work per person. And this does not include the time spent writing this final report. We also did not estimate the work spent solving the exercises, as most of the work for them would be needed for the tasks anyway. \\
 
 	A big burden was also the fact that the presentation of the final task was right at the beginning of the exam period. This meant we had to \say{choose} between working on the final task and studying for the exams that took place at the beginning of the exam period. This was extremely stressful. We prepared the architecture for the final task right after the presentations for the task 2 were held and also started working on the final task early, as soon as it was announced. Yet some development still had to be done in the last week before the final task presentation. \\
 	
@@ -746,9 +736,6 @@
 
 	Final thought: We wish \texttt{ROS} had better documentation or at least a debugger. \\
 
-	% tasks should be published eralier so we could start earlier if we wanted to, same goes for the materials from excercises, we had to wait for qr codes, had to wait for some other components as well
-
-	% the fun part was that the robot was speaking
 	Below are some of the Erazem's funniest quotes: 
 	\begin{itemize}
 		\item \say{How the job gets done?} - Erazem on his first day as the matchmaker
