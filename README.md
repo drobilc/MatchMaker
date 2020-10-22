@@ -49,7 +49,7 @@ Here you can see how all of this looks in action:
 
 ### System requirements
 
-You have to have [ROS kinetic](http://wiki.ros.org/kinetic/Installation) and python2 installed, as well as [Gazebo](http://gazebosim.org/) and [Rviz](http://wiki.ros.org/rviz/UserGuide). You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu 16.04, other versions mihght also work but have not been tested with this code.
+You have to have [ROS kinetic](http://wiki.ros.org/kinetic/Installation) and python2 installed, as well as [Gazebo](http://gazebosim.org/) and [Rviz](http://wiki.ros.org/rviz/UserGuide). You also need a ROS repository. For ROS kinetic, the compatible version of computer operating system is Ubuntu 16.04, other versions might also work but have not been tested with this code.
 
 Since everything runs within a simulation, there is no need for an actual, physical robot. If you really, really want to use a real robot, you'll need a Turtlebot robot with Kinect and a small robotic arm mounted on top (on the right side).
 
